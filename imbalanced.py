@@ -50,3 +50,30 @@ def round_up(Xall,y1,ids):
     z1 = np.array(z1).ravel()
     print "round_up: 0:",len(p_zeros),"1:",len(p_ones),"X1:",X1.shape,"y1:",z1.shape,"j_last:",j
     return X1,z1,ids
+
+from smote import SMOTE
+
+def round_smote(Xall,y1,k=5,h=1.0):
+    p_zeros = [i for i,e in enumerate(y1) if e == 0]
+    p_ones = [i for i,e in enumerate(y1) if e > 0]
+    delta = len(p_zeros) - len(p_ones)
+    if delta > 0:
+        N = ( int(len(p_zeros)/len(p_ones))+1 ) * 100
+        T = Xall[p_ones,:]
+        S = SMOTE(T, N, k, h):
+        sel = random.sample(range(S.shape[0]),delta)
+        X1 = np.vstack([Xall,S[sel,:]])
+        z1 = np.hstack(y1,np.ones(delta))
+    elif delta < 0:
+        delta = -delta
+        N = ( int(len(p_ones)/len(p_zeros))+1 ) * 100
+        T = Xall[p_zeros,:]
+        S = SMOTE(T, N, k, h):
+        sel = random.sample(range(S.shape[0]),delta)
+        X1 = np.vstack([Xall,S[sel,:]])
+        z1 = np.hstack(y1,np.zeros(delta))
+    else:
+        return Xall,y1
+    print "round smote:","X1:",X1.shape,"z1:",z1.shape
+    return X1,z1
+
