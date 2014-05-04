@@ -157,6 +157,19 @@ class RoundClassifier(BaseEstimator, ClassifierMixin):
     ypp = self.predict_proba(X)[:,1]
     return  np.array(map(int,ypp>self.cutoff))
 
+class ConstClassifier(BaseEstimator, ClassifierMixin):
+  def __init__(self, c = 0):
+    self.c = c
+  def fit(self, X, y=None):
+    return self
+  def predict_proba(self, X):
+    X = np.asarray(X)
+    y1=np.empty(X.shape[0]); 
+    y1.fill(self.c)
+    y_proba = np.vstack((1-y1,y1)).T
+    return y_proba
+  def predict(self, X):
+    return self.predict_proba(X)[:,1]
 
 def test():
     print "tests ok"
