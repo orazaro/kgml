@@ -53,7 +53,7 @@ def round_up(Xall,y1,ids):
 
 from smote import SMOTE
 
-def round_smote(Xall,y1,k=1,h=0.1):
+def round_smote(Xall,y1,k=2,h=0.1):
     p_zeros = [i for i,e in enumerate(y1) if e == 0]
     p_ones = [i for i,e in enumerate(y1) if e > 0]
     delta = len(p_zeros) - len(p_ones)
