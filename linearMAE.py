@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# Author:   Oleg Razgulyaev 
+# License:  BSD 3 clause
 """
    Linear model using MAE scoring (adapted to sklearn by O.Razgulyaev)
 __author__ = 'Miroslaw Horbal'

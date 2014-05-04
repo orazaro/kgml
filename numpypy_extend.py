@@ -1,5 +1,7 @@
 #!/usr/bin/env pypy
 # -*- coding: utf-8 -*-
+# Author:   Oleg Razgulyaev 
+# License:  BSD 3 clause
 """
    Extend numpypy module of pypy 
 """
