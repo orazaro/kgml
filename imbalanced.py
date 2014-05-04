@@ -60,7 +60,7 @@ def round_smote(Xall,y1,k=5,h=1.0):
     if delta > 0:
         N = ( int(len(p_zeros)/len(p_ones))+1 ) * 100
         T = Xall[p_ones,:]
-        S = SMOTE(T, N, k, h):
+        S = SMOTE(T, N, k, h)
         sel = random.sample(range(S.shape[0]),delta)
         X1 = np.vstack([Xall,S[sel,:]])
         z1 = np.hstack(y1,np.ones(delta))
@@ -68,7 +68,7 @@ def round_smote(Xall,y1,k=5,h=1.0):
         delta = -delta
         N = ( int(len(p_ones)/len(p_zeros))+1 ) * 100
         T = Xall[p_zeros,:]
-        S = SMOTE(T, N, k, h):
+        S = SMOTE(T, N, k, h)
         sel = random.sample(range(S.shape[0]),delta)
         X1 = np.vstack([Xall,S[sel,:]])
         z1 = np.hstack(y1,np.zeros(delta))
