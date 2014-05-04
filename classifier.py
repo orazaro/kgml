@@ -131,10 +131,14 @@ class RoundClassifier(BaseEstimator, ClassifierMixin):
     return resbrute[0]
 
   def fit(self, X, y):
+    from imbalanced import round_smote
     if self.rup > 0:
         X1,y1,_ = self.round_up(X,y) 
     elif self.rup < 0:
-        X1,y1 = self.round_down(X,y) 
+        if self.rup < -1:
+            X1,y1 = round_smote(X,y) 
+        else:
+            X1,y1 = self.round_down(X,y) 
     else:
         X1,y1 = X,y
     self.est.fit(X1,y1)
