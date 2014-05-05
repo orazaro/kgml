@@ -8,6 +8,22 @@
 import numpy as np
 import random
 
+
+def find_best_cutoff(y1,ypp,verbose=0):
+    from scipy import optimize
+    def f(x,*params):
+        y_true,ypp = params
+        y_pred = np.array(map(int,ypp>x))
+        res = metrics.f1_score(y_true, y_pred)
+        #print "x:",x,"res:",res
+        return -res
+    rranges = (slice(0,1,0.01),)
+    resbrute = optimize.brute(f, rranges, args=(y1,ypp), full_output=False,
+                                  finish=optimize.fmin)
+    if verbose: print "resbrute:",resbrute
+    return resbrute[0]
+
+
 def round_down(Xall,y1):
     p_zeros = [i for i,e in enumerate(y1) if e == 0]
     p_ones = [i for i,e in enumerate(y1) if e > 0]

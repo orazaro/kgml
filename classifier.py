@@ -116,22 +116,8 @@ class RoundClassifier(BaseEstimator, ClassifierMixin):
     #print "round_up: 0:",len(p_zeros),"1:",len(p_ones),"X1:",X1.shape,"y1:",z1.shape,"j_last:",j
     return X1,z1,ids
 
-  def find_best_cutoff(self,y1,ypp):
-    from scipy import optimize
-    def f(x,*params):
-        y_true,ypp = params
-        y_pred = np.array(map(int,ypp>x))
-        res = metrics.f1_score(y_true, y_pred)
-        #print "x:",x,"res:",res
-        return -res
-    rranges = (slice(0,1,0.01),)
-    resbrute = optimize.brute(f, rranges, args=(y1,ypp), full_output=False,
-                                  finish=optimize.fmin)
-    print "resbrute:",resbrute
-    return resbrute[0]
-
   def fit(self, X, y):
-    from imbalanced import round_smote
+    from imbalanced import round_smote,find_best_cutoff
     if self.rup > 0:
         X1,y1,_ = self.round_up(X,y) 
     elif self.rup < 0:
@@ -144,7 +130,7 @@ class RoundClassifier(BaseEstimator, ClassifierMixin):
     self.est.fit(X1,y1)
     if self.find_cutoff:
         ypp = self.predict_proba(X)[:,1]
-        self.cutoff = self.find_best_cutoff(y,ypp)
+        self.cutoff = find_best_cutoff(y,ypp)
     else:
         self.cutoff = 0.5
     return self
