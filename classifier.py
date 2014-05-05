@@ -67,6 +67,7 @@ class ConstClassifier(BaseEstimator, ClassifierMixin):
     return y_proba
   def predict(self, X):
     return self.predict_proba(X)[:,1]
+
 class MeanClassifier(BaseEstimator, ClassifierMixin):
   def fit(self, X, y=None):
     return self
