@@ -136,7 +136,7 @@ class Quadratic(BaseEstimator, TransformerMixin):
             X2.append(X_df[:,i]*X_df[:,j])
         X2 = np.vstack(X2).T
         X1 = np.hstack([X1,X2])
-    print "X1:",X1.shape
+    #print "X1:",X1.shape
     return X1
 
 class RFSel(BaseEstimator, TransformerMixin):
