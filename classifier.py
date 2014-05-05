@@ -30,27 +30,43 @@ from base import check_n_jobs
 logger = logging.getLogger(__name__)
 
 class LassoCV_proba(lm.LassoCV):
-    def predict_proba(self,X):
-        print 'alpha_:',self.alpha_
-        y = self.predict(X)
-        y = 1./(1+np.exp(-(y-0.5)))
-        return np.vstack((1-y,y)).T
+  def predict_proba(self,X):
+    print 'alpha_:',self.alpha_
+    y = self.predict(X)
+    y = 1./(1+np.exp(-(y-0.5)))
+    return np.vstack((1-y,y)).T
+
 class RidgeCV_proba(lm.RidgeCV):
-    def predict_proba(self,X):
-        logger.debug('alpha_=%s',self.alpha_)
-        y = self.predict(X)
-        if 0:
-            y_min,y_max = y.min(),y.max()
-            if y_max>y_min:
-                y = (y-y_min)/(y_max-y_min)
-        else:
-            y = 1./(1+np.exp(-(y-0.5)))
-        return np.vstack((1-y,y)).T
+  def predict_proba(self,X):
+    logger.debug('alpha_=%s',self.alpha_)
+    y = self.predict(X)
+    if 0:
+        y_min,y_max = y.min(),y.max()
+        if y_max>y_min:
+            y = (y-y_min)/(y_max-y_min)
+    else:
+        y = 1./(1+np.exp(-(y-0.5)))
+    return np.vstack((1-y,y)).T
+
 class KNeighborsClassifier_proba(KNeighborsClassifier):
-    def predict_proba(X):
-        y = super(KNeighborsClassifier_proba, self).predict_proba(X)
-        y[np.isnan(y)]=0.5
-        return y
+  def predict_proba(X):
+    y = super(KNeighborsClassifier_proba, self).predict_proba(X)
+    y[np.isnan(y)]=0.5
+    return y
+
+class ConstClassifier(BaseEstimator, ClassifierMixin):
+  def __init__(self, c = 0):
+    self.c = c
+  def fit(self, X, y=None):
+    return self
+  def predict_proba(self, X):
+    X = np.asarray(X)
+    y1=np.empty(X.shape[0]); 
+    y1.fill(self.c)
+    y_proba = np.vstack((1-y1,y1)).T
+    return y_proba
+  def predict(self, X):
+    return self.predict_proba(X)[:,1]
 class MeanClassifier(BaseEstimator, ClassifierMixin):
   def fit(self, X, y=None):
     return self
@@ -71,60 +87,15 @@ class RoundClassifier(BaseEstimator, ClassifierMixin):
     self.rup = rup
     self.find_cutoff = find_cutoff
 
-  def round_down(self,Xall,y1):
-    p_zeros = [i for i,e in enumerate(y1) if e == 0]
-    p_ones = [i for i,e in enumerate(y1) if e > 0]
-    delta = len(p_zeros) - len(p_ones)
-    if delta > 0:
-        sel = random.sample(p_zeros,len(p_ones))
-        sel = sel + p_ones
-    elif delta < 0:
-        sel = random.sample(p_ones,len(p_zeros))
-        sel = sel + p_zeros
-    else:
-        return Xall,y1
-    #print "round down:",len(p_zeros),len(p_ones),len(sel)
-    return Xall[sel,:],y1[sel]
-
-  def round_up(self,Xall,y1,ids=None):
-    if not ids is None: 
-        ids_inv = [None]*Xall.shape[0]
-        for (k,v) in ids.iteritems():
-            for i in v:
-                ids_inv[i] = k
-    p_zeros = [i for i,e in enumerate(y1) if e == 0]
-    p_ones = [i for i,e in enumerate(y1) if e > 0]
-    delta = len(p_zeros) - len(p_ones)
-    if delta > 0:
-        sel = [random.choice(p_ones) for _ in range(delta)]
-    elif delta < 0:
-        delta = -delta
-        sel = [random.choice(p_zeros) for _ in range(delta)]
-    else:
-        return Xall,y1,ids
-    X1 = [Xall]
-    z1 = list(y1)
-    j = Xall.shape[0]
-    for i in sel:
-        X1.append(Xall[i,:])
-        z1.append(y1[i])
-        if not ids is None:
-            ids[ids_inv[i]].append(j)
-        j += 1
-    X1 = np.vstack(X1)
-    z1 = np.array(z1).ravel()
-    #print "round_up: 0:",len(p_zeros),"1:",len(p_ones),"X1:",X1.shape,"y1:",z1.shape,"j_last:",j
-    return X1,z1,ids
-
   def fit(self, X, y):
-    from imbalanced import round_smote,find_best_cutoff
+    from imbalanced import find_best_cutoff,round_smote,round_down,round_up
     if self.rup > 0:
-        X1,y1,_ = self.round_up(X,y) 
+        X1,y1,_ = round_up(X,y) 
     elif self.rup < 0:
         if self.rup < -1:
             X1,y1 = round_smote(X,y) 
         else:
-            X1,y1 = self.round_down(X,y) 
+            X1,y1 = round_down(X,y) 
     else:
         X1,y1 = X,y
     self.est.fit(X1,y1)
@@ -147,19 +118,6 @@ class RoundClassifier(BaseEstimator, ClassifierMixin):
     ypp = self.predict_proba(X)[:,1]
     return  np.array(map(int,ypp>self.cutoff))
 
-class ConstClassifier(BaseEstimator, ClassifierMixin):
-  def __init__(self, c = 0):
-    self.c = c
-  def fit(self, X, y=None):
-    return self
-  def predict_proba(self, X):
-    X = np.asarray(X)
-    y1=np.empty(X.shape[0]); 
-    y1.fill(self.c)
-    y_proba = np.vstack((1-y1,y1)).T
-    return y_proba
-  def predict(self, X):
-    return self.predict_proba(X)[:,1]
 
 def test():
     print "tests ok"
