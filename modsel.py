@@ -33,6 +33,8 @@ def cv_select(y, random_state, n_cv, cv, test_size=0.1):
             return cross_validation.LeaveOneOut(n_cv)
         elif cv == 'kfold':
             return cross_validation.StratifiedKFold(y, n_folds=n_cv)
+        elif cv == 'boot':
+            return cross_validation.Bootstrap(len(y), n_iter=n_cv)
         else:
             raise ValueError("bad cv:%s"%cv)
     else:
