@@ -72,7 +72,7 @@ def cv_run_ids(rd, X, y, ids, random_state, n_cv = 16, n_jobs=-1, scoring='accur
   #cv_ids = cross_validation.StratifiedKFold(y_ids, n_folds=n_cv)
   #cv_ids = cross_validation.StratifiedShuffleSplit(y_ids, n_cv, test_size=0.1, random_state=random_state)
   #cv_ids = cross_validation.LeaveOneOut(n_cv)
-  cv_ids = cv_select(y, random_state, n_cv, cv, test_size)
+  cv_ids = cv_select(y_ids, random_state, n_cv, cv, test_size)
   cv1 = []
   for (a,b) in cv_ids:
       a1 = []
