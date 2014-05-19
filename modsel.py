@@ -55,7 +55,7 @@ def cv_run(rd, X, y, random_state, n_cv=16, n_jobs=-1, scoring='accuracy', cv='s
             scores_mean,_ = estimate_scores(scores,scoring,
                 sampling=True,verbose=1)
             p.append(scores_mean)
-        scores_mean,me = estimate_scores(scores,scoring,
+        scores_mean,me = estimate_scores(p,scoring,
                 sampling=False,verbose=1)
         phat = scores_mean
         print "me_binom_est =",1.96*np.sqrt(phat*(1-phat)/len(y))
