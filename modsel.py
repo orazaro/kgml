@@ -33,7 +33,7 @@ def bootstrap_632(n, n_iter, random_state=None):
         l_test = sorted(s_test)
         test_n = np.random.randint(0,len(l_test),size=n)
         test = np.asarray([l_test[i] for i in test_n])
-        print train,test
+        #print train,test
         cv.append((train,test))
 
 def cv_select(y, random_state, n_cv, cv, test_size=0.1):
