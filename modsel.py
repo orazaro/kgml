@@ -35,7 +35,7 @@ def bootstrap_632(n, n_iter, random_state=None):
             test_n = np.random.randint(0,len(l_test),size=n)
             test = np.asarray([l_test[i] for i in test_n])
         else:
-            test = np.asarray(l_test))
+            test = np.asarray(l_test)
         #print train,test
         cv.append((train,test))
     return cv
