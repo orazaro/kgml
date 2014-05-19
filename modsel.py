@@ -46,7 +46,7 @@ def cv_run(rd, X, y, random_state, n_cv=16, n_jobs=-1, scoring='accuracy', cv='s
     n_jobs = 1 if os.uname()[0]=='Darwin' else n_jobs
     if n_cv == 0:
       n_cv = len(y) 
-    if isinstance(cv,basestring) and cv=='kfold' and scoring='accuracy':
+    if isinstance(cv,basestring) and cv=='kfold' and scoring=='accuracy':
         p =[]
         for i in range(10):
             cv1 = cv_select(y, random_state, n_cv, cv, test_size)
