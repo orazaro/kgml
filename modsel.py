@@ -41,40 +41,43 @@ def cv_select(y, random_state, n_cv, cv, test_size=0.1):
         return cv
 
 def cv_run(rd, X, y, random_state, n_cv=16, n_jobs=-1, scoring='accuracy', cv='shuffle', test_size=0.1, sampling=True):
-  n_jobs = 1 if os.uname()[0]=='Darwin' else n_jobs
-  if n_cv == 0:
+    """ possible scorong: accuracy,roc_auc,precision,average_precision,f1
+    """
+    n_jobs = 1 if os.uname()[0]=='Darwin' else n_jobs
+    if n_cv == 0:
       n_cv = len(y) 
-  #scoring = 'accuracy'
-  #scoring = 'roc_auc'
-  #scoring = 'precision'
-  #scoring = 'average_precision'
-  #scoring = 'f1'
-
-  #cv1 = cross_validation.StratifiedKFold(y, n_folds=n_cv)
-  #cv1 = cross_validation.StratifiedShuffleSplit(y, n_cv, test_size=0.1, random_state=random_state)
-  #cv1 = cross_validation.LeaveOneOut(n_cv)
-  cv1 = cv_select(y, random_state, n_cv, cv, test_size)
-  scores = cross_validation.cross_val_score(rd, X, y, cv=cv1, scoring=scoring,
-    n_jobs=n_jobs, verbose=0)
-  #print scores
-  scores_mean,me = estimate_scores(scores,scoring,sampling)
-  return scores_mean,me
+    if isinstance(cv,basestring) and cv=='kfold' and scoring='accuracy':
+        p =[]
+        for i in range(10):
+            cv1 = cv_select(y, random_state, n_cv, cv, test_size)
+            scores = cross_validation.cross_val_score(rd, X, y, cv=cv1, 
+                scoring=scoring, n_jobs=n_jobs, verbose=0)
+            scores_mean,_ = estimate_scores(scores,scoring,
+                sampling=False,verbose=0)
+            p.append(scores_mean)
+        scores_mean,me = estimate_scores(scores,scoring,
+                sampling=False,verbose=1)
+        phat = scores_mean
+        print "me_binom_est =",1.96*np.sqrt(phat*(1-phat)/len(y))
+    else:
+        cv1 = cv_select(y, random_state, n_cv, cv, test_size)
+        scores = cross_validation.cross_val_score(rd, X, y, cv=cv1, scoring=scoring,
+        n_jobs=n_jobs, verbose=0)
+        scores_mean,me = estimate_scores(scores,scoring,sampling)
+    return scores_mean,me
 
 def cv_run_ids(rd, X, y, ids, random_state, n_cv = 16, n_jobs=-1, scoring='accuracy', cv='shuffle', test_size=0.1, sampling=True):
-  n_jobs = 1 if os.uname()[0]=='Darwin' else n_jobs
-  #scoring = 'accuracy'
-  #scoring = 'roc_auc'
-  n_ids = len(ids)
-  y_ids = [y[ids[i][0]] for i in range(n_ids)]
-  #print "y_ids:",sum(y_ids),len(y_ids)
-  if n_cv == 0:
+    """ possible scorong: accuracy,roc_auc,precision,average_precision,f1
+    """
+    n_jobs = 1 if os.uname()[0]=='Darwin' else n_jobs
+    n_ids = len(ids)
+    y_ids = [y[ids[i][0]] for i in range(n_ids)]
+    #print "y_ids:",sum(y_ids),len(y_ids)
+    if n_cv == 0:
       n_cv = len(y_ids) 
-  #cv_ids = cross_validation.StratifiedKFold(y_ids, n_folds=n_cv)
-  #cv_ids = cross_validation.StratifiedShuffleSplit(y_ids, n_cv, test_size=0.1, random_state=random_state)
-  #cv_ids = cross_validation.LeaveOneOut(n_cv)
-  cv_ids = cv_select(y_ids, random_state, n_cv, cv, test_size)
-  cv1 = []
-  for (a,b) in cv_ids:
+    cv_ids = cv_select(y_ids, random_state, n_cv, cv, test_size)
+    cv1 = []
+    for (a,b) in cv_ids:
       a1 = []
       for i in a:
           a1 = a1 + ids[i]
@@ -82,8 +85,8 @@ def cv_run_ids(rd, X, y, ids, random_state, n_cv = 16, n_jobs=-1, scoring='accur
       for i in b:
           b1 = b1 + ids[i]
       cv1.append( (np.array(a1),np.array(b1)) )
-  scores = cross_validation.cross_val_score(rd, X, y, cv=cv1, scoring=scoring,
+    scores = cross_validation.cross_val_score(rd, X, y, cv=cv1, scoring=scoring,
     n_jobs=n_jobs, verbose=0)
-  #print scores
-  scores_mean,me = estimate_scores(scores,scoring,sampling)
-  return scores_mean,me
+    #print scores
+    scores_mean,me = estimate_scores(scores,scoring,sampling)
+    return scores_mean,me
