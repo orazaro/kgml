@@ -25,6 +25,17 @@ def estimate_scores(scores, scoring, sampling=True, verbose=1):
     print "%d Fold CV Score(%s): %.6f +- %.4f" % (n_cv, scoring, scores_mean, me,)
   return scores_mean, me
 
+def bootstrap_632(n, n_iter, random_state=None):
+    cv = []
+    for i in range(n_iter):
+        train = np.random.randint(0,n,size=n)
+        s_test = set(range(n)) - set(train)
+        l_test = sorted(s_test)
+        test_n = np.random.randint(0,len(l_test),size=n)
+        test = np.asarray([l_test[i] for i in test_n])
+        print train,test
+        cv.append((train,test))
+
 def cv_select(y, random_state, n_cv, cv, test_size=0.1):
     if isinstance(cv,basestring):
         if cv == 'shuffle':
@@ -35,6 +46,8 @@ def cv_select(y, random_state, n_cv, cv, test_size=0.1):
             return cross_validation.StratifiedKFold(y, n_folds=n_cv)
         elif cv == 'boot':
             return cross_validation.Bootstrap(len(y), n_iter=n_cv, train_size=(1-test_size), random_state=random_state)
+        elif cv == 'boot632':
+            return bootstrap_632(len(y), n_iter=n_cv, random_state=random_state)
         else:
             raise ValueError("bad cv:%s"%cv)
     else:
@@ -91,3 +104,22 @@ def cv_run_ids(rd, X, y, ids, random_state, n_cv = 16, n_jobs=-1, scoring='accur
     #print scores
     scores_mean,me = estimate_scores(scores,scoring,sampling)
     return scores_mean,me
+
+
+def test():
+    bootstrap_632(10, 5)
+    print "tests ok"
+
+if __name__ == '__main__':
+    import random,sys
+    random.seed(1)
+    import argparse
+    parser = argparse.ArgumentParser(description='ModSel.')
+    parser.add_argument('cmd', nargs='?', default='test')
+    args = parser.parse_args()
+    print >>sys.stderr,args 
+  
+    if args.cmd == 'test':
+        test()
+    else:
+        raise ValueError("bad cmd")
