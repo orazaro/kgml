@@ -49,7 +49,7 @@ def cv_run(rd, X, y, random_state, n_cv=16, n_jobs=-1, scoring='accuracy', cv='s
     if isinstance(cv,basestring) and cv=='kfold' and scoring=='accuracy':
         p =[]
         for i in range(10):
-            cv1 = cv_select(y, random_state, n_cv, cv, test_size)
+            cv1 = cv_select(y, random_state+i, n_cv, cv, test_size)
             scores = cross_validation.cross_val_score(rd, X, y, cv=cv1, 
                 scoring=scoring, n_jobs=n_jobs, verbose=0)
             scores_mean,_ = estimate_scores(scores,scoring,
