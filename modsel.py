@@ -46,14 +46,14 @@ def cv_run(rd, X, y, random_state, n_cv=16, n_jobs=-1, scoring='accuracy', cv='s
     n_jobs = 1 if os.uname()[0]=='Darwin' else n_jobs
     if n_cv == 0:
       n_cv = len(y) 
-    if isinstance(cv,basestring) and cv=='kfold' and scoring=='accuracy':
+    if isinstance(cv,basestring) and cv=='shuffle' and scoring=='accuracy':
         p =[]
         for i in range(10):
             cv1 = cv_select(y, random_state+i, n_cv, cv, test_size)
             scores = cross_validation.cross_val_score(rd, X, y, cv=cv1, 
                 scoring=scoring, n_jobs=n_jobs, verbose=0)
             scores_mean,_ = estimate_scores(scores,scoring,
-                sampling=False,verbose=1)
+                sampling=True,verbose=1)
             p.append(scores_mean)
         scores_mean,me = estimate_scores(scores,scoring,
                 sampling=False,verbose=1)
