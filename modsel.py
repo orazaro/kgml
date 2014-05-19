@@ -35,6 +35,7 @@ def bootstrap_632(n, n_iter, random_state=None):
         test = np.asarray([l_test[i] for i in test_n])
         #print train,test
         cv.append((train,test))
+    return cv
 
 def cv_select(y, random_state, n_cv, cv, test_size=0.1):
     if isinstance(cv,basestring):
