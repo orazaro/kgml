@@ -53,7 +53,7 @@ def cv_run(rd, X, y, random_state, n_cv=16, n_jobs=-1, scoring='accuracy', cv='s
             scores = cross_validation.cross_val_score(rd, X, y, cv=cv1, 
                 scoring=scoring, n_jobs=n_jobs, verbose=0)
             scores_mean,_ = estimate_scores(scores,scoring,
-                sampling=False,verbose=0)
+                sampling=False,verbose=1)
             p.append(scores_mean)
         scores_mean,me = estimate_scores(scores,scoring,
                 sampling=False,verbose=1)
