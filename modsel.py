@@ -40,15 +40,15 @@ def cv_select(y, random_state, n_cv, cv, test_size=0.1):
     else:
         return cv
 
-def cv_run(rd, X, y, random_state, n_cv=16, n_jobs=-1, scoring='accuracy', cv='shuffle', test_size=0.1, sampling=True):
+def cv_run(rd, X, y, random_state, n_cv=16, n_iter=0, n_jobs=-1, scoring='accuracy', cv='shuffle', test_size=0.1, sampling=True):
     """ possible scorong: accuracy,roc_auc,precision,average_precision,f1
     """
     n_jobs = 1 if os.uname()[0]=='Darwin' else n_jobs
     if n_cv == 0:
       n_cv = len(y) 
-    if isinstance(cv,basestring) and cv=='shuffle' and scoring=='accuracy':
+    if n_iter > 0:
         p =[]
-        for i in range(10):
+        for i in range(n_iter):
             cv1 = cv_select(y, random_state+i, n_cv, cv, test_size)
             scores = cross_validation.cross_val_score(rd, X, y, cv=cv1, 
                 scoring=scoring, n_jobs=n_jobs, verbose=0)
@@ -57,8 +57,9 @@ def cv_run(rd, X, y, random_state, n_cv=16, n_jobs=-1, scoring='accuracy', cv='s
             p.append(scores_mean)
         scores_mean,me = estimate_scores(p,scoring,
                 sampling=False,verbose=1)
-        phat = scores_mean
-        print "me_binom_est =",1.96*np.sqrt(phat*(1-phat)/len(y))
+        if scoring == 'accuracy':
+            phat = scores_mean
+            print "\tme_binom_est =",1.96*np.sqrt(phat*(1-phat)/len(y))
     else:
         cv1 = cv_select(y, random_state, n_cv, cv, test_size)
         scores = cross_validation.cross_val_score(rd, X, y, cv=cv1, scoring=scoring,
