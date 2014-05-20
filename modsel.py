@@ -27,17 +27,19 @@ def estimate_scores(scores, scoring, sampling=True, verbose=1):
 
 def bootstrap_632(n, n_iter, random_state=None):
     cv = []
-    for i in range(n_iter):
+    while n_iter > 0:
         train = np.random.randint(0,n,size=n)
         s_test = set(range(n)) - set(train)
         l_test = sorted(s_test)
-        if False:
-            test_n = np.random.randint(0,len(l_test),size=n)
-            test = np.asarray([l_test[i] for i in test_n])
-        else:
-            test = np.asarray(l_test)
-        #print train,test
-        cv.append((train,test))
+        if len(l_test) > 0:
+            if False:
+                test_n = np.random.randint(0,len(l_test),size=n)
+                test = np.asarray([l_test[i] for i in test_n])
+            else:
+                test = np.asarray(l_test)
+            #print train,test
+            cv.append((train,test))
+            n_iter -= 1
     return cv
 
 def cv_select(y, random_state, n_cv, cv, test_size=0.1):
