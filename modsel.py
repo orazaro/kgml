@@ -26,7 +26,6 @@ def estimate_scores(scores, scoring, sampling=True, verbose=1):
   return scores_mean, me
 
 def bootstrap_632(n, n_iter, random_state=None):
-    cv = []
     while n_iter > 0:
         train = np.random.randint(0,n,size=n)
         s_test = set(range(n)) - set(train)
@@ -38,9 +37,8 @@ def bootstrap_632(n, n_iter, random_state=None):
             else:
                 test = np.asarray(l_test)
             #print train,test
-            cv.append((train,test))
+            yield (train,test)
             n_iter -= 1
-    return cv
 
 def cv_select(y, random_state, n_cv, cv, test_size=0.1):
     if isinstance(cv,basestring):
