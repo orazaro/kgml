@@ -108,6 +108,10 @@ class VarSel(BaseEstimator, TransformerMixin):
   def fit(self, X, y = None):
     feature_importances = np.var(X,axis=0)
     fi = sorted(zip(feature_importances,range(len(feature_importances))),reverse=True)
+    fi_std_max = np.std(feature_importances) * 10
+    print "fi filter: from",len(fi),
+    fi = [e for e in fi if e[0] < fi_std_max]
+    print "to",len(fi)
     self.features_selected = [e[1] for e in fi[:self.k]]
     #print "sorted features:",fi[:20],"selected:",self.features_selected
     return self
