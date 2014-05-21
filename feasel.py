@@ -102,17 +102,23 @@ class VarSel(BaseEstimator, TransformerMixin):
   """
     Transformer to select features with max variance
   """
-  def __init__(self, k = 300):
+  def __init__(self, k = 300, std_ceil = 0):
     self.k = k
+    self.std_ceil = std_ceil
   
   def fit(self, X, y = None):
     feature_importances = np.var(X,axis=0)
     fi = sorted(zip(feature_importances,range(len(feature_importances))),reverse=True)
-    fi_std_max = np.std(feature_importances) * 3
-    print "fi filter: from",len(fi),
-    fi = [e for e in fi if e[0] < fi_std_max]
-    print "to",len(fi)
-    self.features_selected = [e[1] for e in fi[:self.k]]
+    if self.std_ceil > 0:
+        fi_mean = np.mean(feature_importances)
+        fi_std_max = fi_mean + np.std(feature_importances) * self.std_ceil
+        print "fi filter: from",len(fi),
+        fi = [e for e in fi if e[0] < fi_std_max]
+        print "to",len(fi)
+    if self.k > 0:
+        self.features_selected = [e[1] for e in fi[:self.k]]
+    else:
+        self.features_selected = [e[1] for e in fi]
     #print "sorted features:",fi[:20],"selected:",self.features_selected
     return self
 
