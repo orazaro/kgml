@@ -111,7 +111,10 @@ class VarSel(BaseEstimator, TransformerMixin):
     fi_std_max = np.std(feature_importances) * 3
     print "fi filter: from",len(fi),
     fi = [e for e in fi if e[0] < fi_std_max]
-    print "to",len(fi)
+    print "to",len(fi),
+    fi_std_max = np.std([e[0] for e in fi]) * 3
+    fi = [e for e in fi if e[0] < fi_std_max]
+    print "too",len(fi)
     self.features_selected = [e[1] for e in fi[:self.k]]
     #print "sorted features:",fi[:20],"selected:",self.features_selected
     return self
