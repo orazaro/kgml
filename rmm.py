@@ -85,48 +85,6 @@ def ids_rmm_parallel(ids,X1,k=4000):
         Xb.append(B)
     return np.array(Xd),np.array(Xa),np.array(Xb)
 
-def ids_rmm_parallel_old(ids,X1,k=4000):
-    keys = sorted(ids)
-    if k is not None:
-        X2 = VarSel(k=k,std_ceil=0).fit_transform(X1)
-    else:
-        X2 = X1.copy()
-    #print "X2:",np.sum(X2,axis=1)[:10]
-    #print "X2:",list(X2[:,0])
-    from joblib import Parallel, delayed
-    #pres = [rmm(X2[ids[k],:]) for k in keys]
-    pres = Parallel(n_jobs=-1)(delayed(rmm)(X2[ids[k],:]) for k in keys)
-    nclen = X2.shape[1]
-    #nclen = 10
-    X2 = np.zeros((X2.shape[0],nclen*2))
-    for (i,k) in enumerate(keys):
-        v = ids[k]
-        D,A,B = pres[i]
-        A = np.asarray(np.repeat(np.matrix(A),len(v),axis=0))
-        B = np.asarray(np.repeat(np.matrix(B),len(v),axis=0))
-        
-        if False:
-            A1 = VarSel(k=nclen).fit_transform(A)
-            B1 = VarSel(k=nclen).fit_transform(B)
-        elif False:
-            A1 = Cutter(n2=nclen).fit_transform(A)
-            B1 = Cutter(n2=nclen).fit_transform(B)
-        elif False:
-            A1 = A + np.random.random(A.shape)/1000
-            B1 = B + np.random.random(B.shape)/1000
-            A1 = decomposition.RandomizedPCA(n_components=nclen, whiten=True,random_state=1).fit_transform(A1)
-            B1 = decomposition.RandomizedPCA(n_components=nclen, whiten=True,random_state=1).fit_transform(B1)
-        else:
-            A1 = A
-            B1 = B
-
-        C = np.hstack((A1,B1))
-        print "A1:",A1.shape,"B1:",B1.shape,"C:",C.shape,"v:",len(v)
-        #V = np.asarray(np.repeat(np.matrix(C),len(v),axis=0))
-        X2[v,:] = C
-        #X2.append(V)
-    return np.asarray(X2)
-
 def test_rmm():
     m,n = 4,6
     X = np.zeros((m,n))
