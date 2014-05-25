@@ -10,7 +10,7 @@ import numpy as np
 from scipy import stats
 from feasel import VarSel
 
-def rmm(X):
+def rmm(X, verbose=0):
     """ Remove market mode and calculate B,A and D matrices:
         X_ij = B_j + A_j * M_i + D_ij
         M_i = <X>i
@@ -25,8 +25,9 @@ def rmm(X):
         X2 = decomposition.RandomizedPCA(n_components=5, whiten=True,
             random_state=1).fit_transform(X1)
         M_i = X2[:,0].ravel()
-    print "X:",X
-    print "M_i: %r +- %r" % (np.mean(M_i),2*np.std(M_i)),M_i
+    if verbose > 1:
+        print "X:",X
+        print "M_i: %r +- %r" % (np.mean(M_i),2*np.std(M_i)),M_i
     m,n = X.shape
     A = []
     B = []
@@ -48,11 +49,12 @@ def rmm(X):
     B = np.array(B).ravel()
     R = np.array(R).ravel()
     D = np.array(D).ravel()
-    print "A:","mean(A):",np.mean(A),A.shape,A[:10]
-    print "B:","mean(B):",np.mean(B),B.shape,B[:10]
-    print "R:",R.shape,R[:10]
-    print "D: mean(D):",np.mean(D),
-    print "std(D):",np.std(D),"D:",D[:10]
+    if verbose > 0:
+        print "A:","mean(A):",np.mean(A),A.shape,A[:10]
+        print "B:","mean(B):",np.mean(B),B.shape,B[:10]
+        print "R:",R.shape,R[:10]
+        print "D: mean(D):",np.mean(D),
+        print "std(D):",np.std(D),"D:",D[:10]
     A = np.nan_to_num(A)
     B = np.nan_to_num(B)
     D = np.nan_to_num(D)
