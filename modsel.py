@@ -13,17 +13,22 @@ def calc_roc_auc(y_test,y_proba):
     roc_auc = auc(fpr, tpr)
     return roc_auc
 
-def estimate_scores(scores, scoring, sampling=True, verbose=1):
-  n_cv = len(scores)
-  me = 1.96 * np.std(scores) 
-  if sampling:
-      me = me / np.sqrt(len(scores))
-  scores_mean = np.mean(scores)
-  if scoring == 'roc_auc': #flip score < 0.5
-      scores_mean = scores_mean if scores_mean >= 0.5 else 1 - scores_mean
-  if verbose > 0:
-    print "%d Fold CV Score(%s): %.6f +- %.4f" % (n_cv, scoring, scores_mean, me,)
-  return scores_mean, me
+def estimate_scores(scores, scoring, sampling=True, n_sample=None, verbose=1):
+    n_cv = len(scores)
+    scores_mean = np.mean(scores)
+    if scoring == 'roc_auc': #flip score < 0.5
+        scores_mean = scores_mean if scores_mean >= 0.5 else 1 - scores_mean
+    me = 1.96 * np.std(scores) 
+    if sampling:
+        if isinstance(scoring,basestring) and scoring=='accuracy':
+            phat = scores_mean
+            me = 1.96*np.sqrt(phat*(1-phat)/n_sample)
+        else:
+            me = me / np.sqrt(len(scores))
+
+    if verbose > 0:
+        print "%d Fold CV Score(%s): %.6f +- %.4f" % (n_cv, scoring, scores_mean, me,)
+    return scores_mean, me
 
 def bootstrap_632(n, n_iter, random_state=None):
     while n_iter > 0:
@@ -70,10 +75,10 @@ def cv_run(rd, X, y, random_state, n_cv=16, n_iter=0, n_jobs=-1, scoring='accura
             scores = cross_validation.cross_val_score(rd, X, y, cv=cv1, 
                 scoring=scoring, n_jobs=n_jobs, verbose=0)
             scores_mean,_ = estimate_scores(scores,scoring,
-                sampling=True,verbose=1)
+                sampling=True,n_sample=len(y),verbose=1)
             p.append(scores_mean)
         scores_mean,me = estimate_scores(p,scoring,
-                sampling=False,verbose=1)
+                sampling=False,n_sample=len(y),verbose=1)
         if scoring == 'accuracy':
             phat = scores_mean
             print "\tme_binom_est =",1.96*np.sqrt(phat*(1-phat)/len(y))
@@ -81,7 +86,7 @@ def cv_run(rd, X, y, random_state, n_cv=16, n_iter=0, n_jobs=-1, scoring='accura
         cv1 = cv_select(y, random_state, n_cv, cv, test_size)
         scores = cross_validation.cross_val_score(rd, X, y, cv=cv1, scoring=scoring,
         n_jobs=n_jobs, verbose=0)
-        scores_mean,me = estimate_scores(scores,scoring,sampling)
+        scores_mean,me = estimate_scores(scores,scoring,sampling,n_sample=len(y))
     return scores_mean,me
 
 def cv_run_ids(rd, X, y, ids, random_state, n_cv = 16, n_jobs=-1, scoring='accuracy', cv='shuffle', test_size=0.1, sampling=True):
@@ -106,7 +111,7 @@ def cv_run_ids(rd, X, y, ids, random_state, n_cv = 16, n_jobs=-1, scoring='accur
     scores = cross_validation.cross_val_score(rd, X, y, cv=cv1, scoring=scoring,
     n_jobs=n_jobs, verbose=0)
     #print scores
-    scores_mean,me = estimate_scores(scores,scoring,sampling)
+    scores_mean,me = estimate_scores(scores,scoring,sampling,n_sample=len(y))
     return scores_mean,me
 
 
