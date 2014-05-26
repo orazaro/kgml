@@ -11,7 +11,7 @@ import numpy as np
 from scipy import stats
 from feasel import VarSel
 
-def rmm(X, verbose=0):
+def rmm(X, verbose=2):
     """ Remove market mode and calculate B,A and D matrices:
         X_ij = B_j + A_j * M_i + D_ij
         M_i = <X>i
