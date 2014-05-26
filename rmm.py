@@ -5,6 +5,7 @@
 """
     features selection:
     remove market mode
+    http://www.santafe.edu/media/workingpapers/07-08-030.pdf (19)
 """
 import numpy as np
 from scipy import stats
@@ -16,11 +17,11 @@ def rmm(X, verbose=0):
         M_i = <X>i
         for individual ids
     """
-    if True:
+    if False:
         M_i = np.average(X,axis=1).ravel()
     else:
         from sklearn import preprocessing, decomposition
-        X1 = VarSel(k=4000).fit_transform(X)
+        X1 = VarSel(k=9000).fit_transform(X)
         X1 = preprocessing.StandardScaler(with_mean=True).fit_transform(X1)
         X2 = decomposition.RandomizedPCA(n_components=5, whiten=True,
             random_state=1).fit_transform(X1)
