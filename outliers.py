@@ -11,6 +11,6 @@ from sklearn.covariance import EllipticEnvelope
 def search_outliers(X):
     clf = EllipticEnvelope(contamination=0.1)
     clf.fit(X)
-    is_outliers = clr.predict(X)
+    is_outliers = clf.predict(X)
     return is_outliers
 
