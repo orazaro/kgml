@@ -17,7 +17,7 @@ from sklearn.lda import LDA
 from sklearn.qda import QDA
 from sklearn.ensemble import (RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier)
 
-def get_clf(cl,n_jobs=1):
+def get_clf(cl,n_jobs=1,random_state=0):
     lm1 = {'C':[0.0001, 0.001, 0.01, 0.1, 0.3, 1, 3, 10]}
     C_range = 10.0 ** np.arange(-5, 3)
     C_range = np.hstack([C_range,[0.3,3]])
