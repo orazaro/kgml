@@ -17,7 +17,7 @@ def rmm(X, verbose=2):
         M_i = <X>i
         for individual ids
     """
-    if False:
+    if True:
         M_i = np.average(X,axis=1).ravel()
     else:
         from sklearn import preprocessing, decomposition
