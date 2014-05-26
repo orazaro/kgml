@@ -17,6 +17,8 @@ from sklearn.lda import LDA
 from sklearn.qda import QDA
 from sklearn.ensemble import (RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier)
 
+from sklearn import grid_search
+
 def get_clf(cl,n_jobs=1,random_state=0):
     """ Select clasifier by name
     """
