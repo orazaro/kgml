@@ -18,6 +18,8 @@ from sklearn.qda import QDA
 from sklearn.ensemble import (RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier)
 
 def get_clf(cl,n_jobs=1,random_state=0):
+    """ Select clasifier by name
+    """
     lm1 = {'C':[0.0001, 0.001, 0.01, 0.1, 0.3, 1, 3, 10]}
     C_range = 10.0 ** np.arange(-5, 3)
     C_range = np.hstack([C_range,[0.3,3]])
@@ -40,15 +42,17 @@ def get_clf(cl,n_jobs=1,random_state=0):
     est4 = svm.SVR(kernel='poly',degree=3,verbose=0)
     knn1 = {'n_neighbors':2**np.arange(0, 8)}
     gb1 = {'max_depth':[1,2,4,8],'n_estimators':[10,20,40,80,160]}
+    rf1 = {'max_depth':[2,4,8,16,24,32]}
 
     if cl=='rf':
         clf = RandomForestClassifier(n_estimators=200, max_depth=2,
                 max_features='auto',
                 n_jobs=n_jobs, random_state=random_state, verbose=0)
     elif cl=='rf2':
-        clf = RandomForestClassifier(n_estimators=200, max_depth=2,
+        clf1 = RandomForestClassifier(n_estimators=200, max_depth=2,
                 max_features='auto',
                 n_jobs=n_jobs, random_state=random_state, verbose=0)
+        clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='lr2':
         clf = lm.LogisticRegression(penalty='l2', dual=True, tol=0.0001, 
                              C=1, fit_intercept=True, intercept_scaling=1.0, 
