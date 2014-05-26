@@ -46,12 +46,12 @@ def get_clf(cl,n_jobs=1,random_state=0):
     gb1 = {'max_depth':[1,2,4,8],'n_estimators':[10,20,40,80,160]}
     rf1 = {'max_depth':[2,4,8,16,24,32]}
 
-    if cl=='rf':
+    if cl=='rf2':
         clf = RandomForestClassifier(n_estimators=200, max_depth=2,
                 max_features='auto',
                 n_jobs=n_jobs, random_state=random_state, verbose=0)
-    elif cl=='rf2':
-        clf1 = RandomForestClassifier(n_estimators=200, max_depth=2,
+    elif cl=='rf':
+        clf1 = RandomForestClassifier(n_estimators=100, max_depth=2,
                 max_features='auto',
                 n_jobs=n_jobs, random_state=random_state, verbose=0)
         clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs, verbose=0)
