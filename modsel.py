@@ -8,6 +8,85 @@ from sklearn import cross_validation
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import roc_curve, auc
 
+from sklearn.ensemble import RandomForestClassifier
+import sklearn.linear_model as lm
+from sklearn import svm
+from sklearn.naive_bayes import MultinomialNB,GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.lda import LDA
+from sklearn.qda import QDA
+from sklearn.ensemble import (RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier)
+
+def get_clf(cl,n_jobs=1):
+    lm1 = {'C':[0.0001, 0.001, 0.01, 0.1, 0.3, 1, 3, 10]}
+    C_range = 10.0 ** np.arange(-5, 3)
+    C_range = np.hstack([C_range,[0.3,3]])
+    lm2 = dict(C=C_range)
+    est2 = lm.LogisticRegression(penalty='l2', dual=True, tol=0.0001, 
+                             C=1, fit_intercept=True, intercept_scaling=1.0, 
+                             class_weight=None, random_state=random_state)
+    est1 = lm.LogisticRegression(penalty='l1', dual=False, tol=0.0001, 
+                             C=1, fit_intercept=True, intercept_scaling=1.0, 
+                             class_weight=None, random_state=random_state)
+
+    svm1 = {'C':[0.001,0.01,0.1,1.0,10],'gamma':[0.1,0.01,0.001,0.0001]}
+    #C_range = 10.0 ** np.arange(-2, 9)
+    #gamma_range = 10.0 ** np.arange(-5, 4)
+    C_range = 10.0 ** np.arange(-3, 4)
+    gamma_range = 10.0 ** np.arange(-4, 3)
+    svm2 = dict(gamma=gamma_range, C=C_range)
+    est3 = svm.SVR(kernel='rbf',verbose=0)
+    svm3 = {'C':[0.001,0.01,0.1,1.0,10],'gamma':[0.1,0.01,0.001,0.0001],'coef0':[0,1]}
+    est4 = svm.SVR(kernel='poly',degree=3,verbose=0)
+    knn1 = {'n_neighbors':2**np.arange(0, 8)}
+    gb1 = {'max_depth':[1,2,4,8],'n_estimators':[10,20,40,80,160]}
+
+    if cl=='rf':
+        clf = RandomForestClassifier(n_estimators=200, max_depth=2,
+                max_features='auto',
+                n_jobs=n_jobs, random_state=random_state, verbose=0)
+    elif cl=='rf2':
+        clf = RandomForestClassifier(n_estimators=200, max_depth=2,
+                max_features='auto',
+                n_jobs=n_jobs, random_state=random_state, verbose=0)
+    elif cl=='lr2':
+        clf = lm.LogisticRegression(penalty='l2', dual=True, tol=0.0001, 
+                             C=1, fit_intercept=True, intercept_scaling=1.0, 
+                             class_weight=None, random_state=random_state)
+
+    elif cl=='lr1':
+        clf = lm.LogisticRegression(penalty='l1', dual=False, tol=0.0001, 
+                             C=1.0, fit_intercept=True, intercept_scaling=1.0, 
+                             class_weight=None, random_state=random_state)
+    elif cl=='lr2g':
+        clf = grid_search.GridSearchCV(est2, lm1, cv=4, n_jobs=n_jobs, verbose=0)
+
+    elif cl=='lr1g':
+        clf = grid_search.GridSearchCV(est1, lm1, cv=4, n_jobs=n_jobs, verbose=0)
+    elif cl=='svmRg':
+        clf = grid_search.GridSearchCV(est3, svm2, cv=4, n_jobs=n_jobs, verbose=0)
+    elif cl=='svmP3':
+        clf = grid_search.GridSearchCV(est4, svm3, cv=4, n_jobs=n_jobs, verbose=0)
+    elif cl=='mnb':
+        clf = MultinomialNB(alpha=1.0)
+    elif cl=='gnb':
+        clf = GaussianNB()
+    elif cl=='knn':
+        clf = grid_search.GridSearchCV(KNeighborsClassifier(), knn1, cv=4, n_jobs=n_jobs, verbose=0)
+    elif cl=='lda':
+        clf = LDA()
+    elif cl=='qda':
+        clf = QDA()
+    elif cl=='gb':
+        clf = grid_search.GridSearchCV(
+            GradientBoostingClassifier(learning_rate=0.1,
+                random_state=random_state,verbose=0,subsample=1.0), 
+            gb1, cv=4, n_jobs=n_jobs, verbose=0)
+    else:
+        raise ValueError("bad cl:%s"%cl)
+
+    return clf
+
 def calc_roc_auc(y_test,y_proba):
     fpr, tpr, thresholds = roc_curve(y_test, y_proba)
     roc_auc = auc(fpr, tpr)
