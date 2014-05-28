@@ -18,7 +18,7 @@ def rmm(X, verbose=0):
         for individual ids
     """
     if True:
-        M_i = np.average(X,axis=1).ravel()
+        M_i = np.average(np.abs(X),axis=1).ravel()
     else:
         from sklearn import preprocessing, decomposition
         X1 = VarSel(k=9000).fit_transform(X)
