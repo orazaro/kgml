@@ -61,7 +61,7 @@ def rmm(X, verbose=0):
     D = np.nan_to_num(D)
     return D,A,B
 
-def ids_rmm(ids,X1):
+def ids_rmm(ids, X1, verbose=0):
     keys = sorted(ids)
     Xd = []; Xa = []; Xb = []
     for k in keys:
@@ -72,14 +72,14 @@ def ids_rmm(ids,X1):
         Xb.append(B)
     return np.array(Xd),np.array(Xa),np.array(Xb)
 
-def ids_rmm_parallel(ids,X1,k=4000):
+def ids_rmm_parallel(ids,X1,k=4000,verbose=0):
     keys = sorted(ids)
     if k is not None:
         X2 = VarSel(k=k,std_ceil=0).fit_transform(X1)
     else:
         X2 = X1.copy()
     from joblib import Parallel, delayed
-    pres = Parallel(n_jobs=-1)(delayed(rmm)(X2[ids[k],:]) for k in keys)
+    pres = Parallel(n_jobs=-1)(delayed(rmm)(X2[ids[k],:],verbose=verbose) for k in keys)
     Xd = []; Xa = []; Xb = []
     for (i,k) in enumerate(keys):
         D,A,B = pres[i]
