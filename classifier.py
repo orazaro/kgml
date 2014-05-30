@@ -108,6 +108,8 @@ def get_clf(cl,n_jobs=1,random_state=0):
             GradientBoostingClassifier(learning_rate=0.1,
                 random_state=random_state,verbose=0,subsample=1.0), 
             gb1, cv=4, n_jobs=n_jobs, verbose=0)
+    elif cl=='rcv':
+        clf = RidgeCV_proba()
     else:
         raise ValueError("bad cl:%s"%cl)
 
