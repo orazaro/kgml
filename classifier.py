@@ -111,7 +111,7 @@ def get_clf(cl,n_jobs=1,random_state=0):
     elif cl=='rcv':
         clf = RidgeCV_proba()
     elif cl=='lcv':
-        clf = LassoCV_CV_proba()
+        clf = LassoCV_proba()
     else:
         raise ValueError("bad cl:%s"%cl)
 
