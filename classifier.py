@@ -110,6 +110,8 @@ def get_clf(cl,n_jobs=1,random_state=0):
             gb1, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='rcv':
         clf = RidgeCV_proba()
+    elif cl=='lcv':
+        clf = LassoCV_CV_proba()
     else:
         raise ValueError("bad cl:%s"%cl)
 
@@ -117,7 +119,7 @@ def get_clf(cl,n_jobs=1,random_state=0):
 
 class LassoCV_proba(lm.LassoCV):
   def predict_proba(self,X):
-    print 'alpha_:',self.alpha_
+    logger.debug('alpha_=%s',self.alpha_)
     y = self.predict(X)
     y = 1./(1+np.exp(-(y-0.5)))
     return np.vstack((1-y,y)).T
