@@ -112,10 +112,18 @@ def get_clf(cl,n_jobs=1,random_state=0):
         clf = RidgeCV_proba()
     elif cl=='lcv':
         clf = LassoCV_proba()
+    elif cl=='lr':
+        clf = LinearRegression_proba()
     else:
         raise ValueError("bad cl:%s"%cl)
 
     return clf
+
+class LinearRegression_proba(lm.LinearRegression):
+  def predict_proba(self,X):
+    y = self.predict(X)
+    y = 1./(1+np.exp(-(y-0.5)))
+    return np.vstack((1-y,y)).T
 
 class LassoCV_proba(lm.LassoCV):
   def predict_proba(self,X):
