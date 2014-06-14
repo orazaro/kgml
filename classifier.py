@@ -83,13 +83,13 @@ def get_clf(cl,n_jobs=1,random_state=0):
         C_range = 10.0 ** np.arange(-3, 4)
         gamma_range = 10.0 ** np.arange(-4, 3)
         svm2 = dict(gamma=gamma_range, C=C_range)
-        est3 = svm.SVR(kernel='rbf',verbose=0)
+        est3 = svm.SVC(kernel='rbf',verbose=0)
         clf = grid_search.GridSearchCV(est3, svm2, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='svmP3':
         svm1 = {'C':[0.001,0.01,0.1,1.0,10],'gamma':[0.1,0.01,0.001,0.0001]}
         svm3 = {'C':[0.001,0.01,0.1,1.0,10],'gamma':[0.1,0.01,0.001,0.0001],
                                                         'coef0':[0,1]}
-        est4 = svm.SVR(kernel='poly',degree=3,verbose=0)
+        est4 = svm.SVC(kernel='poly',degree=3,verbose=0)
         clf = grid_search.GridSearchCV(est4, svm3, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='mnb':
         clf = MultinomialNB(alpha=1.0)
