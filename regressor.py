@@ -14,6 +14,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import ExtraTreesRegressor, GradientBoostingRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, make_scorer
 from sklearn.neighbors import KNeighborsRegressor
+from sklearn import svm
 
 import sklearn.linear_model as lm
 from sklearn import grid_search
