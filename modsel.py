@@ -94,6 +94,7 @@ def cv_run(rd, X, y, random_state, n_cv=16, n_iter=0, n_jobs=-1, scoring='accura
         if isinstance(scoring,basestring) and scoring=='mean_squared_error':
             # transfer to RMSE
             scores = [np.sqrt(np.abs(e)) for e in scores]
+            scoring=='RMSE'
         scores_mean,me = estimate_scores(scores,scoring,sampling,n_sample=len(y))
     return scores_mean,me
 
