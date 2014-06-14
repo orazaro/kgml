@@ -14,12 +14,36 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import ExtraTreesRegressor, GradientBoostingRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, make_scorer
 
+import sklearn.linear_model as lm
+from sklearn import grid_search
+
 from base import check_n_jobs
 
 "add link coef_ to feature_importances_"
 for cla in [RandomForestRegressor,GradientBoostingRegressor,ExtraTreesRegressor]:
     if 'coef_' not in dir(cla):
         cla.coef_ = property(lambda self:self.feature_importances_)
+
+def is_rgr(cl):
+    """ Check if cl is regressor """
+    return cl[0]=='_'
+
+def get_rgr(cl,n_jobs=1,random_state=0):
+    """ Select regressor by name
+    """
+    if cl=='_rf':
+        clf1 = RandomForestRegressor(n_estimators=100, max_depth=2,
+                max_features='auto',
+                n_jobs=n_jobs, random_state=random_state, verbose=0)
+        rf1 = {'max_depth':[2,4,8,16,24,32]}
+        clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs, verbose=0)
+    elif cl='_lr':
+        clf = LinearRegression()
+    else:
+        raise ValueError("bad cl:%s"%cl)
+
+    return clf
+    
 
 class MaeRegressor(BaseEstimator, RegressorMixin):
   """estimator with MAE score"""
