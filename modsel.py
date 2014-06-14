@@ -89,12 +89,14 @@ def cv_run(rd, X, y, random_state, n_cv=16, n_iter=0, n_jobs=-1, scoring='accura
             print "\tme_binom_est =",1.96*np.sqrt(phat*(1-phat)/len(y))
     else:
         cv1 = cv_select(y, random_state, n_cv, cv, test_size)
-        scores = cross_validation.cross_val_score(rd, X, y, cv=cv1, scoring=scoring,
-        n_jobs=n_jobs, verbose=0)
-        if isinstance(scoring,basestring) and scoring=='mean_squared_error':
-            # transfer to RMSE
+        if isinstance(scoring,basestring) and scoring=='rmse':
+            scores = cross_validation.cross_val_score(rd, X, y, cv=cv1, 
+                scoring='mean_squared_error',
+                n_jobs=n_jobs, verbose=0)
             scores = [np.sqrt(np.abs(e)) for e in scores]
-            scoring = 'RMSE'
+        else:
+            scores = cross_validation.cross_val_score(rd, X, y, cv=cv1, scoring=scoring,
+                n_jobs=n_jobs, verbose=0)
         scores_mean,me = estimate_scores(scores,scoring,sampling,n_sample=len(y))
     return scores_mean,me
 
