@@ -37,7 +37,7 @@ def get_rgr(cl,n_jobs=1,random_state=0):
                 n_jobs=n_jobs, random_state=random_state, verbose=0)
         rf1 = {'max_depth':[2,4,8,16,24,32]}
         clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs, verbose=0)
-    elif cl='_lr':
+    elif cl=='_lr':
         clf = LinearRegression()
     else:
         raise ValueError("bad cl:%s"%cl)
