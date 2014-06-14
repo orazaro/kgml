@@ -13,6 +13,7 @@ from sklearn.base import BaseEstimator, RegressorMixin, TransformerMixin
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import ExtraTreesRegressor, GradientBoostingRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, make_scorer
+from sklearn.neighbors import KNeighborsRegressor
 
 import sklearn.linear_model as lm
 from sklearn import grid_search
@@ -43,6 +44,21 @@ def get_rgr(cl,n_jobs=1,random_state=0):
         clf = lm.RidgeCV()
     elif cl=='_lasso':
         clf = lm.LassoCV();
+    elif cl=='_svmRg':
+        C_range = 10.0 ** np.arange(-3, 4)
+        gamma_range = 10.0 ** np.arange(-4, 3)
+        svm2 = dict(gamma=gamma_range, C=C_range)
+        est3 = svm.SVR(kernel='rbf',verbose=0)
+        clf = grid_search.GridSearchCV(est3, svm2, cv=4, n_jobs=n_jobs, verbose=0)
+    elif cl=='_svmP3':
+        svm1 = {'C':[0.001,0.01,0.1,1.0,10],'gamma':[0.1,0.01,0.001,0.0001]}
+        svm3 = {'C':[0.001,0.01,0.1,1.0,10],'gamma':[0.1,0.01,0.001,0.0001],
+                                                        'coef0':[0,1]}
+        est4 = svm.SVR(kernel='poly',degree=3,verbose=0)
+        clf = grid_search.GridSearchCV(est4, svm3, cv=4, n_jobs=n_jobs, verbose=0)
+    elif cl=='_knn':
+        knn1 = {'n_neighbors':2**np.arange(0, 8)}
+        clf = grid_search.GridSearchCV(KNeighborsRegressor(), knn1, cv=4, n_jobs=n_jobs, verbose=0)
     else:
         raise ValueError("bad cl:%s"%cl)
 
