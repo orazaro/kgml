@@ -5,7 +5,7 @@
 import os
 import numpy as np
 from sklearn import cross_validation
-from sklearn.metrics import accuracy_score, mean_absolute_error
+from sklearn.metrics import accuracy_score, mean_absolute_error, make_scorer
 from sklearn.metrics import roc_curve, auc
 
 def calc_roc_auc(y_test,y_proba):
@@ -95,7 +95,7 @@ def cv_run(rd, X, y, random_state, n_cv=16, n_iter=0, n_jobs=-1, scoring='accura
                 n_jobs=n_jobs, verbose=0)
             scores = [np.sqrt(np.abs(e)) for e in scores]
         elif isinstance(scoring,basestring) and scoring=='mae':
-            mae = metrics.make_scorer(mean_absolute_error, greater_is_better=False)
+            mae = make_scorer(mean_absolute_error, greater_is_better=False)
             scores = cross_validation.cross_val_score(rd, X, y, cv=cv1, 
                 scoring=mae,
                 n_jobs=n_jobs, verbose=0)
