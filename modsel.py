@@ -59,7 +59,7 @@ def cv_select(y, random_state, n_cv, cv, test_size=0.1):
             return bootstrap_632(len(y), n_iter=n_cv, random_state=random_state)
         # for regression
         elif cv == '_shuffle':
-            return cross_validation.ShuffleSplit(y, n_cv, test_size=test_size, random_state=random_state)
+            return cross_validation.ShuffleSplit(len(y), n_iter=n_cv, test_size=test_size, random_state=random_state)
         elif cv == '_kfold':
             return cross_validation.KFold(y, n_folds=n_cv)
         else:
