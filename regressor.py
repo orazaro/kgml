@@ -42,7 +42,7 @@ def get_rgr(cl,n_jobs=1,random_state=0):
     elif cl=='_ridge':
         clf = lm.RidgeCV()
     elif cl=='_lasso':
-        clf = LassoCV();
+        clf = lm.LassoCV();
     else:
         raise ValueError("bad cl:%s"%cl)
 
