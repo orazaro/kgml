@@ -57,6 +57,11 @@ def cv_select(y, random_state, n_cv, cv, test_size=0.1):
             return cross_validation.Bootstrap(len(y), n_iter=n_cv, train_size=(1-test_size), random_state=random_state)
         elif cv == 'boot632':
             return bootstrap_632(len(y), n_iter=n_cv, random_state=random_state)
+        # for regression
+        elif cv == '_shuffle':
+            return cross_validation.ShuffleSplit(y, n_cv, test_size=test_size, random_state=random_state)
+        elif cv == '_kfold':
+            return cross_validation.KFold(y, n_folds=n_cv)
         else:
             raise ValueError("bad cv:%s"%cv)
     else:
