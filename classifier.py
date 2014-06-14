@@ -212,6 +212,8 @@ class RoundClassifier(BaseEstimator, ClassifierMixin):
         y_proba = np.vstack((1-y,y)).T
     return y_proba
   def predict(self, X):
+    if not self.find_cutoff and hasattr(self.est,'predict'):
+        return self.est.predict(X)
     ypp = self.predict_proba(X)[:,1]
     return  np.array(map(int,ypp>self.cutoff))
 
