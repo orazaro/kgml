@@ -61,7 +61,7 @@ def cv_select(y, random_state, n_cv, cv, test_size=0.1):
         elif cv == '_shuffle':
             return cross_validation.ShuffleSplit(len(y), n_iter=n_cv, test_size=test_size, random_state=random_state)
         elif cv == '_kfold':
-            return cross_validation.KFold(y, n_folds=n_cv)
+            return cross_validation.KFold(len(y), n_folds=n_cv)
         else:
             raise ValueError("bad cv:%s"%cv)
     else:
