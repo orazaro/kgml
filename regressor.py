@@ -39,6 +39,10 @@ def get_rgr(cl,n_jobs=1,random_state=0):
         clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='_lr':
         clf = lm.LinearRegression()
+    elif cl=='_ridge':
+        clf = lm.RidgeCV()
+    elif cl=='_lasso':
+        clf = LassoCV();
     else:
         raise ValueError("bad cl:%s"%cl)
 
