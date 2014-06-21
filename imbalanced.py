@@ -52,6 +52,7 @@ def round_down(Xall,y1,ids=None):
         ids = defaultdict(list)
         for (j,i) in enumerate(sel):
             ids[ids_inv[i]].append(j)
+        print sel,ids
         return Xall[sel,:],y1[sel],ids
     else:
         return Xall[sel,:],y1[sel]
