@@ -24,7 +24,14 @@ def find_best_cutoff(y1,ypp,verbose=0):
     if verbose: print "resbrute:",resbrute
     return resbrute[0]
 
-def round_down(Xall,y1):
+def ids_invert(X,ids):
+    ids_inv = [None]*X.shape[0]
+    for (k,v) in ids.iteritems():
+        for i in v:
+            ids_inv[i] = k
+    return ids_inv
+
+def round_down(Xall,y1,ids=None):
     p_zeros = [i for i,e in enumerate(y1) if e == 0]
     p_ones = [i for i,e in enumerate(y1) if e > 0]
     delta = len(p_zeros) - len(p_ones)
@@ -40,11 +47,8 @@ def round_down(Xall,y1):
     return Xall[sel,:],y1[sel]
 
 def round_up(Xall,y1,ids=None):
-    if not ids is None: 
-        ids_inv = [None]*Xall.shape[0]
-        for (k,v) in ids.iteritems():
-            for i in v:
-                ids_inv[i] = k
+    if ids is not None: 
+        ids_inv = ids_invert(Xall,ids)
     p_zeros = [i for i,e in enumerate(y1) if e == 0]
     p_ones = [i for i,e in enumerate(y1) if e > 0]
     delta = len(p_zeros) - len(p_ones)
@@ -61,7 +65,7 @@ def round_up(Xall,y1,ids=None):
     for i in sel:
         X1.append(Xall[i,:])
         z1.append(y1[i])
-        if not ids is None:
+        if ids is not None:
             ids[ids_inv[i]].append(j)
         j += 1
     X1 = np.vstack(X1)
