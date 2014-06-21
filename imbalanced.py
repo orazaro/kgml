@@ -8,6 +8,7 @@
 import numpy as np
 import random
 
+from collections import defaultdict
 from sklearn import metrics
 
 def find_best_cutoff(y1,ypp,verbose=0):
