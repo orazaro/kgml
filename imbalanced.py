@@ -50,14 +50,14 @@ def round_down(Xall,y1,ids=None):
     #print "round down:",len(p_zeros),len(p_ones),len(sel)
     if ids is not None:
         ids_inv = ids_invert(Xall,ids)
-        ids = defaultdict(list)
+        ids2 = defaultdict(list)
         for (j,i) in enumerate(sel):
-            ids[ids_inv[i]].append(j)
-        print len(sel),sum([len(ids[k]) for k in ids])
-        p = []
-        for k in ids:
-            p.extend(ids[k])
-        print sorted(p)
+            ids2[ids_inv[i]].append(j)
+        #print len(sel),sum([len(ids[k]) for k in ids])
+        # renumerate ids2 as range(0,len(ids2))
+        ids = defaultdict(list)
+        for i,id2 in enumerate(ids2):
+            ids[i] = ids2[id2]
         return Xall[sel,:],y1[sel],ids
     else:
         return Xall[sel,:],y1[sel]
