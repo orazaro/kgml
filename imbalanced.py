@@ -25,6 +25,9 @@ def find_best_cutoff(y1,ypp,verbose=0):
     return resbrute[0]
 
 def ids_invert(X,ids):
+    """ invert ids
+        ids: dictionary of relation id -> rows in X
+    """
     ids_inv = [None]*X.shape[0]
     for (k,v) in ids.iteritems():
         for i in v:
@@ -44,7 +47,14 @@ def round_down(Xall,y1,ids=None):
     else:
         return Xall,y1
     #print "round down:",len(p_zeros),len(p_ones),len(sel)
-    return Xall[sel,:],y1[sel]
+    if ids is not None:
+        ids_inv = ids_invert(Xall,ids)
+        ids = defaultdict(list)
+        for (j,i) in enumerate(sel):
+            ids[ids_inv[i]].append(j)
+        return Xall[sel,:],y1[sel],ids
+    else:
+        return Xall[sel,:],y1[sel]
 
 def round_up(Xall,y1,ids=None):
     if ids is not None: 
