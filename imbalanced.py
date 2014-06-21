@@ -54,6 +54,10 @@ def round_down(Xall,y1,ids=None):
         for (j,i) in enumerate(sel):
             ids[ids_inv[i]].append(j)
         print len(sel),sum([len(ids[k]) for k in ids])
+        p = []
+        for k in ids:
+            p.extend(ids[k])
+        print sorted(p)
         return Xall[sel,:],y1[sel],ids
     else:
         return Xall[sel,:],y1[sel]
