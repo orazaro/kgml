@@ -192,7 +192,7 @@ class RoundClassifier(BaseEstimator, ClassifierMixin):
         if self.rup < -1:
             X1,y1 = round_smote(X,y) 
         else:
-            X1,y1 = round_down(X,y) 
+            X1,y1,_ = round_down(X,y) 
     else:
         X1,y1 = X,y
     self.est.fit(X1,y1)
