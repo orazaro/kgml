@@ -60,7 +60,7 @@ def round_down(Xall,y1,ids=None):
             ids[i] = ids2[id2]
         return Xall[sel,:],y1[sel],ids
     else:
-        return Xall[sel,:],y1[sel]
+        return Xall[sel,:],y1[sel],ids
 
 def round_up(Xall,y1,ids=None):
     if ids is not None: 
