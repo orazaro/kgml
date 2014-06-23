@@ -46,7 +46,7 @@ def round_down(Xall,y1,ids=None):
         sel = random.sample(p_ones,len(p_zeros))
         sel = sel + p_zeros
     else:
-        return Xall,y1
+        return Xall,y1,ids
     #print "round down:",len(p_zeros),len(p_ones),len(sel)
     if ids is not None:
         ids_inv = ids_invert(Xall,ids)
