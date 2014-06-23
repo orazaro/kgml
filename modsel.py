@@ -100,7 +100,6 @@ def cv_run(rd, X, y, random_state, n_cv=16, n_iter=0, n_jobs=-1, scoring='accura
                 scoring='mean_squared_error',
                 n_jobs=n_jobs, verbose=0)
             y_std = np.std(y)
-            print "y_std:",y_std
             scores = [np.sqrt(np.abs(e))/y_std for e in scores]
         elif isinstance(scoring,basestring) and scoring=='mae':
             mae = make_scorer(mean_absolute_error, greater_is_better=False)
