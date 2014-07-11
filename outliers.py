@@ -24,7 +24,7 @@ def search_outliers_array2(data, m = 6.):
     s = d/mdev if mdev else 0
     return s>m
 
-def search_outliers(X, m = 6., verbose=1):
+def search_outliers(X, m = 3., verbose=1):
     nrows,ncols = X.shape
     outliers = np.array([0.0] * nrows)
     for j in range(ncols):
@@ -36,7 +36,7 @@ def search_outliers(X, m = 6., verbose=1):
                 print("outliers col:%d row_vals:%r"%(j,zip(bad,X[bad,j]))),
                 print "data: ",np.mean(X[:,j]),"+-",np.std(X[:,j])
     if verbose>0:
-        print "outliers:",outliers[outliers>2*np.std(outliers)]
+        print "outliers:",outliers[outliers>3*np.std(outliers)]
     return outliers == 0
 
 
