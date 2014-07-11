@@ -32,7 +32,7 @@ def search_outliers(X, m = 3., verbose=1):
         if np.any(isout):
             bad = np.where(isout)[0]
             outliers[bad] += 1.0
-            if verbose>0:
+            if verbose>1:
                 print("outliers col:%d row_vals:%r"%(j,zip(bad,X[bad,j]))),
                 print "data: ",np.mean(X[:,j]),"+-",np.std(X[:,j])
     if verbose>0:
