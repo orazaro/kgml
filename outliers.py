@@ -21,11 +21,11 @@ def search_outliers_array(data, m = 6.):
     s = d/mdev if mdev else 0
     return s>m
 
-def search_outliers(X,verbose=1):
-    n,m = X.shape
-    good = np.array([True] * n)
-    for j in range(m):
-        isout = search_outliers_array(X[:,j])
+def search_outliers(X, m = 6., verbose=1):
+    nrows,ncols = X.shape
+    good = np.array([True] * nrows)
+    for j in range(ncols):
+        isout = search_outliers_array(X[:,j],m)
         if np.any(isout):
             bad = np.where(isout)[0]
             good[bad] = False
