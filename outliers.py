@@ -15,6 +15,9 @@ def search_outliers_EllipticEnvelope(X):
     return is_outliers
 
 def search_outliers_array(data, m = 6.):
+    return abs(data - np.mean(data)) > m * np.std(data)
+
+def search_outliers_array2(data, m = 6.):
     """ http://stackoverflow.com/questions/11686720/is-there-a-numpy-builtin-to-reject-outliers-from-a-list """
     d = np.abs(data - np.median(data))
     mdev = np.median(d)
@@ -38,14 +41,14 @@ def test():
     data = np.arange(100)/100.
     data[50] = 3.
     print np.any(search_outliers_array(data))
-    X = np.array([range(20),range(20),range(20)])/20.
+    X = np.array([range(50),range(50),range(50)])/50.
     X[1,10] = 3.
-    X[1,14] = 5.
+    X[1,14] = 15.
     X[0,1] = 33.
     #print search_outliers(X)
     good = search_outliers(X.T)
     print "good rows:",sum(good)
-    print X.T[good,:]
+    #print X.T[good,:]
 
 if __name__ == "__main__":
     test()
