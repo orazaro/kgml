@@ -26,16 +26,18 @@ def search_outliers_array2(data, m = 6.):
 
 def search_outliers(X, m = 6., verbose=1):
     nrows,ncols = X.shape
-    good = np.array([True] * nrows)
+    outliers = np.array([0] * nrows)
     for j in range(ncols):
         isout = search_outliers_array(X[:,j],m)
         if np.any(isout):
             bad = np.where(isout)[0]
-            good[bad] = False
+            outliers[bad] += 1
             if verbose>0:
                 print("outliers col:%d row_vals:%r"%(j,zip(bad,X[bad,j]))),
                 print "data: ",np.mean(X[:,j]),"+-",np.std(X[:,j])
-    return good
+    if verbose>0:
+        print "outliers:",outliers[outliers>0]
+    return outliers == 0
 
 
 def test():
