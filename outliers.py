@@ -35,9 +35,10 @@ def search_outliers(X, m = 6., verbose=1):
             if verbose>1:
                 print("outliers col:%d row_vals:%r"%(j,zip(bad,X[bad,j]))),
                 print "data: ",np.mean(X[:,j]),"+-",np.std(X[:,j])
+    sel_outliers = outliers>m*np.std(outliers)
     if verbose>0:
-        print "outliers:",outliers[outliers>m*np.std(outliers)]
-    return outliers == 0
+        print "outliers:",outliers[sel_outliers]
+    return np.where(sel_outliers)[0] 
 
 
 def test():
