@@ -59,6 +59,7 @@ def search_outliers(X, m = 6., mode = 1, verbose=1):
             ("pca", decomposition.RandomizedPCA(n_components=20, whiten=True,random_state=1))
             ]  ;
         X1 = Pipeline(pline).fit_transform(X)
+        print "X1:",X1.shape
         outliers = X[:,0]
         sel_outliers = s_o_a(outliers,m=m)
     else:
@@ -77,7 +78,7 @@ def test():
     X[1,14] = 15.
     X[0,1] = 33.
     #print search_outliers(X)
-    bad = search_outliers(X.T,m=2,mode=4)
+    bad = search_outliers(X.T,m=3,mode=4)
     print "bad rows:",sum(bad)
     print X.T[bad,:]
 
