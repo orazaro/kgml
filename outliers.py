@@ -77,7 +77,7 @@ def test():
     X[1,14] = 15.
     X[0,1] = 33.
     #print search_outliers(X)
-    bad = search_outliers(X.T,m=4,mode=1)
+    bad = search_outliers(X.T,m=3,mode=11)
     print "bad rows:",sum(bad)
     print X.T[bad,:]
 
