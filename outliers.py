@@ -42,13 +42,13 @@ def search_outliers(X, m = 6., mode = 1, verbose=1):
                 if verbose>1:
                     print("outliers col:%d row_vals:%r"%(j,zip(bad,X[bad,j]))),
                     print "data: ",np.mean(X[:,j]),"+-",np.std(X[:,j])
-        sel_outliers = search_outliers_array(outliers,m=m)
+        sel_outliers = s_o_a(outliers,m=m)
     elif mode_mode == 2:
         outliers = np.sum(X,axis=1)
-        sel_outliers = search_outliers_array(outliers,m=m)
+        sel_outliers = s_o_a(outliers,m=m)
     elif mode_mode == 3:
         outliers = np.max(X,axis=1)
-        sel_outliers = search_outliers_array(outliers,m=m)
+        sel_outliers = s_o_a(outliers,m=m)
     else:
         raise ValueError("bad search_outliers mode: %r"%mode)
     if verbose>0:
