@@ -40,7 +40,7 @@ def search_outliers(X, m = 6., mode = 0, verbose=1):
                     print("outliers col:%d row_vals:%r"%(j,zip(bad,X[bad,j]))),
                     print "data: ",np.mean(X[:,j]),"+-",np.std(X[:,j])
         sel_outliers = search_outliers_array(outliers,m=m)
-    elif mode == 3:
+    elif mode == 2:
         outliers = np.sum(X,axis=1)
         sel_outliers = search_outliers_array(outliers,m=m)
     else:
