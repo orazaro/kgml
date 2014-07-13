@@ -7,6 +7,8 @@
 """
 import numpy as np
 from sklearn.covariance import EllipticEnvelope
+from sklearn import preprocessing, decomposition
+from sklearn.pipeline import Pipeline
 
 def search_outliers_EllipticEnvelope(X):
     clf = EllipticEnvelope(contamination=0.2)
@@ -48,6 +50,16 @@ def search_outliers(X, m = 6., mode = 1, verbose=1):
         sel_outliers = s_o_a(outliers,m=m)
     elif mode_mode == 3:
         outliers = np.max(X,axis=1)
+        sel_outliers = s_o_a(outliers,m=m)
+    elif mode_mode == 4:
+        from feasel import VarSel
+        pline = [
+            ("varsel", VarSel(k=4000)),
+            ("scaler", preprocessing.StandardScaler(with_mean=True)),
+            ("pca", decomposition.RandomizedPCA(n_components=20, whiten=True,random_state=1))
+            ]  ;
+        X1 = Pipeline(pline).fit_transform(X)
+        outliers = X[:,0]
         sel_outliers = s_o_a(outliers,m=m)
     else:
         raise ValueError("bad search_outliers mode: %r"%mode)
