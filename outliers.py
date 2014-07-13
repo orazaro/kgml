@@ -25,9 +25,9 @@ def search_outliers_array2(data, m = 6.):
     return s>m
 
 def search_outliers(X, m = 6., mode = 0, verbose=1):
-    nrows,ncols = X.shape
-    outliers = np.array([0.0] * nrows)
     if mode < 2:
+        nrows,ncols = X.shape
+        outliers = np.array([0.0] * nrows)
         for j in range(ncols):
             if mode == 0:
                 isout = search_outliers_array(X[:,j],m)
@@ -40,6 +40,11 @@ def search_outliers(X, m = 6., mode = 0, verbose=1):
                     print("outliers col:%d row_vals:%r"%(j,zip(bad,X[bad,j]))),
                     print "data: ",np.mean(X[:,j]),"+-",np.std(X[:,j])
         sel_outliers = search_outliers_array(outliers,m=m)
+    elif mode == 3:
+        outliers = np.sum(X,axis=1)
+        sel_outliers = search_outliers_array(outliers,m=m)
+    else:
+        raise ValueError("bad search_outliers mode %r"%mode)
     if verbose>0:
         print "outliers:",outliers[sel_outliers]
     return np.where(sel_outliers)[0] 
