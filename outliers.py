@@ -44,7 +44,7 @@ def search_outliers(X, m = 6., mode = 0, verbose=1):
         outliers = np.sum(X,axis=1)
         sel_outliers = search_outliers_array(outliers,m=m)
     else:
-        raise ValueError("bad search_outliers mode %r"%mode)
+        raise ValueError("bad search_outliers mode: %r"%mode)
     if verbose>0:
         print "outliers:",outliers[sel_outliers]
     return np.where(sel_outliers)[0] 
