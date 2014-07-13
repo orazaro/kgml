@@ -65,7 +65,7 @@ def search_outliers(X, m = 6., mode = 1, verbose=1):
     else:
         raise ValueError("bad search_outliers mode: %r"%mode)
     if verbose>0:
-        print "sel_outliers:",sel_outliers
+        #print "sel_outliers:",sel_outliers
         if type(sel_outliers)!=bool:
             print "outliers:",outliers[sel_outliers]
     return np.where(sel_outliers)[0] 
