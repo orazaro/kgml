@@ -24,18 +24,22 @@ def search_outliers_array2(data, m = 6.):
     s = d/mdev if mdev else 0
     return s>m
 
-def search_outliers(X, m = 6., verbose=1):
+def search_outliers(X, m = 6., mode = 0, verbose=1):
     nrows,ncols = X.shape
     outliers = np.array([0.0] * nrows)
-    for j in range(ncols):
-        isout = search_outliers_array(X[:,j],m)
-        if np.any(isout):
-            bad = np.where(isout)[0]
-            outliers[bad] += 1.0
-            if verbose>1:
-                print("outliers col:%d row_vals:%r"%(j,zip(bad,X[bad,j]))),
-                print "data: ",np.mean(X[:,j]),"+-",np.std(X[:,j])
-    sel_outliers = outliers>m*np.std(outliers)
+    if mode < 2:
+        for j in range(ncols):
+            if mode == 0:
+                isout = search_outliers_array(X[:,j],m)
+            else:
+                isout = search_outliers_array2(X[:,j],m)
+            if np.any(isout):
+                bad = np.where(isout)[0]
+                outliers[bad] += 1.0
+                if verbose>1:
+                    print("outliers col:%d row_vals:%r"%(j,zip(bad,X[bad,j]))),
+                    print "data: ",np.mean(X[:,j]),"+-",np.std(X[:,j])
+        sel_outliers = search_outliers_array(outliers)
     if verbose>0:
         print "outliers:",outliers[sel_outliers]
     return np.where(sel_outliers)[0] 
