@@ -24,15 +24,18 @@ def search_outliers_array2(data, m = 6.):
     s = d/mdev if mdev else 0
     return s>m
 
-def search_outliers(X, m = 6., mode = 0, verbose=1):
-    if mode < 2:
+def search_outliers(X, m = 6., mode = 1, verbose=1):
+    mode_search_outliers_array = int(mode/10)
+    if mode_search_outliers_array == 0:
+        s_o_a = search_outliers_array
+    else:
+        s_o_a = search_outliers_array2
+    mode_mode = mode%10
+    if mode_mode == 1:
         nrows,ncols = X.shape
         outliers = np.array([0.0] * nrows)
         for j in range(ncols):
-            if mode == 0:
-                isout = search_outliers_array(X[:,j],m)
-            else:
-                isout = search_outliers_array2(X[:,j],m)
+            isout = s_o_a(X[:,j],m)
             if np.any(isout):
                 bad = np.where(isout)[0]
                 outliers[bad] += 1.0
@@ -40,10 +43,10 @@ def search_outliers(X, m = 6., mode = 0, verbose=1):
                     print("outliers col:%d row_vals:%r"%(j,zip(bad,X[bad,j]))),
                     print "data: ",np.mean(X[:,j]),"+-",np.std(X[:,j])
         sel_outliers = search_outliers_array(outliers,m=m)
-    elif mode == 2:
+    elif mode_mode == 2:
         outliers = np.sum(X,axis=1)
         sel_outliers = search_outliers_array(outliers,m=m)
-    elif mode == 3:
+    elif mode_mode == 3:
         outliers = np.max(X,axis=1)
         sel_outliers = search_outliers_array(outliers,m=m)
     else:
