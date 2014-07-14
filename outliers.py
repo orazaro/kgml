@@ -27,6 +27,7 @@ def search_outliers_array2(data, m = 6.):
     return s>m
 
 def search_outliers(X, m = 6., mode = 1, verbose=1):
+    nrows,ncols = X.shape
     mode_search_outliers_array = int(mode/10)
     if mode_search_outliers_array == 0:
         s_o_a = search_outliers_array
@@ -34,7 +35,6 @@ def search_outliers(X, m = 6., mode = 1, verbose=1):
         s_o_a = search_outliers_array2
     mode_mode = mode%10
     if mode_mode == 1:
-        nrows,ncols = X.shape
         outliers = np.array([0.0] * nrows)
         for j in range(ncols):
             isout = s_o_a(X[:,j],m)
