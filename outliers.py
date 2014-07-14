@@ -59,7 +59,7 @@ def search_outliers(X, m = 6., mode = 1, verbose=1):
             ("pca", decomposition.RandomizedPCA(n_components=20, whiten=True,random_state=1))
             ]  ;
         X1 = Pipeline(pline).fit_transform(X)
-        print "X1:",X1.shape,X1[:,:4]
+        #print "X1:",X1.shape,X1[:,:4]
         sel_outliers = np.array([False] * nrows)
         for j in range(4):
             outliers = X1[:,0]
