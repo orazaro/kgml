@@ -27,6 +27,15 @@ def search_outliers_array2(data, m = 6.):
     return s>m
 
 def search_outliers(X, m = 6., mode = 1, verbose=1):
+    """ Search outliers in X matrix with mode:
+        1. Select outliers in every column, than select rows-outliers 
+            with too much columns-outlier  
+        2. Select rows-outliers of sum of its all columns
+        3. Select rows-outliers of max value of its all columns
+        4. make PCA of the matrix X, than select rows-outliers of its 
+            first four principal components
+        parameter m - Z-score in std to select outliers
+    """
     nrows,ncols = X.shape
     mode_search_outliers_array = int(mode/10)
     if mode_search_outliers_array == 0:
