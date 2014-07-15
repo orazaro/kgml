@@ -71,7 +71,7 @@ def search_outliers(X, m = 6., mode = 1, verbose=1):
         #print "X1:",X1.shape,X1[:,:4]
         sel_outliers = np.array([False] * nrows)
         for j in range(4):
-            outliers = X1[:,0]
+            outliers = X1[:,j]
             sel_outliers = sel_outliers | s_o_a(outliers,m=m)
             if np.any(sel_outliers): break
     else:
