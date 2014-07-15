@@ -73,6 +73,7 @@ def search_outliers(X, m = 6., mode = 1, verbose=1):
         for j in range(4):
             outliers = X1[:,0]
             sel_outliers = sel_outliers | s_o_a(outliers,m=m)
+            if np.any(sel_outliers): break
     else:
         raise ValueError("bad search_outliers mode: %r"%mode)
     if verbose>0:
