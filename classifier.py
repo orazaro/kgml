@@ -58,6 +58,13 @@ def get_clf(cl,n_jobs=1,random_state=0):
                 n_jobs=n_jobs, random_state=random_state, verbose=0)
         rf1 = {'max_depth':[2,4,8,16,24,32]}
         clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs, verbose=0)
+    elif cl=='dt':
+        from sklearn.tree import DecisionTreeClassifier
+        clf1 = DecisionTreeClassifier(max_depth=2,
+                max_features='auto',
+                verbose=0)
+        rf1 = {'max_depth':[2,4,8,16,24,32]}
+        clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='lr2':
         clf = lm.LogisticRegression(penalty='l2', dual=True, tol=0.0001, 
                              C=1, fit_intercept=True, intercept_scaling=1.0, 
