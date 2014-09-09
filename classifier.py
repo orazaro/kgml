@@ -47,6 +47,7 @@ def get_clf(cl,n_jobs=1,random_state=0):
     C_range = 10.0 ** np.arange(-5, 3)
     C_range = np.hstack([C_range,[0.3,3]])
     lm2 = dict(C=C_range)
+    rf1 = {'max_depth':[2,4,8,16,24,32]}
 
     if cl=='rf2':
         clf = RandomForestClassifier(n_estimators=200, max_depth=2,
@@ -56,12 +57,10 @@ def get_clf(cl,n_jobs=1,random_state=0):
         clf1 = RandomForestClassifier(n_estimators=100, max_depth=2,
                 max_features='auto',
                 n_jobs=n_jobs, random_state=random_state, verbose=0)
-        rf1 = {'max_depth':[2,4,8,16,24,32]}
         clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='dt':
         from sklearn.tree import DecisionTreeClassifier
         clf1 = DecisionTreeClassifier(max_depth=2, max_features='auto')
-        rf1 = {'max_depth':[2,4,8,16,24,32]}
         clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='lr2':
         clf = lm.LogisticRegression(penalty='l2', dual=True, tol=0.0001, 
