@@ -60,9 +60,7 @@ def get_clf(cl,n_jobs=1,random_state=0):
         clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='dt':
         from sklearn.tree import DecisionTreeClassifier
-        clf1 = DecisionTreeClassifier(max_depth=2,
-                max_features='auto',
-                verbose=0)
+        clf1 = DecisionTreeClassifier(max_depth=2, max_features='auto')
         rf1 = {'max_depth':[2,4,8,16,24,32]}
         clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='lr2':
