@@ -269,14 +269,14 @@ def _cross_val_predict(estimator, X, y, train, test, verbose,
 
 
 def cross_val_predict(estimator, X, y, loss=None, cv=None, n_jobs=1, 
-        verbose=0, fit_params=None,
+        verbose=0, fit_params=None, proba=False,
         pre_dispatch='2*n_jobs'):
     fit_params = fit_params if fit_params is not None else {}
     parallel = Parallel(n_jobs=n_jobs, verbose=verbose,
                         pre_dispatch=pre_dispatch)
     results = parallel(
         delayed(_cross_val_predict)(clone(estimator), X, y, train, test,
-                                  verbose, fit_params)
+                                  verbose, fit_params, proba)
         for train, test in cv)
     y_pred = np.zeros(len(y))
     scores = []
