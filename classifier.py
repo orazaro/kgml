@@ -81,11 +81,14 @@ def get_clf(cl,n_jobs=1,random_state=0):
              C=1, fit_intercept=True, intercept_scaling=1.0, 
              class_weight=None, random_state=random_state)
         clf = grid_search.GridSearchCV(est1, lm1, cv=4, n_jobs=n_jobs, verbose=0)
-    elif cl=='svmLg':
-        C_range = 10.0 ** np.arange(-3, 4)
-        svm2 = dict(C=C_range)
-        est3 = svm.SVC(kernel='linear',verbose=0)
-        clf = grid_search.GridSearchCV(est3, svm2, cv=4, n_jobs=n_jobs, verbose=0)
+    elif cl=='svmL1g':
+        #est3 = svm.SVC(kernel='linear',verbose=0)
+        est3 = svm.LinearSVC(loss='l2',penalty='l1',dual=False,verbose=0)
+        clf = grid_search.GridSearchCV(est3, lm1, cv=4, n_jobs=n_jobs, verbose=0)
+    elif cl=='svmL2g':
+        #est3 = svm.SVC(kernel='linear',verbose=0)
+        est3 = svm.LinearSVC(loss='l1',penalty='l2',verbose=0)
+        clf = grid_search.GridSearchCV(est3, lm1, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='svmRg':
         #C_range = 10.0 ** np.arange(-2, 9)
         #gamma_range = 10.0 ** np.arange(-5, 4)
