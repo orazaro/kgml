@@ -175,3 +175,16 @@ class RFSel(BaseEstimator, TransformerMixin):
     #print "transforming data X_df:", X_df.shape
     return X_df[:,self.features_selected]
 
+class SparseToDense(BaseEstimator, TransformerMixin):
+  """
+    Transformer to convers sparse X to dense X 
+  """
+  def __init__(self):
+    pass
+  
+  def fit(self, X, y = None):
+    return self
+
+  def transform(self, X_df):
+    return X_df.toarray()
+
