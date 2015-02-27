@@ -81,6 +81,10 @@ def get_clf(cl,n_jobs=1,random_state=0):
              C=1, fit_intercept=True, intercept_scaling=1.0, 
              class_weight=None, random_state=random_state)
         clf = grid_search.GridSearchCV(est1, lm1, cv=4, n_jobs=n_jobs, verbose=0)
+    elif cl=='svmL1':
+        clf = svm.LinearSVC(C=1.0,loss='l2',penalty='l1',dual=False,verbose=0)
+    elif cl=='svmL2':
+        clf = svm.LinearSVC(C=1.0,loss='l1',penalty='l2',verbose=0)
     elif cl=='svmL1g':
         #est3 = svm.SVC(kernel='linear',verbose=0)
         est3 = svm.LinearSVC(loss='l2',penalty='l1',dual=False,verbose=0)
