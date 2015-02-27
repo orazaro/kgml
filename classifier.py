@@ -81,6 +81,8 @@ def get_clf(cl,n_jobs=1,random_state=0):
              C=1, fit_intercept=True, intercept_scaling=1.0, 
              class_weight=None, random_state=random_state)
         clf = grid_search.GridSearchCV(est1, lm1, cv=4, n_jobs=n_jobs, verbose=0)
+    elif cl=='svmL':
+        clf = svm.LinearSVC(C=1.0,loss='l2',penalty='l2',dual=True,verbose=0)
     elif cl=='svmL1':
         clf = svm.LinearSVC(C=1.0,loss='l2',penalty='l1',dual=False,verbose=0)
     elif cl=='svmL2':
@@ -114,6 +116,10 @@ def get_clf(cl,n_jobs=1,random_state=0):
     elif cl=='knn':
         knn1 = {'n_neighbors':2**np.arange(0, 8)}
         clf = grid_search.GridSearchCV(KNeighborsClassifier(), knn1, cv=4, n_jobs=n_jobs, verbose=0)
+    elif cl=='knn100':
+        clf = KNeighborsClassifier(n_neighbors=100)
+    elif cl=='knn1k':
+        clf = KNeighborsClassifier(n_neighbors=1024)
     elif cl=='lda':
         clf = LDA()
     elif cl=='qda':
