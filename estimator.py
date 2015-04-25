@@ -14,6 +14,18 @@ from sklearn.base import BaseEstimator
 from sklearn.base import clone
 from base import check_n_jobs
 
+class DenseTransformer(TransformerMixin):
+
+    def transform(self, X, y=None, **fit_params):
+        return X.todense()
+
+    def fit_transform(self, X, y=None, **fit_params):
+        self.fit(X, y, **fit_params)
+        return self.transform(X)
+
+    def fit(self, X, y=None, **fit_params):
+        return self
+
 class SplitEstimator(BaseEstimator):
   """   Estimator of set of estimators: perform split into set of estimators 
         and merge them back
