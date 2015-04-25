@@ -15,6 +15,10 @@ from sklearn.base import clone
 from base import check_n_jobs
 
 class DenseTransformer(TransformerMixin):
+  """   
+    http://stackoverflow.com/questions/28384680/scikit-learns-pipeline-a-sparse-matrix-was-passed-but-dense-data-is-required
+    http://zacstewart.com/2014/08/05/pipelines-of-featureunions-of-pipelines.html
+  """
 
     def transform(self, X, y=None, **fit_params):
         return X.todense()
