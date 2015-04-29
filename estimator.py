@@ -10,7 +10,7 @@ import sys, random
 import numpy as np
 from collections import defaultdict
 
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.base import clone
 from base import check_n_jobs
 
@@ -19,16 +19,19 @@ class DenseTransformer(TransformerMixin):
     http://stackoverflow.com/questions/28384680/scikit-learns-pipeline-a-sparse-matrix-was-passed-but-dense-data-is-required
     http://zacstewart.com/2014/08/05/pipelines-of-featureunions-of-pipelines.html
   """
-
     def transform(self, X, y=None, **fit_params):
+    if hasattr(X,'todense'):
         return X.todense()
+    else:
+        return X
+#return np.asarray(X,dtype=float)
 
     def fit_transform(self, X, y=None, **fit_params):
-        self.fit(X, y, **fit_params)
-        return self.transform(X)
+    self.fit(X, y, **fit_params)
+    return self.transform(X)
 
     def fit(self, X, y=None, **fit_params):
-        return self
+    return self
 
 class SplitEstimator(BaseEstimator):
   """   Estimator of set of estimators: perform split into set of estimators 
