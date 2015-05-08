@@ -33,6 +33,17 @@ class DenseTransformer(TransformerMixin):
   def fit(self, X, y=None, **fit_params):
     return self
 
+class DTypeTransformer(TransformerMixin):
+  def __init__(self,dtype):
+    self.dtype = dtype
+  def transform(self, X, y=None, **fit_params):
+    return np.asarray(X,dtype=self.dtype)
+  def fit_transform(self, X, y=None, **fit_params):
+    self.fit(X, y, **fit_params)
+    return self.transform(X)
+  def fit(self, X, y=None, **fit_params):
+    return self
+
 class SplitEstimator(BaseEstimator):
   """   Estimator of set of estimators: perform split into set of estimators 
         and merge them back
