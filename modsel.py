@@ -78,7 +78,7 @@ def cv_select(y, random_state, n_cv, cv, test_size=0.1):
         if cv == 'shuffle':
             return cross_validation.StratifiedShuffleSplit(y, n_cv, test_size=test_size, random_state=random_state)
         elif cv == 'loo':
-            return cross_validation.LeaveOneOut(n_cv)
+            return cross_validation.LeaveOneOut(n=len(y))
         elif cv == 'kfold':
             return cross_validation.StratifiedKFold(y, n_folds=n_cv)
         elif cv == 'boot':
