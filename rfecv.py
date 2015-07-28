@@ -12,10 +12,10 @@ import numpy as np
 from sklearn.feature_selection import RFE
 from sklearn.base import MetaEstimatorMixin
 from sklearn.cross_validation import check_cv
-from sklearn.utils import check_arrays, safe_sqr
+from sklearn.utils import check_X_y, safe_sqr
 from sklearn.base import clone
 from sklearn.base import is_classifier
-from sklearn.metrics.scorer import _deprecate_loss_and_score_funcs
+from sklearn.metrics.scorer import make_scorer, get_scorer
 
 from sklearn.externals.joblib import Parallel, delayed
 
@@ -135,7 +135,8 @@ class RFECVp(RFE, MetaEstimatorMixin):
         if self.f_estimator == None:
             self.f_estimator = clone(self.estimator)
 
-        X, y = check_arrays(X, y, sparse_format="csr")
+        #X, y = check_arrays(X, y, sparse_format="csr")
+        X, y = check_X_y(X, y, "csc")
 
         # select n_features_to_select (was always =1)
         if 0.0 < self.step < 1.0:
@@ -173,7 +174,15 @@ class RFECVp(RFE, MetaEstimatorMixin):
 
                 if self.loss_func is None and self.scoring is None:
                     score = estimator.score(X_test[:, mask], y_test)
+                elif self.scoring is not None:
+                    scorer = get_scorer(self.scoring)
+                    try:
+                        score = scorer(estimator, X_test[:, mask], y_test)
+                    except:
+                        print "**************** Except in scorer; set score=0.0 *************************"
+                        score = 0.0
                 else:
+                    from sklearn.metrics.scorer import _deprecate_loss_and_score_funcs
                     scorer = _deprecate_loss_and_score_funcs(
                         loss_func=self.loss_func,
                         scoring=self.scoring
