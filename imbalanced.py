@@ -36,7 +36,7 @@ def ids_invert(X,ids):
     return ids_inv
 
 def round_down_sel(y1):
-    p_zeros = [i for i,e in enumerate(y1) if e == 0]
+    p_zeros = [i for i,e in enumerate(y1) if e <= 0]
     p_ones = [i for i,e in enumerate(y1) if e > 0]
     delta = len(p_zeros) - len(p_ones)
     if delta > 0:
@@ -46,12 +46,12 @@ def round_down_sel(y1):
         sel = random.sample(p_ones,len(p_zeros))
         sel = sel + p_zeros
     else:
-        sel = []
+        sel = None
     return sel
 
 def round_down(Xall,y1,ids=None):
     sel = round_down_sel(y1)
-    if len(sel) == 0:
+    if sel is None:
         return Xall,y1,ids
     #print "round down:",len(p_zeros),len(p_ones),len(sel)
     if ids is not None:
