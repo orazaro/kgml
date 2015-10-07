@@ -7,7 +7,7 @@ import numpy as np
 from sklearn import cross_validation
 from sklearn.metrics import accuracy_score, mean_absolute_error, make_scorer
 from sklearn.metrics import roc_curve, auc
-
+from collections import defaultdict
 
 def multiclass_log_loss(y_true, y_pred, eps=1e-15):
     """Multi class version of Logarithmic Loss metric.
@@ -140,6 +140,28 @@ def cv_run(rd, X, y, random_state, n_cv=16, n_iter=0, n_jobs=-1, scoring='accura
                 n_jobs=n_jobs, verbose=0)
         scores_mean,me = estimate_scores(scores,scoring,sampling,n_sample=len(y))
     return scores_mean,me
+
+
+###------- Split into train and test with nonoverlapping pids --###
+
+def iter_to_ids(pid_iter):
+    """ From list of pids to 
+            dict i_pid -> list of indices
+            dict pid -> i_pid
+    """
+    ids_voc = dict()
+    ids = defaultdict(list)
+    for index,pid in enumerate(pid_iter):
+        if pid not in ids_voc:
+            ids_voc[pid] = len(ids_voc)
+        ids[ids_voc[pid]].append(index)
+    return ids,ids_voc
+
+def y_to_ids(y, ids):
+    """ From list of flags 0/1 to flags 0/1 of groups grouped by ids 
+    """
+    y_ids = np.array([np.any(y[ids[i]]) for i in range(len(ids))],dtype=int)
+    return y_ids
 
 def cv_run_ids(rd, X, y, ids, random_state, n_cv = 16, n_jobs=-1, scoring='accuracy', cv='shuffle', test_size=0.1, sampling=True):
     """ possible scorong: accuracy,roc_auc,precision,average_precision,f1
