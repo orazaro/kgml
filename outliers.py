@@ -3,12 +3,14 @@
 # Author:   Oleg Razgulyaev 
 # License:  BSD 3 clause
 """
-    outliers detection
+    outliers detection and removal
 """
 import numpy as np
 from sklearn.covariance import EllipticEnvelope
 from sklearn import preprocessing, decomposition
 from sklearn.pipeline import Pipeline
+
+###------ search outliers ------------###
 
 def search_outliers_EllipticEnvelope(X):
     clf = EllipticEnvelope(contamination=0.2)
@@ -81,6 +83,19 @@ def search_outliers(X, m = 6., mode = 1, verbose=1):
         if type(sel_outliers)!=bool:
             print "outliers:",outliers[sel_outliers]
     return np.where(sel_outliers)[0] 
+
+
+###------- remove outliers ----------------###
+
+def df_winsorize(df,columns=None,limits=(0.05,0.05)):
+    from scipy.stats.mstats import winsorize
+    if columns is not None:
+        values = df[columns].values
+    else:
+        values = df.values
+    winsorize(values, limits=limits, inplace=True, axis=0)
+    if columns is not None:
+        df[columns] = values
 
 
 def test():
