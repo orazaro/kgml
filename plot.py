@@ -12,6 +12,10 @@ import matplotlib.pyplot as plt
 #from matplotlib import style
 #style.use("ggplot")
 
+def rand_jitter(arr, dx=.003):
+    stdev = dx*(max(arr)-min(arr))
+    return arr + np.random.randn(len(arr)) * stdev
+
 def plt_subplots(nrow=1, ncol=1, sharex=False, sharey=False, figsize=(10,10)):
     """ Initialize subplots. """
     fig,axarr = plt.subplots(nrow, ncol, sharex=sharex, sharey=sharey,figsize=figsize)
