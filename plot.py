@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 
 def rand_jitter(arr, dx=.003):
     stdev = dx*(max(arr)-min(arr))
+    if stdev == 0.0:
+        stdev = dx
     return arr + np.random.randn(len(arr)) * stdev
 
 def plt_subplots(nrow=1, ncol=1, sharex=False, sharey=False, figsize=(10,10)):

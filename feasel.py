@@ -188,3 +188,68 @@ class SparseToDense(BaseEstimator, TransformerMixin):
   def transform(self, X_df):
     return X_df.toarray()
 
+from scipy.stats.mstats import mquantiles
+
+class Winsorize(BaseEstimator, TransformerMixin):
+  """
+    Winsorize selected columns or all dataset 
+  
+    Parameters
+    ----------
+    limits: tuple
+        lower and upper quantiles to winsorize data
+        one of the quantiles can be None
+    columns: list
+        columns to winsorize, if None than all
+  """
+  def __init__(self, limits=(0.05,0.95), columns=None):
+    assert len(limits) == 2
+    self.limits = limits
+    self.columns_ = columns
+  
+  def fit(self, X, y = None):
+    if self.columns_ is None:
+        values = X
+        self.columns = np.arange(X.shape[1])
+    else:
+        self.columns = np.asarray(self.columns_)
+        values = X[:,self.columns]
+    if self.limits[0] is not None:
+        self.xmin = mquantiles(values, prob=self.limits[:1], axis=0).ravel()
+    else:
+        self.xmin = None
+    if self.limits[1] is not None:
+        self.xmax = mquantiles(values, prob=self.limits[1:], axis=0).ravel()
+    else:
+        self.xmax = None
+    #print "xmin:",self.xmin
+    #print "xmax:",self.xmax
+    return self
+
+  def transform(self, X):
+    X1 = X.copy()
+    if self.xmin is not None:
+        for i,col in enumerate(self.columns):
+            sel = X1[:,col] < self.xmin[i]
+            X1[sel,col] = self.xmin[i]
+    if self.xmax is not None:
+        for i,col in enumerate(self.columns):
+            sel = X1[:,col] > self.xmax[i]
+            X1[sel,col] = self.xmax[i]
+    return X1
+
+#----- tests -------------#
+
+
+def test_winsorize():
+    X = np.array(range(120),dtype=float).reshape((40,3))
+    w = Winsorize(limits=(0.05,0.95))
+    print "X:",X
+    X1 = w.fit_transform(X)
+    print "X1:",X1
+    print "test columns"
+    w = Winsorize(limits=(0.05,0.95),columns=[0,2])
+    print "X1:",w.fit_transform(X)
+
+if __name__ == '__main__':
+    test_winsorize()
