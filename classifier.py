@@ -50,7 +50,7 @@ def get_clf(cl,n_jobs=1,random_state=0):
     rf1 = {'max_depth':[2,4,8,16,24,32]}
 
     if cl=='rf2':
-        clf = RandomForestClassifier(n_estimators=200, max_depth=2,
+        clf = RandomForestClassifier(n_estimators=100, min_samples_leaf=1,
                 max_features='auto',
                 n_jobs=n_jobs, random_state=random_state, verbose=0)
     elif cl=='rf':

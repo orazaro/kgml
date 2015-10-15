@@ -19,26 +19,24 @@ from sklearn.feature_selection import RFECV, RFE
 import matplotlib.pyplot as plt
 from plot import plot_decision_line, plot_decision_boundary
 
-def df_standartize(df, goal):
-    """ Convert DataFrame to standard form for ML: goal at the last column
+def df_standardize(df, target):
+    """ Convert DataFrame to standard form for ML: target at the last column
     
     Parameters
     ----------
     df: DataFrame
         dataset to strandartize as Pandas DataFrame
-    goal: str
-        column name for the goal
+    target: str
+        column name for the target
     """
-    if df.columns[-1] != goal:
-        new_columns = [s for s in df.columns if s != goal]
+    if df.columns[-1] != target:
+        new_columns = [s for s in df.columns if s != target]
         if len(new_columns) != len(df.columns) - 1:
-            raise ValueError("goal [{}] not in DataFrame column names!".format(goal)
-        new_columns.append(goal)
+            raise ValueError("target [{}] not in DataFrame column names!".format(target))
+        new_columns.append(target)
         return df[new_columns]
     else:
         return df
-
-
 
 def get_clf(sclf,C=1.0,class_weight=None):
     if sclf == 'svm':
