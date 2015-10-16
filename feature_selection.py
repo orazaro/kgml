@@ -17,6 +17,53 @@ from sklearn.feature_selection import SelectPercentile, f_classif, chi2
 
 logger = logging.getLogger(__name__)
 
+def remove_noninformative_columns(df):
+    """ Remove noninformative columns:
+        - with variance < 1E-15
+    """
+    variance = np.var(df,axis=0)
+    return df.iloc[:,list(variance>1E-15)]
+
+def add_quadratic_features(df, predictors, rm_noninform=True):
+    """ Add quadratic features based on the selected predictors
+    
+    Parameters
+    ----------
+    df: DataFrame
+        dataset
+    predictors: list of str
+        column names to use to build the quadratic features
+
+    Returns
+    -------
+    df1: DataFrame
+        dataset with added features
+    """
+    from itertools import combinations
+    Xout = df.values
+    columns = list(df.columns)
+    X = df[predictors].values
+    
+    # add squares
+    X1 = X * X
+    Xout = np.c_[Xout,X1]
+    columns.extend(["{}*{}".format(e,e) for e in predictors])
+    #print columns
+    
+    # add combinations
+    X2 = []
+    for (i,j) in combinations(range(len(predictors)),2):
+        X2.append(X[:,i]*X[:,j])
+        columns.append("{}*{}".format(predictors[i],predictors[j]))
+    X2 = np.vstack(X2).T
+    Xout = np.c_[Xout,X2]
+    #print columns
+    df_out = pd.DataFrame(Xout,columns=columns)
+    if rm_noninform:
+        df_out = remove_noninformative_columns(df_out)
+    return df_out 
+
+
 def f_regression_select(X, y, maxf = 300, pvals = True, names = None, verbose = 0, old_idx_sel=None):
     "Select features using f_regression"
     if names == None:
