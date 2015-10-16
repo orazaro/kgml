@@ -118,7 +118,7 @@ def plot_decision_boundary(clf, X, y, ax, sample_weight=None, names=None, title=
     #ax.legend()
 
 
-def plot_roc_crossval(model, X, y, show_folds=False):
+def plot_roc_crossval(model, X, y, n_folds=6, figsize=(8,8),show_folds=False):
     """ Run classifier with cross-validation and plot ROC curves
         from http://goo.gl/NMhWvf
     """
@@ -127,8 +127,9 @@ def plot_roc_crossval(model, X, y, show_folds=False):
     from sklearn.metrics import roc_curve, auc
     import matplotlib.pyplot as plt    
 
-    cv = StratifiedKFold(y, n_folds=6)
+    cv = StratifiedKFold(y, n_folds=n_folds)
 
+    plt.figure(figsize=figsize)
     mean_tpr = 0.0
     mean_fpr = np.linspace(0, 1, 100)
     all_tpr = []
@@ -155,7 +156,7 @@ def plot_roc_crossval(model, X, y, show_folds=False):
     plt.ylim([-0.05, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Receiver operating characteristic example')
+    plt.title('Receiver operating characteristic')
     plt.legend(loc="lower right")
     plt.show()
 
