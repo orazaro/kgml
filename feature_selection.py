@@ -39,6 +39,7 @@ def add_quadratic_features(df, predictors, rm_noninform=True):
     df1: DataFrame
         dataset with added features
     """
+    import pandas as pd
     from itertools import combinations
     Xout = df.values
     columns = list(df.columns)
