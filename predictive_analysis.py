@@ -38,13 +38,14 @@ def df_standardize(df, target):
     else:
         return df
 
-def df_xyf(df, target=None,ydtype=int):
+def df_xyf(df, predictors=None, target=None,ydtype=int):
     if target is None:
         target = df.columns[-1]
-    columns = np.array([e for e in df.columns if e != target])
-    return  (df.ix[:,columns].values, 
+    if predictors is None:
+        predictors = np.array([e for e in df.columns[:-1] if e != target])
+    return  (df.ix[:,predictors].values, 
             np.asarray(df[target].values,dtype=ydtype),
-            columns)
+            predictors)
 
 def get_clf(sclf,C=1.0,class_weight=None):
     if sclf == 'svm':
