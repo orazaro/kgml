@@ -40,7 +40,7 @@ from sklearn.ensemble import (RandomForestClassifier, GradientBoostingClassifier
 
 from sklearn import grid_search
 
-def get_clf(cl,n_jobs=1,random_state=0):
+def get_clf(cl,n_jobs=1,random_state=0,class_weight=auto):
     """ Select clasifier by name
     """
     lm1 = {'C':[0.0001, 0.001, 0.01, 0.1, 0.3, 1, 3, 10]}
@@ -51,49 +51,49 @@ def get_clf(cl,n_jobs=1,random_state=0):
 
     if cl=='rf2':
         clf = RandomForestClassifier(n_estimators=100, min_samples_leaf=1,
-                max_features='auto',
+                max_features='auto', class_weight=class_weight,
                 n_jobs=n_jobs, random_state=random_state, verbose=0)
     elif cl=='rf':
         clf1 = RandomForestClassifier(n_estimators=100, max_depth=2,
-                max_features='auto',
+                max_features='auto', class_weight=class_weight,
                 n_jobs=n_jobs, random_state=random_state, verbose=0)
         clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='dt':
         from sklearn.tree import DecisionTreeClassifier
-        clf1 = DecisionTreeClassifier(max_depth=2, max_features='auto')
+        clf1 = DecisionTreeClassifier(max_depth=2, max_features='auto', class_weight=class_weight)
         clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='lr2':
         clf = lm.LogisticRegression(penalty='l2', dual=True, tol=0.0001, 
                              C=1, fit_intercept=True, intercept_scaling=1.0, 
-                             class_weight=None, random_state=random_state)
+                             class_weight=class_weight, random_state=random_state)
 
     elif cl=='lr1':
         clf = lm.LogisticRegression(penalty='l1', dual=False, tol=0.0001, 
                              C=1.0, fit_intercept=True, intercept_scaling=1.0, 
-                             class_weight=None, random_state=random_state)
+                             class_weight=class_weight, random_state=random_state)
     elif cl=='lr2g':
         est2 = lm.LogisticRegression(penalty='l2', dual=True, tol=0.0001, 
              C=1, fit_intercept=True, intercept_scaling=1.0, 
-             class_weight=None, random_state=random_state)
+             class_weight=class_weight, random_state=random_state)
         clf = grid_search.GridSearchCV(est2, lm1, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='lr1g':
         est1 = lm.LogisticRegression(penalty='l1', dual=False, tol=0.0001, 
              C=1, fit_intercept=True, intercept_scaling=1.0, 
-             class_weight=None, random_state=random_state)
+             class_weight=class_weight, random_state=random_state)
         clf = grid_search.GridSearchCV(est1, lm1, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='svmL':
-        clf = svm.LinearSVC(C=1.0,loss='l2',penalty='l2',dual=True,verbose=0)
+        clf = svm.LinearSVC(C=1.0,loss='l2',penalty='l2',dual=True,verbose=0,class_weight=class_weight)
     elif cl=='svmL1':
-        clf = svm.LinearSVC(C=1.0,loss='l2',penalty='l1',dual=False,verbose=0)
+        clf = svm.LinearSVC(C=1.0,loss='l2',penalty='l1',dual=False,verbose=0,class_weight=class_weight)
     elif cl=='svmL2':
-        clf = svm.LinearSVC(C=1.0,loss='l1',penalty='l2',verbose=0)
+        clf = svm.LinearSVC(C=1.0,loss='l1',penalty='l2',verbose=0,class_weight=class_weight)
     elif cl=='svmL1g':
         #est3 = svm.SVC(kernel='linear',verbose=0)
-        est3 = svm.LinearSVC(loss='l2',penalty='l1',dual=False,verbose=0)
+        est3 = svm.LinearSVC(loss='l2',penalty='l1',dual=False,verbose=0,class_weight=class_weight)
         clf = grid_search.GridSearchCV(est3, lm1, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='svmL2g':
         #est3 = svm.SVC(kernel='linear',verbose=0)
-        est3 = svm.LinearSVC(loss='l1',penalty='l2',verbose=0)
+        est3 = svm.LinearSVC(loss='l1',penalty='l2',verbose=0,class_weight=class_weight)
         clf = grid_search.GridSearchCV(est3, lm1, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='svmRg':
         #C_range = 10.0 ** np.arange(-2, 9)
@@ -101,14 +101,14 @@ def get_clf(cl,n_jobs=1,random_state=0):
         C_range = 10.0 ** np.arange(-3, 4)
         gamma_range = 10.0 ** np.arange(-4, 3)
         svm2 = dict(gamma=gamma_range, C=C_range)
-        est3 = svm.SVC(kernel='rbf',verbose=0)
+        est3 = svm.SVC(kernel='rbf',verbose=0,class_weight=class_weight)
         clf = grid_search.GridSearchCV(est3, svm2, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='svmP3':
         svm1 = {'C':[0.001,0.01,0.1,1.0,10],'gamma':[0.1,0.01,0.001,0.0001]}
         svm3 = {'C':[0.001,0.01,0.1,1.0,10],'gamma':[0.1,0.01,0.001,0.0001],
                                                         'coef0':[0,1]}
         est4 = svm.SVC(kernel='poly',degree=3,verbose=0)
-        clf = grid_search.GridSearchCV(est4, svm3, cv=4, n_jobs=n_jobs, verbose=0)
+        clf = grid_search.GridSearchCV(est4, svm3, cv=4, n_jobs=n_jobs, verbose=0,class_weight=class_weight)
     elif cl=='mnb':
         clf = MultinomialNB(alpha=1.0)
     elif cl=='gnb':
