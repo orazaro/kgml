@@ -38,14 +38,52 @@ def df_standardize(df, target):
     else:
         return df
 
-def df_xyf(df, predictors=None, target=None,ydtype=int):
+def df_xyf(df, predictors=None, target=None, ydtype=None):
     if target is None:
         target = df.columns[-1]
     if predictors is None:
         predictors = np.array([e for e in df.columns[:-1] if e != target])
+    if ydtype is None:
+        y = np.asarray(df[target].values)
+    else:
+        y = np.asarray(df[target].values,dtype=ydtype)
     return  (df.ix[:,predictors].values, 
-            np.asarray(df[target].values,dtype=ydtype),
+            y,
             predictors)
+
+def feature_selection_ET(df, predictors=None, target=None ,ax=None, isclass=True, 
+        verbosity=0, nf=7, n_estimators=100, class_weight='auto'):
+    X, y, names = df_xyf(df, predictors=predictors, target=target)
+    if verbosity > 1:
+        print "names:", ",".join(names)
+    if isclass:
+        forest = ensemble.ExtraTreesClassifier(n_estimators=n_estimators,
+                                      random_state=random_state,n_jobs=-1)
+    else:
+        forest = ensemble.ExtraTreesRegressor(n_estimators=n_estimators,
+                                      random_state=random_state,n_jobs=-1)
+    forest.fit(X, y)
+    importances = forest.feature_importances_
+    std = np.std([tree.feature_importances_ for tree in forest.estimators_],
+                 axis=0)
+    indices = np.argsort(importances)[::-1]
+
+    # Print the feature ranking
+    print("Feature ranking:")
+    nf_all = X.shape[1]
+    for i in range(nf_all):
+        print("%2d. %25s (%10f)" % (i+1, names[indices[i]], importances[indices[i]]))
+
+    # Plot the feature importances of the forest
+    nf = nf_all if nf > nf_all else nf
+    ax.set_title("Feature importances")
+    ax.bar(range(nf), importances[indices][:nf],
+           color="r", yerr=std[indices][:nf], align="center")
+    anames = np.array(names)
+    ax.set_xlim([-1, nf])
+    plt.xticks(range(nf), anames[indices][:nf],rotation='vertical')
+
+#--- old stuff --------#
 
 def get_clf(sclf,C=1.0,class_weight=None):
     if sclf == 'svm':
@@ -197,39 +235,6 @@ def estimate_predictions(df, features, goal, sels = ('all','pca2'),
                 nfolds=nfolds,metrics_av=metrics_av)
             out_predictive_results(results)
         print
-
-
-def feature_selection_ET(fn ,ax=None, sel="all", goal="Linebreak", isclass=True, 
-        verbosity=0, nf=7, n_estimators=100):
-    X, y, names = data_prepare(fn, sel=sel, goal=goal, verbosity=verbosity-1)
-    if verbosity > 1:
-        print "names:", ",".join(names)
-    if isclass:
-        forest = ensemble.ExtraTreesClassifier(n_estimators=n_estimators,
-                                      random_state=random_state,n_jobs=-1)
-    else:
-        forest = ensemble.ExtraTreesRegressor(n_estimators=n_estimators,
-                                      random_state=random_state,n_jobs=-1)
-    forest.fit(X, y)
-    importances = forest.feature_importances_
-    std = np.std([tree.feature_importances_ for tree in forest.estimators_],
-                 axis=0)
-    indices = np.argsort(importances)[::-1]
-
-    # Print the feature ranking
-    print("Feature ranking:")
-    nf_all = X.shape[1]
-    for i in range(nf_all):
-        print("%2d. %25s (%10f)" % (i+1, names[indices[i]], importances[indices[i]]))
-
-    # Plot the feature importances of the forest
-    nf = nf_all if nf > nf_all else nf
-    ax.set_title("Feature importances")
-    ax.bar(range(nf), importances[indices][:nf],
-           color="r", yerr=std[indices][:nf], align="center")
-    anames = np.array(names)
-    ax.set_xlim([-1, nf])
-    plt.xticks(range(nf), anames[indices][:nf],rotation='vertical')
 
 
 
