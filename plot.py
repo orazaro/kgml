@@ -160,4 +160,16 @@ def plot_roc_crossval(model, X, y, n_folds=6, figsize=(8,8),show_folds=False):
     plt.legend(loc="lower right")
     plt.show()
 
+def plot_pred_proba_hist(y_true, y_proba, bins=20, figsize=(12,6)):
+    fig,axarr = plt.subplots(1,2,figsize=figsize)
+    axgen = (e for e in np.array(axarr).ravel())
+
+    ax = axgen.next(); 
+    ax.hist(y_proba[y_true>0],bins=bins); 
+    ax.set_title("class 1 predicted probabilities distribution")
+    ax.set_xlim((0,1))
+    ax = axgen.next(); 
+    ax.hist(y_proba[y_true<=0],bins=bins); 
+    ax.set_title("class 0 predicted probabilities distribution")
+    ax.set_xlim((0,1))
 
