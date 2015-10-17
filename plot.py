@@ -233,11 +233,9 @@ def plot_estimates(y_true, y_proba, bins=20, figsize=(8,5), tohist=True):
     fig,axarr = plt.subplots(nx,2,figsize=figsize)
     axgen = (e for e in np.array(axarr).ravel())
 
-    y0 = y_proba[y_true<=0]
-    y1 = y_proba[y_true>0]
-
-    plot_pred_proba_hist_class(y_true, y_proba, ax=axgen.next(), cl=1, bins=bins)
-    plot_pred_proba_hist_class(y_true, y_proba, ax=axgen.next(), cl=0, bins=bins)
+    if tohist:
+        plot_pred_proba_hist_class(y_true, y_proba, ax=axgen.next(), cl=1, bins=bins)
+        plot_pred_proba_hist_class(y_true, y_proba, ax=axgen.next(), cl=0, bins=bins)
     plot_pred_proba_distrib(y_true, y_proba, ax=axgen.next())
     plot_roc_curve(y_true, y_proba, ax=axgen.next())
     
