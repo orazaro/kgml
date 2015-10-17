@@ -40,7 +40,7 @@ from sklearn.ensemble import (RandomForestClassifier, GradientBoostingClassifier
 
 from sklearn import grid_search
 
-def get_clf(cl,n_jobs=1,random_state=0,class_weight=auto):
+def get_clf(cl,n_jobs=1,random_state=0,class_weight='auto'):
     """ Select clasifier by name
     """
     lm1 = {'C':[0.0001, 0.001, 0.01, 0.1, 0.3, 1, 3, 10]}

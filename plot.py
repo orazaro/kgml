@@ -160,28 +160,60 @@ def plot_roc_crossval(model, X, y, n_folds=6, figsize=(6,6),show_folds=False):
     plt.legend(loc="lower right")
     plt.show()
 
+def plot_roc_curve(y_true, y_proba, ax=None, figsize=(6,6)):
+    """ Run classifier with cross-validation and plot ROC curves
+        from http://goo.gl/NMhWvf
+    """
+    from sklearn.metrics import roc_curve, auc
+
+    if ax is None:
+        fig,ax1 = plt.subplots(1,1,figsize=figsize)
+    else: 
+        ax1 = ax
+
+    # Compute ROC curve and area the curve
+    fpr, tpr, thresholds = roc_curve(y_true, y_proba)
+
+    ax1.plot([0, 1], [0, 1], '--', color=(0.6, 0.6, 0.6), label='Luck')
+
+    tpr[-1] = 1.0
+    auc = auc(fpr, tpr)
+    ax1.plot(fpr, tpr, 'k--',
+             label='ROC (area = %0.2f)' % auc, lw=2)
+
+    ax1.set_xlim([-0.05, 1.05])
+    ax1.set_ylim([-0.05, 1.05])
+    ax1.set_xlabel('False Positive Rate')
+    ax1.set_ylabel('True Positive Rate')
+    ax1.set_title('Receiver operating characteristic')
+    ax1.legend(loc="lower right")
+    if ax is None:
+        plt.show()
+
+def plot_pred_proba_hist_class(y_true, y_proba, ax, cl, bins=20):
+    if cl > 0:
+        yc = y_proba[y_true>0]
+    else:
+        yc = y_proba[y_true<=0]
+    ax.hist(yc,bins=bins); 
+    ax.set_title("class {}".format(cl))
+    ax.set_xlim((0,1))
+
 def plot_pred_proba_hist(y_true, y_proba, bins=20, figsize=(12,5)):
     fig,axarr = plt.subplots(1,2,figsize=figsize)
     axgen = (e for e in np.array(axarr).ravel())
-
-    y0 = y_proba[y_true<=0]
-    y1 = y_proba[y_true>0]
     
-    ax = axgen.next(); 
-    ax.hist(y1,bins=bins); 
-    ax.set_title("class 1")
-    ax.set_xlim((0,1))
-    ax = axgen.next(); 
-    ax.hist(y0,bins=bins); 
-    ax.set_title("class 0")
-    ax.set_xlim((0,1))
-   
+    plot_pred_proba_hist_class(y_true, y_proba, ax=axgen.next(), cl=1, bins=bins)
+    plot_pred_proba_hist_class(y_true, y_proba, ax=axgen.next(), cl=2, bins=bins)
+
     plt.suptitle("Predicted probability distributions",fontsize=16)
     #plt.figtext(.02, -.10, "This is text on the bottom of the figure.\nHere I've made extra room for adding more text.\n" + ("blah "*16+"\n")*3)
 
-def plot_pred_proba_distrib(y_true, y_proba, figsize=(8,5)):
-    fig,axarr = plt.subplots(1,1,figsize=figsize)
-    axgen = (e for e in np.array(axarr).ravel())
+def plot_pred_proba_distrib(y_true, y_proba, ax=None, figsize=(8,5)):
+    if ax is None:
+        fig,ax1 = plt.subplots(1,1,figsize=figsize)
+    else:
+        ax1 = ax
 
     y0 = y_proba[y_true<=0]
     y1 = y_proba[y_true>0]
@@ -191,9 +223,22 @@ def plot_pred_proba_distrib(y_true, y_proba, figsize=(8,5)):
     density1 = gaussian_kde( y1 )
 
     x = np.arange(0., 1, .01)
-    ax = axgen.next(); 
-    ax.plot(x, density0(x),label="class 0",lw=3)
-    ax.plot(x, density1(x),label="class 1",lw=3)
-    plt.legend()
-    ax.set_title("probability density functions")
+    ax1.plot(x, density0(x),label="class 0",lw=3)
+    ax1.plot(x, density1(x),label="class 1",lw=3)
+    ax1.legend()
+    ax1.set_title("probability density functions")
+   
+def plot_estimates(y_true, y_proba, bins=20, figsize=(8,5), tohist=True):
+    nx = 2 if tohist else 1
+    fig,axarr = plt.subplots(nx,2,figsize=figsize)
+    axgen = (e for e in np.array(axarr).ravel())
+
+    y0 = y_proba[y_true<=0]
+    y1 = y_proba[y_true>0]
+
+    plot_pred_proba_hist_class(y_true, y_proba, ax=axgen.next(), cl=1, bins=bins)
+    plot_pred_proba_hist_class(y_true, y_proba, ax=axgen.next(), cl=0, bins=bins)
+    plot_pred_proba_distrib(y_true, y_proba, ax=axgen.next())
+    plot_roc_curve(y_true, y_proba, ax=axgen.next())
     
+    plt.suptitle("Predicted probability distributions",fontsize=14)
