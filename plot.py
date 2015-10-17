@@ -118,7 +118,7 @@ def plot_decision_boundary(clf, X, y, ax, sample_weight=None, names=None, title=
     #ax.legend()
 
 
-def plot_roc_crossval(model, X, y, n_folds=6, figsize=(8,8),show_folds=False):
+def plot_roc_crossval(model, X, y, n_folds=6, figsize=(6,6),show_folds=False):
     """ Run classifier with cross-validation and plot ROC curves
         from http://goo.gl/NMhWvf
     """
@@ -160,16 +160,40 @@ def plot_roc_crossval(model, X, y, n_folds=6, figsize=(8,8),show_folds=False):
     plt.legend(loc="lower right")
     plt.show()
 
-def plot_pred_proba_hist(y_true, y_proba, bins=20, figsize=(12,6)):
+def plot_pred_proba_hist(y_true, y_proba, bins=20, figsize=(12,5)):
     fig,axarr = plt.subplots(1,2,figsize=figsize)
     axgen = (e for e in np.array(axarr).ravel())
 
+    y0 = y_proba[y_true<=0]
+    y1 = y_proba[y_true>0]
+    
     ax = axgen.next(); 
-    ax.hist(y_proba[y_true>0],bins=bins); 
-    ax.set_title("class 1 predicted probabilities distribution")
+    ax.hist(y1,bins=bins); 
+    ax.set_title("class 1")
     ax.set_xlim((0,1))
     ax = axgen.next(); 
-    ax.hist(y_proba[y_true<=0],bins=bins); 
-    ax.set_title("class 0 predicted probabilities distribution")
+    ax.hist(y0,bins=bins); 
+    ax.set_title("class 0")
     ax.set_xlim((0,1))
+   
+    plt.suptitle("Predicted probability distributions",fontsize=16)
+    #plt.figtext(.02, -.10, "This is text on the bottom of the figure.\nHere I've made extra room for adding more text.\n" + ("blah "*16+"\n")*3)
 
+def plot_pred_proba_distrib(y_true, y_proba, figsize=(8,5)):
+    fig,axarr = plt.subplots(1,1,figsize=figsize)
+    axgen = (e for e in np.array(axarr).ravel())
+
+    y0 = y_proba[y_true<=0]
+    y1 = y_proba[y_true>0]
+    
+    from scipy.stats import gaussian_kde 
+    density0 = gaussian_kde( y0 )
+    density1 = gaussian_kde( y1 )
+
+    x = np.arange(0., 1, .01)
+    ax = axgen.next(); 
+    ax.plot(x, density0(x),label="class 0",lw=3)
+    ax.plot(x, density1(x),label="class 1",lw=3)
+    plt.legend()
+    ax.set_title("probability density functions")
+    
