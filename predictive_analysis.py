@@ -52,13 +52,15 @@ def df_xyf(df, predictors=None, target=None, ydtype=None):
             predictors)
 
 def feature_selection_ET(df, predictors=None, target=None ,ax=None, isclass=True, 
-        verbosity=0, nf=7, n_estimators=100, class_weight='auto'):
+        verbosity=0, nf=7, n_estimators=100, class_weight='auto',prank=False):
     X, y, names = df_xyf(df, predictors=predictors, target=target)
+    nf_all = X.shape[1]
+    
     if verbosity > 1:
         print "names:", ",".join(names)
     if isclass:
         forest = ensemble.ExtraTreesClassifier(n_estimators=n_estimators,
-                                      random_state=random_state,n_jobs=-1)
+                                      random_state=random_state,n_jobs=-1,class_weight=class_weight)
     else:
         forest = ensemble.ExtraTreesRegressor(n_estimators=n_estimators,
                                       random_state=random_state,n_jobs=-1)
@@ -68,11 +70,11 @@ def feature_selection_ET(df, predictors=None, target=None ,ax=None, isclass=True
                  axis=0)
     indices = np.argsort(importances)[::-1]
 
-    # Print the feature ranking
-    print("Feature ranking:")
-    nf_all = X.shape[1]
-    for i in range(nf_all):
-        print("%2d. %25s (%10f)" % (i+1, names[indices[i]], importances[indices[i]]))
+    if prank:
+        # Print the feature ranking
+        print("Feature ranking:")
+        for i in range(nf_all):
+            print("%2d. %25s (%10f)" % (i+1, names[indices[i]], importances[indices[i]]))
 
     # Plot the feature importances of the forest
     nf = nf_all if nf > nf_all else nf
@@ -82,6 +84,10 @@ def feature_selection_ET(df, predictors=None, target=None ,ax=None, isclass=True
     anames = np.array(names)
     ax.set_xlim([-1, nf])
     plt.xticks(range(nf), anames[indices][:nf],rotation='vertical')
+    
+    names_sorted = [names[indices[i]] for i in range(len(predictors))]
+    importances_sorted = [importances[indices[i]] for i in range(len(predictors))]
+    return names_sorted,importances_sorted
 
 #--- old stuff --------#
 
