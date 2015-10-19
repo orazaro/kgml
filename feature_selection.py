@@ -66,7 +66,7 @@ def add_quadratic_features(df, predictors, rm_noninform=True):
 
 
 
-def forward_selected(data, response):
+def forward_selected(data, response, verbosity=0):
     """Linear model designed by forward selection.
         
 
@@ -119,10 +119,12 @@ def forward_selected(data, response):
             remaining.remove(best_candidate)
             selected.append(best_candidate)
             current_score = best_new_score
+        if verbosity > 0:
+            print current_score, selected
     formula = "{} ~ {} + 1".format(response,
                                    ' + '.join(selected))
     model = smf.ols(formula, data).fit()
-    return model
+    return model, selected
 
 
 def f_regression_select(X, y, maxf = 300, pvals = True, names = None, verbose = 0, old_idx_sel=None):

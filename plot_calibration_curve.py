@@ -57,7 +57,7 @@ from sklearn.calibration import CalibratedClassifierCV, calibration_curve
 from sklearn.cross_validation import train_test_split
 
 
-def plot_calibration_curve(est, name, fig_index):
+def plot_calibration_curve(X_train, X_test, y_train, y_test, y, est, name, fig_index, bins=10):
     """Plot calibration curve for est w/o and with calibration. """
     # Calibrated with isotonic calibration
     isotonic = CalibratedClassifierCV(est, cv=2, method='isotonic')
@@ -94,12 +94,12 @@ def plot_calibration_curve(est, name, fig_index):
         print("\tF1: %1.3f\n" % f1_score(y_test, y_pred))
 
         fraction_of_positives, mean_predicted_value = \
-            calibration_curve(y_test, prob_pos, n_bins=10)
+            calibration_curve(y_test, prob_pos, n_bins=bins)
 
         ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
                  label="%s (%1.3f)" % (name, clf_score))
 
-        ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
+        ax2.hist(prob_pos, range=(0, 1), bins=bins, label=name,
                  histtype="step", lw=2)
 
     ax1.set_ylabel("Fraction of positives")
