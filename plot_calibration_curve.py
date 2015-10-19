@@ -41,8 +41,6 @@ results. This shows that sigmoid calibration can deal with situations where
 the calibration curve of the base classifier is sigmoid (e.g., for LinearSVC)
 but not where it is transposed-sigmoid (e.g., Gaussian naive Bayes).
 """
-print(__doc__)
-
 # Author: Alexandre Gramfort <alexandre.gramfort@telecom-paristech.fr>
 #         Jan Hendrik Metzen <jhm@informatik.uni-bremen.de>
 # License: BSD Style.
@@ -57,16 +55,6 @@ from sklearn.metrics import (brier_score_loss, precision_score, recall_score,
                              f1_score)
 from sklearn.calibration import CalibratedClassifierCV, calibration_curve
 from sklearn.cross_validation import train_test_split
-
-
-# Create dataset of classification task with many redundant and few
-# informative features
-X, y = datasets.make_classification(n_samples=100000, n_features=20,
-                                    n_informative=2, n_redundant=10,
-                                    random_state=42)
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.99,
-                                                    random_state=42)
 
 
 def plot_calibration_curve(est, name, fig_index):
@@ -125,10 +113,23 @@ def plot_calibration_curve(est, name, fig_index):
 
     plt.tight_layout()
 
-# Plot calibration cuve for Gaussian Naive Bayes
-plot_calibration_curve(GaussianNB(), "Naive Bayes", 1)
+if __name__ == '__main__':
+    print(__doc__)
 
-# Plot calibration cuve for Linear SVC
-plot_calibration_curve(LinearSVC(), "SVC", 2)
+    # Create dataset of classification task with many redundant and few
+    # informative features
+    X, y = datasets.make_classification(n_samples=100000, n_features=20,
+                                        n_informative=2, n_redundant=10,
+                                        random_state=42)
 
-plt.show()
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.99,
+                                                        random_state=42)
+
+
+    # Plot calibration cuve for Gaussian Naive Bayes
+    plot_calibration_curve(GaussianNB(), "Naive Bayes", 1)
+
+    # Plot calibration cuve for Linear SVC
+    plot_calibration_curve(LinearSVC(), "SVC", 2)
+
+    plt.show()
