@@ -76,7 +76,7 @@ def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=100, n_jobs=1, 
     
     # Calibrated with isotonic calibration
     cv = 10
-    cv = list(bootstrap_632(len(y), 10))
+    cv = bootstrap_632(len(y), 50)
     isotonic = CalibratedClassifierCV(est, cv=cv, method='isotonic')
 
     # Calibrated with sigmoid calibration

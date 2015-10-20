@@ -59,6 +59,8 @@ def estimate_scores(scores, scoring, sampling=True, n_sample=None, verbose=1):
     return scores_mean, me
 
 def bootstrap_632_gen(n, random_state=None):
+    if random_state is not None:
+        np.random.seed(random_state)
     while True:
         train = np.random.randint(0,n,size=n)
         s_test = set(range(n)) - set(train)
@@ -72,7 +74,7 @@ def bootstrap_632_gen(n, random_state=None):
             yield (train,test)
 
 def bootstrap_632(n, n_iter, random_state=None):
-    g = bootstrap_632_gen(n, random_state=andom_state) 
+    g = bootstrap_632_gen(n, random_state=random_state) 
     return [g.next() for i in range(n_iter)] 
 
 def cv_select(y, random_state, n_cv, cv, test_size=0.1):
