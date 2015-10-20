@@ -45,6 +45,7 @@ but not where it is transposed-sigmoid (e.g., Gaussian naive Bayes).
 #         Jan Hendrik Metzen <jhm@informatik.uni-bremen.de>
 #         Oleg Razgulyaev <oleg@razgulyaev.com>
 # License: BSD Style.
+# http://scikit-learn.org/stable/auto_examples/calibration/plot_calibration_curve.html#example-calibration-plot-calibration-curve-py
 
 import numpy as np
 import matplotlib.pyplot as plt
