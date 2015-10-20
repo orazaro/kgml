@@ -52,7 +52,37 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import (brier_score_loss, precision_score, recall_score, f1_score)
 from sklearn.calibration import CalibratedClassifierCV, calibration_curve
 
-def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=3):
+def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=1):
+    """ Compute true and predicted probabilities for a calibration curve.
+    
+    For the empty bins insert np.nan but do not skip the bin as is done in the 
+    sklearn version of the same function.
+
+    Parameters
+    ----------
+    y_true : array, shape (n_samples,)
+        True targets.
+    y_prob : array, shape (n_samples,)
+        Probabilities of the positive class.
+    n_bins : int
+        Number of bins. A bigger number requires more data.
+    n_power: int, optional (default=1)
+        make increasing sizes of bins to be useful for an imbalanced datasets 
+
+    Returns
+    -------
+    prob_true : array, shape (n_bins+1,)
+        The true probability in each bin (fraction of positives).
+    prob_pred : array, shape (n_bins+1,)
+        The mean predicted probability in each bin.
+    
+    References
+    ----------
+    Alexandru Niculescu-Mizil and Rich Caruana (2005) Predicting Good
+    Probabilities With Supervised Learning, in Proceedings of the 22nd
+    International Conference on Machine Learning (ICML).
+    See section 4 (Qualitative Analysis of Predictions).
+    """
     bins = np.linspace(0., 1. + 1e-8, n_bins + 1)
     bins = np.power(bins,n_power)
     binids = np.digitize(y_prob, bins) - 1
@@ -66,7 +96,7 @@ def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=3):
 
     return np.array(prob_true), np.array(prob_pred)
 
-def plot_calibration_curve_boot(X, y, clfs, names=None, bins=10, n_iter=100, n_jobs=1, fig_index=1, scatt=False):
+def plot_calibration_curve_boot(X, y, clfs, names=None, bins=10, n_power=1, n_iter=10, n_jobs=1, fig_index=1, scatt=False):
     """ Plot calibration curve for est w/o and with calibration. 
         using bootstrap
     """
@@ -106,7 +136,7 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, bins=10, n_iter=100, n_j
                 raise RuntimeError("clf without predict_proba or decision_function")
         
             fraction_of_positives, mean_predicted_value = \
-                calibration_curve_nan(y_test, y_proba, n_bins=bins)
+                calibration_curve_nan(y_test, y_proba, n_bins=bins, n_power=n_power)
             #print fraction_of_positives.shape, mean_predicted_value.shape
             Res.append(np.array(list(fraction_of_positives)+list(mean_predicted_value)))
             clf_score += brier_score_loss(y_test, y_proba, pos_label=y_test.max())
