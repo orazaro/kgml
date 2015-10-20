@@ -52,10 +52,9 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import (brier_score_loss, precision_score, recall_score, f1_score)
 from sklearn.calibration import CalibratedClassifierCV, calibration_curve
 
-def calibration_curve_nan(y_true, y_prob, n_bins=5):
+def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=3):
     bins = np.linspace(0., 1. + 1e-8, n_bins + 1)
-    bins = np.power(bins,3)
-    #bins = np.array([0.,0.1,0.2,0.35,0.5,1.+1e-8])
+    bins = np.power(bins,n_power)
     binids = np.digitize(y_prob, bins) - 1
 
     bin_sums = np.bincount(binids, weights=y_prob, minlength=len(bins))
@@ -67,33 +66,29 @@ def calibration_curve_nan(y_true, y_prob, n_bins=5):
 
     return np.array(prob_true), np.array(prob_pred)
 
-def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=100, n_jobs=1, fig_index=1):
+def plot_calibration_curve_boot(X, y, clfs, names=None, bins=10, n_iter=100, n_jobs=1, fig_index=1, scatt=False):
     """ Plot calibration curve for est w/o and with calibration. 
         using bootstrap
     """
     import sklearn.cross_validation as cross_validation
     from sklearn import (metrics, cross_validation)
     from modsel import bootstrap_632
-    
-    # Calibrated with isotonic calibration
-    cv = 10
-    cv = bootstrap_632(len(y), 20)
-    isotonic = CalibratedClassifierCV(est, cv=cv, method='isotonic')
-
-    # Calibrated with sigmoid calibration
-    sigmoid = CalibratedClassifierCV(est, cv=cv, method='sigmoid')
-
-    est1 = CalibratedClassifierCV(est, cv=cv, method='isotonic')
+   
+    if not isinstance(clfs, (list,tuple,set)):
+        clfs = [clfs]
 
     fig = plt.figure(fig_index, figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
     ax2 = plt.subplot2grid((3, 1), (2, 0))
 
     ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
-    clfs = [(est1, name),
-            (isotonic, name + ' + Isotonic'),
-            (sigmoid, name + ' + Sigmoid')][:1]
-    for clf, name in clfs:
+    for i_clf,clf in enumerate(clfs):
+        if names is not None:
+            name = names[i_clf]
+        elif hasattr(clf,'name'):
+            name = clf.name
+        else:
+            name = "Undef"
         Res,clf_score = [],0
         cv = bootstrap_632(len(y), n_iter)
         for train,test in cv:
@@ -129,21 +124,16 @@ def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=100, n_jobs=1, 
         x1 = Res_mean[(bins+1):][:bins]
         x1err = Res_err[(bins+1):][:bins]
 
-        if False:
-            y_pred = np.array(y_proba>0.5,dtype=int)
-
-            clf_score = brier_score_loss(y_true, y_proba, pos_label=y_true.max())
-            print("%s:" % name)
-            print("\tBrier: %1.3f" % (clf_score))
-            print("\tPrecision: %1.3f" % precision_score(y_true, y_pred))
-            print("\tRecall: %1.3f" % recall_score(y_true, y_pred))
-            print("\tF1: %1.3f\n" % f1_score(y_true, y_pred))
-
-
         if len(clfs) > 1:
             ax1.plot(x1, y1, "s-",
                  label="%s (%1.3f)" % (name, clf_score))
         else:
+            if scatt:
+                for irow in range(Res.shape[0]):
+                    x2 = Res[irow,(bins+1):][:bins]
+                    y2 = Res[irow,:(bins+1)][:bins]
+                    ax1.scatter(x2,y2,alpha=0.5)
+                    x1err = y1err = None
             ax1.errorbar(x1, y1, marker='o', xerr=x1err, yerr=y1err, ls='--', lw=2,
                 label="%s (%1.3f)" % (name, clf_score))
 
