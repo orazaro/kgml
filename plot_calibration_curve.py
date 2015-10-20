@@ -51,7 +51,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import (brier_score_loss, precision_score, recall_score, f1_score)
 from sklearn.calibration import CalibratedClassifierCV, calibration_curve
 
-def calibration_curve_my(y_true, y_prob, n_bins=5):
+def calibration_curve_nan(y_true, y_prob, n_bins=5):
     bins = np.linspace(0., 1. + 1e-8, n_bins + 1)
     bins = np.power(bins,3)
     #bins = np.array([0.,0.1,0.2,0.35,0.5,1.+1e-8])
@@ -110,7 +110,7 @@ def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=100, n_jobs=1, 
                 raise RuntimeError("clf without predict_proba or decision_function")
         
             fraction_of_positives, mean_predicted_value = \
-                calibration_curve_my(y_test, y_proba, n_bins=bins)
+                calibration_curve_nan(y_test, y_proba, n_bins=bins)
             #print fraction_of_positives.shape, mean_predicted_value.shape
             Res.append(np.array(list(fraction_of_positives)+list(mean_predicted_value)))
             clf_score += brier_score_loss(y_test, y_proba, pos_label=y_test.max())
