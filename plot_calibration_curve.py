@@ -75,6 +75,8 @@ def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=1):
         The true probability in each bin (fraction of positives).
     prob_pred : array, shape (n_bins+1,)
         The mean predicted probability in each bin.
+    bins: array
+        used bins margins 
     
     References
     ----------
@@ -94,9 +96,9 @@ def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=1):
     prob_true = [e1/e2 if e2 != 0 else np.nan for (e1,e2) in zip(bin_true,bin_total)]
     prob_pred = [e1/e2 if e2 != 0 else np.nan for (e1,e2) in zip(bin_sums,bin_total)]
 
-    return np.array(prob_true), np.array(prob_pred)
+    return np.array(prob_true), np.array(prob_pred), bins
 
-def plot_calibration_curve_boot(X, y, clfs, names=None, bins=10, n_power=1, n_iter=10, n_jobs=1, fig_index=1, scatt=False):
+def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_iter=10, n_jobs=1, fig_index=1, scatt=False):
     """ Plot calibration curve for est w/o and with calibration. 
         using bootstrap
     """
@@ -111,6 +113,7 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, bins=10, n_power=1, n_it
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
     ax2 = plt.subplot2grid((3, 1), (2, 0))
 
+    ax1.plot([0,0],[-0.05,1.05],'k--',lw=1, label="Borders of bins")
     ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
     for i_clf,clf in enumerate(clfs):
         if names is not None:
@@ -135,24 +138,24 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, bins=10, n_power=1, n_it
             else:
                 raise RuntimeError("clf without predict_proba or decision_function")
         
-            fraction_of_positives, mean_predicted_value = \
-                calibration_curve_nan(y_test, y_proba, n_bins=bins, n_power=n_power)
+            fraction_of_positives, mean_predicted_value, bins_used = \
+                calibration_curve_nan(y_test, y_proba, n_bins=n_bins, n_power=n_power)
             #print fraction_of_positives.shape, mean_predicted_value.shape
             Res.append(np.array(list(fraction_of_positives)+list(mean_predicted_value)))
             clf_score += brier_score_loss(y_test, y_proba, pos_label=y_test.max())
             
         clf_score /= n_iter
         Res = np.array(Res)
-        print "Res:",Res.shape
+        #print "Res:",Res.shape
         Res_mean = np.nanmean(Res,axis=0)
         Res_err = np.nanstd(Res,axis=0)*1.96
         #print "Res_mean:",Res_mean
         #print "Res_err:",Res_err 
         
-        y1 = Res_mean[:(bins+1)][:bins]
-        y1err = Res_err[:(bins+1)][:bins]
-        x1 = Res_mean[(bins+1):][:bins]
-        x1err = Res_err[(bins+1):][:bins]
+        y1 = Res_mean[:(n_bins+1)][:n_bins]
+        y1err = Res_err[:(n_bins+1)][:n_bins]
+        x1 = Res_mean[(n_bins+1):][:n_bins]
+        x1err = Res_err[(n_bins+1):][:n_bins]
 
         if len(clfs) > 1:
             ax1.plot(x1, y1, "s-",
@@ -160,16 +163,19 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, bins=10, n_power=1, n_it
         else:
             if scatt:
                 for irow in range(Res.shape[0]):
-                    x2 = Res[irow,(bins+1):][:bins]
-                    y2 = Res[irow,:(bins+1)][:bins]
+                    x2 = Res[irow,(n_bins+1):][:n_bins]
+                    y2 = Res[irow,:(n_bins+1)][:n_bins]
                     ax1.scatter(x2,y2,alpha=0.5)
                     x1err = y1err = None
             ax1.errorbar(x1, y1, marker='o', xerr=x1err, yerr=y1err, ls='--', lw=2,
                 label="%s (%1.3f)" % (name, clf_score))
 
-        ax2.hist(y_proba, range=(0, 1), bins=bins, label=name,
+        ax2.hist(y_proba, range=(0, 1), bins=n_bins, label=name,
                  histtype="step", lw=2)
 
+    # draw bins margins
+    for x_bin in bins_used[1:-1]:
+        ax1.plot([x_bin,x_bin],[-0.05,1.05],'k--',lw=1)
     ax1.set_ylabel("Fraction of positives")
     ax1.set_xlim([0.0, 1.0])
     ax1.set_ylim([-0.05, 1.05])
