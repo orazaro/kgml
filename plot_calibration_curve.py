@@ -54,7 +54,7 @@ from sklearn.calibration import CalibratedClassifierCV, calibration_curve
 def calibration_curve_my(y_true, y_prob, n_bins=5):
     bins = np.linspace(0., 1. + 1e-8, n_bins + 1)
     bins = np.power(bins,3)
-    bins = np.array([0.,0.1,0.2,0.35,0.5,1.+1e-8])
+    #bins = np.array([0.,0.1,0.2,0.35,0.5,1.+1e-8])
     binids = np.digitize(y_prob, bins) - 1
 
     bin_sums = np.bincount(binids, weights=y_prob, minlength=len(bins))
@@ -76,7 +76,7 @@ def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=100, n_jobs=1, 
     
     # Calibrated with isotonic calibration
     cv = 10
-    cv = bootstrap_632(len(y), 50)
+    cv = bootstrap_632(len(y), 20)
     isotonic = CalibratedClassifierCV(est, cv=cv, method='isotonic')
 
     # Calibrated with sigmoid calibration
@@ -84,15 +84,14 @@ def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=100, n_jobs=1, 
 
     est1 = CalibratedClassifierCV(est, cv=cv, method='isotonic')
 
-
     fig = plt.figure(fig_index, figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
     ax2 = plt.subplot2grid((3, 1), (2, 0))
 
     ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
-    clfs = [(est, name),
+    clfs = [(est1, name),
             (isotonic, name + ' + Isotonic'),
-            (sigmoid, name + ' + Sigmoid')][:2]
+            (sigmoid, name + ' + Sigmoid')][:1]
     for clf, name in clfs:
         Res,clf_score = [],0
         cv = bootstrap_632(len(y), n_iter)
