@@ -75,7 +75,8 @@ def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=100, n_jobs=1, 
     from modsel import bootstrap_632
     
     # Calibrated with isotonic calibration
-    cv = 3
+    cv = 10
+    cv = list(bootstrap_632(len(y), 10))
     isotonic = CalibratedClassifierCV(est, cv=cv, method='isotonic')
 
     # Calibrated with sigmoid calibration
@@ -88,7 +89,7 @@ def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=100, n_jobs=1, 
     ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
     clfs = [(est, name),
             (isotonic, name + ' + Isotonic'),
-            (sigmoid, name + ' + Sigmoid')][:1]
+            (sigmoid, name + ' + Sigmoid')][:3]
     for clf, name in clfs:
         Res,clf_score = [],0
         cv = bootstrap_632(len(y), n_iter)
@@ -97,13 +98,14 @@ def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=100, n_jobs=1, 
             X_test, y_test = X[test],y[test]
             
             clf.fit(X_train, y_train)
-            y_pred = clf.predict(X_test)
             if hasattr(clf, "predict_proba"):
                 y_proba = clf.predict_proba(X_test)[:, 1]
-            else:  # use decision function
+            elif hasattr(clf, "decision_function"):  # use decision function
                 prob_pos = clf.decision_function(X_test)
                 y_proba = \
                     (prob_pos - prob_pos.min()) / (prob_pos.max() - prob_pos.min())
+            else:
+                raise RuntimeError("clf without predict_proba or decision_function")
         
             fraction_of_positives, mean_predicted_value = \
                 calibration_curve_my(y_test, y_proba, n_bins=bins)
@@ -142,8 +144,8 @@ def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=100, n_jobs=1, 
             ax1.errorbar(x1, y1, marker='o', xerr=x1err, yerr=y1err, ls='--', lw=2,
                 label="%s (%1.3f)" % (name, clf_score))
 
-        ax2.hist(y_proba, range=(0, 1), bins=bins, label=name,
-                 histtype="step", lw=2)
+        #ax2.hist(y_proba, range=(0, 1), bins=bins, label=name,
+        #         histtype="step", lw=2)
 
     ax1.set_ylabel("Fraction of positives")
     ax1.set_xlim([0.0, 1.0])
@@ -156,6 +158,7 @@ def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=100, n_jobs=1, 
     ax2.legend(loc="upper center", ncol=2)
 
     plt.tight_layout()
+
 def plot_calibration_curve_cv(X, y, est, name, bins=10, n_folds=8, n_jobs=1, fig_index=1):
     """Plot calibration curve for est w/o and with calibration. """
     import sklearn.cross_validation as cross_validation
