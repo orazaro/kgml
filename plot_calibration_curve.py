@@ -51,17 +51,31 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import (brier_score_loss, precision_score, recall_score, f1_score)
 from sklearn.calibration import CalibratedClassifierCV, calibration_curve
 
+def calibration_curve_my(y_true, y_prob, n_bins=5):
+    bins = np.linspace(0., 1. + 1e-8, n_bins + 1)
+    bins = np.power(bins,3)
+    bins = np.array([0.,0.1,0.2,0.35,0.5,1.+1e-8])
+    binids = np.digitize(y_prob, bins) - 1
 
-def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=8, n_jobs=1, fig_index=1):
+    bin_sums = np.bincount(binids, weights=y_prob, minlength=len(bins))
+    bin_true = np.bincount(binids, weights=y_true, minlength=len(bins))
+    bin_total = np.bincount(binids, minlength=len(bins))
+
+    prob_true = [e1/e2 if e2 != 0 else np.nan for (e1,e2) in zip(bin_true,bin_total)]
+    prob_pred = [e1/e2 if e2 != 0 else np.nan for (e1,e2) in zip(bin_sums,bin_total)]
+
+    return np.array(prob_true), np.array(prob_pred)
+
+def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=100, n_jobs=1, fig_index=1):
     """ Plot calibration curve for est w/o and with calibration. 
         using bootstrap
     """
     import sklearn.cross_validation as cross_validation
     from sklearn import (metrics, cross_validation)
-    from model_selection import cross_val_predict_proba
+    from modsel import bootstrap_632
     
     # Calibrated with isotonic calibration
-    cv = 2
+    cv = 3
     isotonic = CalibratedClassifierCV(est, cv=cv, method='isotonic')
 
     # Calibrated with sigmoid calibration
@@ -72,15 +86,13 @@ def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=8, n_jobs=1, fi
     ax2 = plt.subplot2grid((3, 1), (2, 0))
 
     ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
-    for clf, name in [(est, name),
-                      (isotonic, name + ' + Isotonic'),
-                      (sigmoid, name + ' + Sigmoid')]:
-        
-        for i_iter in range(n_iter):
-            N = X.shape[0]
-            train = np.random.choice(N,N)
-            train_i = set(train)
-            test = list(set(np.arange(N)) - set(train))
+    clfs = [(est, name),
+            (isotonic, name + ' + Isotonic'),
+            (sigmoid, name + ' + Sigmoid')][:1]
+    for clf, name in clfs:
+        Res,clf_score = [],0
+        cv = bootstrap_632(len(y), n_iter)
+        for train,test in cv:
             X_train, y_train  = X[train],y[train]
             X_test, y_test = X[test],y[test]
             
@@ -93,7 +105,25 @@ def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=8, n_jobs=1, fi
                 y_proba = \
                     (prob_pos - prob_pos.min()) / (prob_pos.max() - prob_pos.min())
         
+            fraction_of_positives, mean_predicted_value = \
+                calibration_curve_my(y_test, y_proba, n_bins=bins)
+            #print fraction_of_positives.shape, mean_predicted_value.shape
+            Res.append(np.array(list(fraction_of_positives)+list(mean_predicted_value)))
+            clf_score += brier_score_loss(y_test, y_proba, pos_label=y_test.max())
             
+        clf_score /= n_iter
+        Res = np.array(Res)
+        print "Res:",Res.shape
+        Res_mean = np.nanmean(Res,axis=0)
+        Res_err = np.nanstd(Res,axis=0)*1.96
+        #print "Res_mean:",Res_mean
+        #print "Res_err:",Res_err 
+        
+        y1 = Res_mean[:(bins+1)][:bins]
+        y1err = Res_err[:(bins+1)][:bins]
+        x1 = Res_mean[(bins+1):][:bins]
+        x1err = Res_err[(bins+1):][:bins]
+
         if False:
             y_pred = np.array(y_proba>0.5,dtype=int)
 
@@ -104,18 +134,21 @@ def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=8, n_jobs=1, fi
             print("\tRecall: %1.3f" % recall_score(y_true, y_pred))
             print("\tF1: %1.3f\n" % f1_score(y_true, y_pred))
 
-        fraction_of_positives, mean_predicted_value = \
-            calibration_curve(y_true, y_proba, n_bins=bins)
 
-        ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
+        if len(clfs) > 1:
+            ax1.plot(x1, y1, "s-",
                  label="%s (%1.3f)" % (name, clf_score))
+        else:
+            ax1.errorbar(x1, y1, marker='o', xerr=x1err, yerr=y1err, ls='--', lw=2,
+                label="%s (%1.3f)" % (name, clf_score))
 
         ax2.hist(y_proba, range=(0, 1), bins=bins, label=name,
                  histtype="step", lw=2)
 
     ax1.set_ylabel("Fraction of positives")
+    ax1.set_xlim([0.0, 1.0])
     ax1.set_ylim([-0.05, 1.05])
-    ax1.legend(loc="lower right")
+    ax1.legend(loc="upper left")
     ax1.set_title('Calibration plots  (reliability curve)')
 
     ax2.set_xlabel("Mean predicted value")
@@ -235,6 +268,10 @@ def plot_calibration_curve_old(X_train, X_test, y_train, y_test, y, est, name, f
     ax2.legend(loc="upper center", ncol=2)
 
     plt.tight_layout()
+
+plot_calibration_curve = plot_calibration_curve_boot
+
+#--- tests ---------#
 
 def test_plot_calibration_curve():
     from sklearn import datasets
