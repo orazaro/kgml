@@ -82,6 +82,9 @@ def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=100, n_jobs=1, 
     # Calibrated with sigmoid calibration
     sigmoid = CalibratedClassifierCV(est, cv=cv, method='sigmoid')
 
+    est1 = CalibratedClassifierCV(est, cv=cv, method='isotonic')
+
+
     fig = plt.figure(fig_index, figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
     ax2 = plt.subplot2grid((3, 1), (2, 0))
@@ -89,7 +92,7 @@ def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=100, n_jobs=1, 
     ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
     clfs = [(est, name),
             (isotonic, name + ' + Isotonic'),
-            (sigmoid, name + ' + Sigmoid')][:3]
+            (sigmoid, name + ' + Sigmoid')][:2]
     for clf, name in clfs:
         Res,clf_score = [],0
         cv = bootstrap_632(len(y), n_iter)
@@ -144,8 +147,8 @@ def plot_calibration_curve_boot(X, y, est, name, bins=10, n_iter=100, n_jobs=1, 
             ax1.errorbar(x1, y1, marker='o', xerr=x1err, yerr=y1err, ls='--', lw=2,
                 label="%s (%1.3f)" % (name, clf_score))
 
-        #ax2.hist(y_proba, range=(0, 1), bins=bins, label=name,
-        #         histtype="step", lw=2)
+        ax2.hist(y_proba, range=(0, 1), bins=bins, label=name,
+                 histtype="step", lw=2)
 
     ax1.set_ylabel("Fraction of positives")
     ax1.set_xlim([0.0, 1.0])
