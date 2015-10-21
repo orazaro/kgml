@@ -122,7 +122,7 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_
             name = clf.name
         else:
             name = "Undef"
-        Res,clf_score = [],0
+        Res,clf_score,clf_auc = [],0.0,0.0
         cv = bootstrap_632(len(y), n_iter)
         for train,test in cv:
             X_train, y_train  = X[train],y[train]
@@ -143,8 +143,10 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_
             #print fraction_of_positives.shape, mean_predicted_value.shape
             Res.append(np.array(list(fraction_of_positives)+list(mean_predicted_value)))
             clf_score += brier_score_loss(y_test, y_proba, pos_label=y_test.max())
+            clf_auc += metrics.roc_auc_score(y_test, y_proba)
             
         clf_score /= n_iter
+        clf_auc /= n_iter
         Res = np.array(Res)
         #print "Res:",Res.shape
         Res_mean = np.nanmean(Res,axis=0)
@@ -159,7 +161,7 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_
 
         if len(clfs) > 1:
             ax1.plot(x1, y1, "s-",
-                 label="%s (%1.3f)" % (name, clf_score))
+                 label="%s (brier=%1.3f, auc=%1.3f)" % (name, clf_score, clf_auc))
         else:
             if scatt:
                 for irow in range(Res.shape[0]):
@@ -168,7 +170,7 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_
                     ax1.scatter(x2,y2,alpha=0.5)
                     x1err = y1err = None
             ax1.errorbar(x1, y1, marker='o', xerr=x1err, yerr=y1err, ls='--', lw=2,
-                label="%s (%1.3f)" % (name, clf_score))
+                label="%s (brier=%1.3f, auc=%1.3f)" % (name, clf_score, clf_auc) )
 
         ax2.hist(y_proba, range=(0, 1), bins=n_bins, label=name,
                  histtype="step", lw=2)
