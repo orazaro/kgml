@@ -2,12 +2,42 @@
 # -*- coding: utf-8 -*-
 # Author:   Oleg Razgulyaev 
 # License:  BSD 3 clause
+
+from __future__ import devision
 import os
 import numpy as np
 from sklearn import cross_validation
 from sklearn.metrics import accuracy_score, mean_absolute_error, make_scorer
 from sklearn.metrics import roc_curve, auc
 from collections import defaultdict
+
+
+def precision_sensitivity_specificity(y_true, y_proba, threshold=0.5):
+    pr = np.asarray(y_proba > threshold, dtype=int)
+    tr = np.asarray(y_true, dtype=int)
+    tr_neg = (tr+1)%2
+    pr_neg = (pr+1)%2
+    tp = np.sum(pr & tr)
+    tn = np.sum(pr_neg & tr_neg)
+    fp = np.sum(pr & tr_neg)
+    fn = np.sum(pr_neg & tr)
+
+    # precision
+    if (tp + fp) != 0:
+        precision = tp / (tp + fp)
+    else:
+        precision = 0.0
+    # sensitivity or recall
+    if (tp + fn) != 0:
+        sensitivity = tp / (tp + fn)
+    else:
+        sensitivity = 0.0
+    # specificity
+    if (fp + tn) != 0:
+        specificity = tn / (fp + tn)
+    else:
+        specificity = 0.0
+    return precision,sensitivity,specificity
 
 def multiclass_log_loss(y_true, y_pred, eps=1e-15):
     """Multi class version of Logarithmic Loss metric.
