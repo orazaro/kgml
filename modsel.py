@@ -3,7 +3,7 @@
 # Author:   Oleg Razgulyaev 
 # License:  BSD 3 clause
 
-from __future__ import devision
+from __future__ import division
 import os
 import numpy as np
 from sklearn import cross_validation
@@ -222,9 +222,22 @@ def cv_run_ids(rd, X, y, ids, random_state, n_cv = 16, n_jobs=-1, scoring='accur
     scores_mean,me = estimate_scores(scores,scoring,sampling,n_sample=len(y))
     return scores_mean,me
 
+def test_precision_sensitivity_specificity():
+    n = 50
+    tr = np.asarray(np.random.uniform(0,1,n) > 0.5,dtype=int)
+    pr = np.asarray(np.random.uniform(0,1,n) > 0.5,dtype=int)
+    print "tr:",tr[:5]
+    print "pr:",pr[:5]
+    precision,sensitivity,specificity = precision_sensitivity_specificity(tr,pr)
+    print "precision:",precision
+    print "sensitivity:",sensitivity
+    print "specificity:",specificity
+    from sklearn.metrics import precision_recall_fscore_support
+    print precision_recall_fscore_support(tr,pr)
 
 def test():
-    bootstrap_632(10, 5)
+    #bootstrap_632(10, 5)
+    test_precision_sensitivity_specificity()
     print "tests ok"
 
 if __name__ == '__main__':
