@@ -71,7 +71,7 @@ def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=1, minsamples=0, bin
     minsamples: int, optional (default=0)
         min number of samples in bid
         if minsamples > 0:
-            will collapse adjacent bids with low samples starting from right
+            will collapse adjacent bids with low number of samples starting from right
     bins: array, shape (n_bids+1,), optional (default=None)
         bins margins to use
         if=None: build new
