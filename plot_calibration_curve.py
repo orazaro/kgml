@@ -68,6 +68,14 @@ def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=1, minsamples=0, bin
         Number of bins. A bigger number requires more data.
     n_power: int, optional (default=1)
         make increasing sizes of bins to be useful for an imbalanced datasets 
+    minsamples: int, optional (default=0)
+        min number of samples in bid
+        if minsamples > 0:
+            will collapse adjacent bids with low samples starting from right
+    bins: array, shape (n_bids+1,), optional (default=None)
+        bins margins to use
+        if=None: build new
+        else: use this margins
 
     Returns
     -------
@@ -76,7 +84,7 @@ def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=1, minsamples=0, bin
     prob_pred : array, shape (n_bins+1,)
         The mean predicted probability in each bin.
     bins: array
-        used bins margins 
+        bins margins used
     
     References
     ----------
