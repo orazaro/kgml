@@ -88,10 +88,26 @@ def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=1, minsamples=0, bin
     if bins is None:
         bins = np.linspace(0., 1. + 1e-8, n_bins + 1)
         if minsamples > 0:
+            removed = []
+            assert np.min(y_prob) >= bins[0] and np.max(y_prob) <= bins[-1]
+            #print bins
+            n = len(bins)
+            i,j = n-2,n-1
+            while i>0 and j>0:
+                k = np.sum((bins[i]<=y_prob) & (y_prob<bins[j]))
+                #print i,j,bins[i],bins[j],k
+                if k < minsamples:
+                    removed.append(i)
+                    i -= 1
+                else:
+                    j = i
+                    i = j - 1
+            #print removed
+            bins = np.delete(bins, removed)
             print bins
-
         else:
             bins = np.power(bins,n_power)
+
          
     binids = np.digitize(y_prob, bins) - 1
 
@@ -102,9 +118,10 @@ def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=1, minsamples=0, bin
     prob_true = [e1/e2 if e2 != 0 else np.nan for (e1,e2) in zip(bin_true,bin_total)]
     prob_pred = [e1/e2 if e2 != 0 else np.nan for (e1,e2) in zip(bin_sums,bin_total)]
 
-    return np.array(prob_true), np.array(prob_pred), bins
+    n_bins = len(bins)-1
+    return np.array(prob_true), np.array(prob_pred), bins, n_bins
 
-def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_iter=10, n_jobs=1, fig_index=1, scatt=False):
+def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_iter=10, n_jobs=1, fig_index=1, scatt=False, minsamples=50):
     """ Plot calibration curve for est w/o and with calibration. 
         using bootstrap
     """
@@ -121,6 +138,7 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_
 
     ax1.plot([0,0],[-0.05,1.05],'k--',lw=1, label="Borders of bins")
     ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
+    bins_used = None
     for i_clf,clf in enumerate(clfs):
         if names is not None:
             name = names[i_clf]
@@ -130,7 +148,6 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_
             name = "Undef"
         Res,clf_score,clf_auc = [],0.0,0.0
         cv = bootstrap_632(len(y), n_iter)
-        bins_used = None
         for train,test in cv:
             X_train, y_train  = X[train],y[train]
             X_test, y_test = X[test],y[test]
@@ -145,9 +162,9 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_
             else:
                 raise RuntimeError("clf without predict_proba or decision_function")
         
-            fraction_of_positives, mean_predicted_value, bins_used = \
+            fraction_of_positives, mean_predicted_value, bins_used, n_bins = \
                 calibration_curve_nan(y_test, y_proba, n_bins=n_bins, n_power=n_power, 
-                    bins=bins_used)
+                    bins=bins_used, minsamples=minsamples)
             #print fraction_of_positives.shape, mean_predicted_value.shape
             Res.append(np.array(list(fraction_of_positives)+list(mean_predicted_value)))
             clf_score += brier_score_loss(y_test, y_proba, pos_label=y_test.max())
@@ -315,6 +332,15 @@ plot_calibration_curve = plot_calibration_curve_boot
 
 #--- tests ---------#
 
+def test_calibration_curve_nan():
+    
+    y_true = np.arange(20)
+    y_prob = np.square(np.arange(20)/20.)
+    print y_prob
+    calibration_curve_nan(y_true, y_prob, n_bins=5, minsamples=3)
+    calibration_curve_nan(y_true, y_prob, n_bins=5, minsamples=5)
+    calibration_curve_nan(y_true, y_prob, n_bins=5, minsamples=9)
+
 def test_plot_calibration_curve():
     from sklearn import datasets
     from sklearn.naive_bayes import GaussianNB
@@ -348,4 +374,5 @@ def test_plot_calibration_curve_old():
 
 if __name__ == '__main__':
     #test_plot_calibration_curve_old()
-    test_plot_calibration_curve()
+    #test_plot_calibration_curve()
+    test_calibration_curve_nan()
