@@ -104,7 +104,7 @@ def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=1, minsamples=0, bin
                     i = j - 1
             #print removed
             bins = np.delete(bins, removed)
-            print bins
+            #print bins
         else:
             bins = np.power(bins,n_power)
 
