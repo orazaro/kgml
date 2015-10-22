@@ -52,7 +52,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import (brier_score_loss, precision_score, recall_score, f1_score)
 from sklearn.calibration import CalibratedClassifierCV, calibration_curve
 
-def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=1):
+def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=1, minsamples=0, bins=None):
     """ Compute true and predicted probabilities for a calibration curve.
     
     For the empty bins insert np.nan but do not skip the bin as is done in the 
@@ -85,8 +85,14 @@ def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=1):
     International Conference on Machine Learning (ICML).
     See section 4 (Qualitative Analysis of Predictions).
     """
-    bins = np.linspace(0., 1. + 1e-8, n_bins + 1)
-    bins = np.power(bins,n_power)
+    if bins is None:
+        bins = np.linspace(0., 1. + 1e-8, n_bins + 1)
+        if minsamples > 0:
+            print bins
+
+        else:
+            bins = np.power(bins,n_power)
+         
     binids = np.digitize(y_prob, bins) - 1
 
     bin_sums = np.bincount(binids, weights=y_prob, minlength=len(bins))
@@ -124,6 +130,7 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_
             name = "Undef"
         Res,clf_score,clf_auc = [],0.0,0.0
         cv = bootstrap_632(len(y), n_iter)
+        bins_used = None
         for train,test in cv:
             X_train, y_train  = X[train],y[train]
             X_test, y_test = X[test],y[test]
@@ -139,7 +146,8 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_
                 raise RuntimeError("clf without predict_proba or decision_function")
         
             fraction_of_positives, mean_predicted_value, bins_used = \
-                calibration_curve_nan(y_test, y_proba, n_bins=n_bins, n_power=n_power)
+                calibration_curve_nan(y_test, y_proba, n_bins=n_bins, n_power=n_power, 
+                    bins=bins_used)
             #print fraction_of_positives.shape, mean_predicted_value.shape
             Res.append(np.array(list(fraction_of_positives)+list(mean_predicted_value)))
             clf_score += brier_score_loss(y_test, y_proba, pos_label=y_test.max())

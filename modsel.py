@@ -39,6 +39,25 @@ def precision_sensitivity_specificity(y_true, y_proba, threshold=0.5):
         specificity = 0.0
     return precision,sensitivity,specificity
 
+def best_threshold(y_true, y_proba, n_thr = 1000):
+    n_thr = 1000
+    thrs = np.linspace(0., 1., n_thr)
+    prec,sn,sp = [],[],[]
+    for t in thrs:
+        prec1,sn1,sp1 = precision_sensitivity_specificity(y_true, y_proba, threshold=t)
+        prec.append(prec1)
+        sn.append(sn1)
+        sp.append(sp1)
+    prec = np.asarray(prec)
+    sn = np.asarray(sn)
+    sp = np.asarray(sp)
+    f1 = 2*prec*sn/(prec+sn)
+    f2 = 2*sp*sn/(sp+sn)
+    def p_argmax(f):
+        f[np.isnan(f)]=0.0
+        return np.argmax(f)
+    return thrs[p_argmax(f1)],thrs[p_argmax(f2)]
+
 def multiclass_log_loss(y_true, y_pred, eps=1e-15):
     """Multi class version of Logarithmic Loss metric.
     https://www.kaggle.com/wiki/MultiClassLogLoss
