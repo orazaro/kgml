@@ -131,7 +131,38 @@ def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=1, minsamples=0, bin
 
 def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_iter=10, n_jobs=1, fig_index=1, scatt=False, minsamples=50):
     """ Plot calibration curve for est w/o and with calibration. 
-        using bootstrap
+    
+        Use bootstrap for the cross-validation
+
+        Parameters
+        ----------
+        X: array, shape(n_samples, n_features)
+            dataset
+        y: array, shape(n_samples,)
+            targets
+        clfs: list of estimators or one estimator
+            estimator for which plot the calibration curve
+        names: list, optional (default=None)
+            names of estimators
+            if==None: try to use est.name
+        n_bins: int, optional (default=10)
+            number of bins for the calibration
+        n_power: int, optional (default=1)
+            power to squeeze bin margins towards zero
+        n_iter: int, optional (default=10)
+            number of cv iterations
+        n_jobs: int, optional (default=1)
+            number of processor cores to use
+        fig_index: int, optional (default=1)
+            fig number if any
+        scatt: bool, optional (default=False)
+            plot all measurements as scatterplot
+            if scatt==False: add confidence intervals as errorbars
+        minsamples: int, optional (default=50)
+            min number of samples in bin
+            if minsamples > 0:
+                will combine adjacent bids with low number of samples in one 
+                starting from right
     """
     import sklearn.cross_validation as cross_validation
     from sklearn import (metrics, cross_validation)
