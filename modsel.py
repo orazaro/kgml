@@ -13,6 +13,28 @@ from collections import defaultdict
 
 
 def precision_sensitivity_specificity(y_true, y_proba, threshold=0.5):
+    """ Calculate precision, sensitivity and specificity.
+
+    Calculate precision, sensitivity and specificity using selected threshold.
+
+    Parameters
+    ----------
+    y_true: array, shape=(n_samples,)
+        true targets: (0,1) values
+    y_proba: array, shape=(n_samples,)
+        predicted probabilities: float values 
+    threshold: float, optional (default=0.5)
+        threshold to select the predicted class
+
+    Returns
+    -------
+    precision: float
+        precision = tp / (tp + fp)
+    sensitivity: float
+        sensitivity = tp / (tp + fn)
+    specificity: float
+        specificity = tn / (fp + tn)
+    """
     pr = np.asarray(y_proba > threshold, dtype=int)
     tr = np.asarray(y_true, dtype=int)
     tr_neg = (tr+1)%2
