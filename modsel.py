@@ -62,6 +62,29 @@ def precision_sensitivity_specificity(y_true, y_proba, threshold=0.5):
     return precision,sensitivity,specificity
 
 def best_threshold(y_true, y_proba, n_thr = 1000):
+    """ Select the best threshold.
+
+    Select the best threshold to maximize 
+    f1-score (harmonic mean of precision and recall==sensitivity) or 
+    the harmonic mean of specificity and sensitivity
+
+    Parameters
+    ----------
+    y_true: array, shape=(n_samples,)
+        true targets: (0,1) values
+    y_proba: array, shape=(n_samples,)
+        predicted probabilities: float values 
+    n_thr: int, optional (default=1000)
+        number of bins in (0,1) interval to select the best thresholds
+
+    Returns
+    -------
+    best_thr1: float
+        the best threshold to maximize f1-score (harmonic mean of precision and 
+            recall==sensitivity)
+    best_thr2: float
+        the best threshold to maximize the harmonic mean of specificity and sensitivity
+    """
     n_thr = 1000
     thrs = np.linspace(0., 1., n_thr)
     prec,sn,sp = [],[],[]
