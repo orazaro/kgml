@@ -128,14 +128,20 @@ def feature_selection_ET(df, predictors=None, target=None ,ax=None, isclass=True
         for i in range(nf_all):
             print("%2d. %25s (%10f)" % (i+1, names[indices[i]], importances[indices[i]]))
 
-    # Plot the feature importances of the forest
-    nf = nf_all if nf > nf_all else nf
-    ax.set_title("Feature importances")
-    ax.bar(range(nf), importances[indices][:nf],
-           color="r", yerr=std[indices][:nf], align="center")
-    anames = np.array(names)
-    ax.set_xlim([-1, nf])
-    plt.xticks(range(nf), anames[indices][:nf],rotation='vertical')
+    if verbosity > 0:
+        if ax is None:
+            fig,ax1 = plt.subplots(1,1,figsize=(14,6))
+        else:
+            ax1 = ax
+        # Plot the feature importances of the forest
+        nf = nf_all if nf > nf_all else nf
+        ax1.set_title("Feature importances")
+        ax1.bar(range(nf), importances[indices][:nf],
+               color="r", yerr=std[indices][:nf], align="center")
+        anames = np.array(names)
+        ax1.set_xlim([-1, nf])
+        plt.xticks(range(nf), anames[indices][:nf],rotation='vertical')
+        if ax is None: plt.show()
     
     names_sorted = [names[indices[i]] for i in range(len(predictors))]
     importances_sorted = [importances[indices[i]] for i in range(len(predictors))]
