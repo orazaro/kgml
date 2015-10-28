@@ -44,7 +44,7 @@ def df_standardize(df, target):
         return df
 
 def df_xyf(df, predictors=None, target=None, ydtype=None):
-    """ Extract samples and target numpy arrays and its names from DataFrame.
+    """ Extract samples and target numpy arrays and its names from the DataFrame.
 
     Parameters
     ----------
