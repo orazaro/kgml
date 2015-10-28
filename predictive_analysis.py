@@ -28,6 +28,11 @@ def df_standardize(df, target):
         dataset to strandartize as Pandas DataFrame
     target: str
         column name for the target
+
+    Returns
+    -------
+    df: DataFrame
+        dataset in the standard form for ML: target at the last column
     """
     if df.columns[-1] != target:
         new_columns = [s for s in df.columns if s != target]
@@ -39,10 +44,34 @@ def df_standardize(df, target):
         return df
 
 def df_xyf(df, predictors=None, target=None, ydtype=None):
+    """ Extract samples and target numpy arrays and its names from DataFrame.
+
+    Parameters
+    ----------
+    df: DataFrame shape=(n_samples, n_columns)
+        dataset with all features and the targets
+    predictors: list of str, optional (default=None)
+        names of the predictors to use for training/predicting
+        if None, than use all predictors except the target
+    target: str, optional (default=None)
+        target to predict
+        if None, than use the last column in the DataFrame
+    ydtype: dtype, optional (default=None)
+        if not None, than convert y to this data type
+
+    Returns
+    -------
+    X: array, shape=(n_samples, n_features)
+        the train data samples with values of their features
+    y: array, shape=(n_samples,))
+        the targets
+    feature_names: array-like of str
+        feature names
+    """
     if target is None:
         target = df.columns[-1]
     if predictors is None:
-        predictors = np.array([e for e in df.columns[:-1] if e != target])
+        predictors = np.array([e for e in df.columns if e != target])
     if ydtype is None:
         y = np.asarray(df[target].values)
     else:
