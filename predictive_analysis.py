@@ -94,16 +94,28 @@ def feature_selection_ET(df, predictors=None, target=None ,ax=None, isclass=True
     target: str, optional (default=None)
         target to predict
         if None, than use the last column in the DataFrame
-    ax=None
-    isclass=True
-    verbosity=0
-    nf=7
-    n_estimators=100
-    class_weight='auto'
-    prank=False
+    ax: the Axes instance, optional (default=None)
+        axes to plot on
+        if None, than use subplots to create axes
+    isclass: bool, optional (default=True)
+        use a classifier or a regressor to predict the target
+    verbosity: int, optional (default=0)
+        level of verbosity
+    nf: int, optional (default=7)
+        number of the features to show on the plot
+    n_estimators: int, optional (default=100)
+        number of estimators to use in the ExtraTreesClassifier
+    class_weight: str, optional (default='auto')
+        usage of the weight of classes or not and how to
+    prank: bool, optional (default=False)
+        to print out ranks
 
     Returns
     -------
+    names_sorted: list
+        names of the features sorted by their importances
+    importances_sorted: list
+        importances (sorted) of the features
     """
     X, y, names = df_xyf(df, predictors=predictors, target=target)
     nf_all = X.shape[1]
