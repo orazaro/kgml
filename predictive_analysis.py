@@ -82,6 +82,29 @@ def df_xyf(df, predictors=None, target=None, ydtype=None):
 
 def feature_selection_ET(df, predictors=None, target=None ,ax=None, isclass=True, 
         verbosity=0, nf=7, n_estimators=100, class_weight='auto',prank=False):
+    """ Use ExtraTreesClassifier to calculate importances of predictors.
+
+    Parameters
+    ----------
+    df: DataFrame shape=(n_samples, n_columns)
+        dataset with all features and the targets
+    predictors: list of str, optional (default=None)
+        names of the predictors to use for training/predicting
+        if None, than use all predictors except the target
+    target: str, optional (default=None)
+        target to predict
+        if None, than use the last column in the DataFrame
+    ax=None
+    isclass=True
+    verbosity=0
+    nf=7
+    n_estimators=100
+    class_weight='auto'
+    prank=False
+
+    Returns
+    -------
+    """
     X, y, names = df_xyf(df, predictors=predictors, target=target)
     nf_all = X.shape[1]
     
