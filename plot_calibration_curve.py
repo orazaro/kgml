@@ -199,7 +199,7 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_
     if not isinstance(clfs, (list,tuple,set)):
         clfs = [clfs]
 
-    fig,ax1 = plt.subplots(1,1,figsize=(10, 8))
+    fig,ax1 = plt.subplots(1,1,figsize=(10, 7))
 
     ax1.plot([0,0],[-0.05,1.05],'k--',lw=1, label="Borders of bins")
     ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
