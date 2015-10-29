@@ -107,8 +107,8 @@ def get_clf(cl,n_jobs=1,random_state=0,class_weight='auto'):
         svm1 = {'C':[0.001,0.01,0.1,1.0,10],'gamma':[0.1,0.01,0.001,0.0001]}
         svm3 = {'C':[0.001,0.01,0.1,1.0,10],'gamma':[0.1,0.01,0.001,0.0001],
                                                         'coef0':[0,1]}
-        est4 = svm.SVC(kernel='poly',degree=3,verbose=0)
-        clf = grid_search.GridSearchCV(est4, svm3, cv=4, n_jobs=n_jobs, verbose=0,class_weight=class_weight)
+        est4 = svm.SVC(kernel='poly',degree=3,verbose=0,class_weight=class_weight)
+        clf = grid_search.GridSearchCV(est4, svm3, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl=='mnb':
         clf = MultinomialNB(alpha=1.0)
     elif cl=='gnb':
