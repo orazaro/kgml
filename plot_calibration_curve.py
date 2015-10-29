@@ -50,7 +50,10 @@ but not where it is transposed-sigmoid (e.g., Gaussian naive Bayes).
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import (brier_score_loss, precision_score, recall_score, f1_score)
+from sklearn import metrics
 from sklearn.calibration import CalibratedClassifierCV, calibration_curve
+from sklearn.base import clone
+from sklearn.externals.joblib import Parallel, delayed
 
 def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=1, minsamples=0, bins=None):
     """ Compute true and predicted probabilities for a calibration curve.
@@ -129,6 +132,31 @@ def calibration_curve_nan(y_true, y_prob, n_bins=5, n_power=1, minsamples=0, bin
     n_bins = len(bins)-1
     return np.array(prob_true), np.array(prob_pred), bins, n_bins
 
+def calibration_inner_loop(clf,X,y,train,test,n_bins,n_power,bins_used,minsamples):
+    X_train, y_train  = X[train],y[train]
+    X_test, y_test = X[test],y[test]
+    
+    clf.fit(X_train, y_train)
+    if hasattr(clf, "predict_proba"):
+        y_proba = clf.predict_proba(X_test)[:, 1]
+    elif hasattr(clf, "decision_function"):  # use decision function
+        prob_pos = clf.decision_function(X_test)
+        y_proba = \
+            (prob_pos - prob_pos.min()) / (prob_pos.max() - prob_pos.min())
+    else:
+        raise RuntimeError("clf without predict_proba or decision_function")
+
+    fraction_of_positives, mean_predicted_value, bins_used, n_bins = \
+        calibration_curve_nan(y_test, y_proba, n_bins=n_bins, n_power=n_power, 
+            bins=bins_used, minsamples=minsamples)
+    #print fraction_of_positives.shape, mean_predicted_value.shape
+    return (\
+        np.array(list(fraction_of_positives)+list(mean_predicted_value)),
+        brier_score_loss(y_test, y_proba, pos_label=y_test.max()),
+        metrics.roc_auc_score(y_test, y_proba),
+        bins_used, n_bins
+        )
+
 def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_iter=10, n_jobs=1, fig_index=1, scatt=False, minsamples=50):
     """ Plot calibration curve for est w/o and with calibration. 
     
@@ -171,9 +199,7 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_
     if not isinstance(clfs, (list,tuple,set)):
         clfs = [clfs]
 
-    fig = plt.figure(fig_index, figsize=(10, 10))
-    ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
-    ax2 = plt.subplot2grid((3, 1), (2, 0))
+    fig,ax1 = plt.subplots(1,1,figsize=(10, 6))
 
     ax1.plot([0,0],[-0.05,1.05],'k--',lw=1, label="Borders of bins")
     ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
@@ -186,28 +212,29 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_
         else:
             name = "Undef"
         Res,clf_score,clf_auc = [],0.0,0.0
-        cv = bootstrap_632(len(y), n_iter)
-        for train,test in cv:
-            X_train, y_train  = X[train],y[train]
-            X_test, y_test = X[test],y[test]
-            
-            clf.fit(X_train, y_train)
-            if hasattr(clf, "predict_proba"):
-                y_proba = clf.predict_proba(X_test)[:, 1]
-            elif hasattr(clf, "decision_function"):  # use decision function
-                prob_pos = clf.decision_function(X_test)
-                y_proba = \
-                    (prob_pos - prob_pos.min()) / (prob_pos.max() - prob_pos.min())
-            else:
-                raise RuntimeError("clf without predict_proba or decision_function")
-        
-            fraction_of_positives, mean_predicted_value, bins_used, n_bins = \
-                calibration_curve_nan(y_test, y_proba, n_bins=n_bins, n_power=n_power, 
-                    bins=bins_used, minsamples=minsamples)
-            #print fraction_of_positives.shape, mean_predicted_value.shape
-            Res.append(np.array(list(fraction_of_positives)+list(mean_predicted_value)))
-            clf_score += brier_score_loss(y_test, y_proba, pos_label=y_test.max())
-            clf_auc += metrics.roc_auc_score(y_test, y_proba)
+        cv = list(bootstrap_632(len(y), n_iter))
+        if bins_used is None:
+            train,test = cv[0]
+            (_,_,_,bins_used, n_bins) = calibration_inner_loop(clf,X,y,train,test,n_bins,
+                n_power,bins_used,minsamples)
+        if n_jobs != 1:
+            verbose=0
+            pre_dispatch='2*n_jobs'
+            parallel = Parallel(n_jobs=n_jobs, verbose=verbose,
+                        pre_dispatch=pre_dispatch)
+            r = parallel(
+                delayed(calibration_inner_loop)(clone(clf),X,y,train,test,n_bins,n_power,
+                                    bins_used,minsamples)
+                for train, test in cv)
+        else:
+            r = []
+            for train,test in cv:
+                r.append( calibration_inner_loop(clf,X,y,train,test,n_bins,n_power,
+                    bins_used,minsamples) )
+        for (r1,r2,r3,_,_) in r:
+            Res.append(r1)
+            clf_score += r2
+            clf_auc += r3
             
         clf_score /= n_iter
         clf_auc /= n_iter
@@ -236,9 +263,6 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_
             ax1.errorbar(x1, y1, marker='o', xerr=x1err, yerr=y1err, ls='--', lw=2,
                 label="%s (brier=%1.3f, auc=%1.3f)" % (name, clf_score, clf_auc) )
 
-        ax2.hist(y_proba, range=(0, 1), bins=n_bins, label=name,
-                 histtype="step", lw=2)
-
     # draw bins margins
     for x_bin in bins_used[1:-1]:
         ax1.plot([x_bin,x_bin],[-0.05,1.05],'k--',lw=1)
@@ -247,10 +271,7 @@ def plot_calibration_curve_boot(X, y, clfs, names=None, n_bins=10, n_power=1, n_
     ax1.set_ylim([-0.05, 1.05])
     ax1.legend(loc="upper left")
     ax1.set_title('Calibration plots  (reliability curve)')
-
-    ax2.set_xlabel("Mean predicted value")
-    ax2.set_ylabel("Count")
-    ax2.legend(loc="upper center", ncol=2)
+    ax1.set_xlabel("Mean predicted value")
 
     plt.tight_layout()
 
