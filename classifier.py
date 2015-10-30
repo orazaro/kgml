@@ -167,10 +167,19 @@ class RidgeCV_proba(lm.RidgeCV):
     return np.vstack((1-y,y)).T
 
 class KNeighborsClassifier_proba(KNeighborsClassifier):
-  def predict_proba(X):
+  def predict_proba(self,X):
     y = super(KNeighborsClassifier_proba, self).predict_proba(X)
     y[np.isnan(y)]=0.5
     return y
+
+class SVC_proba(svm.SVC):
+  def predict_proba(self,X):
+    if hasattr(self, "decision_function"):  # use decision function
+        prob_pos = clf.decision_function(X)
+        y = (prob_pos - prob_pos.min()) / (prob_pos.max() - prob_pos.min())
+        return np.vstack((1-y,y)).T
+    else:
+        raise RuntimeError("svm.SVC without decision_function")
 
 class ConstClassifier(BaseEstimator, ClassifierMixin):
   def __init__(self, c = 0):
