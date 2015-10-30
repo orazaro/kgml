@@ -175,7 +175,7 @@ class KNeighborsClassifier_proba(KNeighborsClassifier):
 class SVC_proba(svm.SVC):
   def predict_proba(self,X):
     if hasattr(self, "decision_function"):  # use decision function
-        prob_pos = clf.decision_function(X)
+        prob_pos = self.decision_function(X)
         y = (prob_pos - prob_pos.min()) / (prob_pos.max() - prob_pos.min())
         return np.vstack((1-y,y)).T
     else:
