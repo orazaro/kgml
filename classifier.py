@@ -176,7 +176,10 @@ class SVC_proba(svm.SVC):
   def predict_proba(self,X):
     if hasattr(self, "decision_function"):  # use decision function
         prob_pos = self.decision_function(X)
-        y = (prob_pos - prob_pos.min()) / (prob_pos.max() - prob_pos.min())
+        if False:
+            y = (prob_pos - prob_pos.min()) / (prob_pos.max() - prob_pos.min())
+        else:
+            y = prob_pos
         return np.vstack((1-y,y)).T
     else:
         raise RuntimeError("svm.SVC without decision_function")
