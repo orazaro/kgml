@@ -177,7 +177,7 @@ def feature_selection_RFE(df, predictors=None, target=None ,ax=None, isclass=Tru
         estimator = \
             linear_model.LogisticRegression(penalty='l2', C=.01, class_weight='auto')
         scoring = 'roc_auc'
-        cv = cross_validation.StratifiedKFold(y, 2)
+        cv = cross_validation.StratifiedKFold(y, 4)
     else:
         if False:
             from sklearn.ensemble import RandomForestRegressor
