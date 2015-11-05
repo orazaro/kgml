@@ -34,7 +34,7 @@ def psel_grid_search(model, X, y, param_grid, scoring='roc_auc', cv=4, n_jobs=-1
     if isinstance(param_grid, string_types):
         param_grid = param_grids(param_grid)
 
-    clf = grid_search.GridSearchCV(model, param_grid, scoring=scoring, cv=cv, n_jobs=n_jobs, verbose=verbosity-2)
+    clf = grid_search.GridSearchCV(model, param_grid, scoring=scoring, cv=cv, n_jobs=n_jobs, verbose=int(verbosity>1))
     clf.fit(X, y)
 
     if verbosity > 0:
