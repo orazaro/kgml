@@ -159,6 +159,71 @@ def feature_selection_ET(df, predictors=None, target=None ,ax=None, isclass=True
     importances_sorted = [importances[indices[i]] for i in range(len(predictors))]
     return names_sorted,importances_sorted
 
+def feature_selection_RFE(df, predictors=None, target=None ,ax=None, isclass=True, 
+        verbosity=0, nf=7, class_weight='auto',prank=False):
+    """
+    """
+    X, y, names = df_xyf(df, predictors=predictors, target=target)
+    nf_all = X.shape[1]
+    
+    if verbosity > 1:
+        print "names:", ",".join(names)
+    
+    # Create the RFE object and compute a cross-validated score.
+    if isclass:
+        #estimator = svm.SVC(kernel="linear",C=1.0)
+        estimator = get_clf('svm')    
+        scoring = 'f1'
+        cv = cross_validation.StratifiedKFold(y, 2)
+    else:
+        if False:
+            from sklearn.ensemble import RandomForestRegressor
+            if not hasattr(RandomForestRegressor,'coef_'):
+                RandomForestRegressor.coef_ = property(lambda self:self.feature_importances_)
+            estimator = RandomForestRegressor(n_estimators=100, max_depth=2, min_samples_leaf=2)
+        else:
+            estimator = linear_model.RidgeCV()
+        scoring = 'mean_squared_error'
+        cv = 3
+
+    # The "accuracy" scoring is proportional to the number of correct
+    # classifications
+    if True:
+        rfecv = RFECV(estimator=estimator, step=1, cv=cv, scoring=scoring)
+    else:
+        from kgml.rfecv import RFECVp
+        f_estimator = get_clf('svm')
+        rfecv = RFECVp(estimator=estimator,f_estimator=f_estimator, step=1, cv=cv, scoring=scoring)
+        
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        rfecv.fit(X, y)
+
+    if ax is None:
+        fig,ax1 = plt.subplots(1,1,figsize=(14,6))
+    else:
+        ax1 = ax
+    # Plot number of features VS. cross-validation scores
+    ax1.set_xlabel("Number of features selected")
+    ax1.set_ylabel("Cross validation score ({})".format(scoring))
+    ax1.plot(range(1, len(rfecv.grid_scores_) + 1), rfecv.grid_scores_)
+    if ax is None: plt.show()
+
+    #print("Optimal number of features : %d" % rfecv.n_features_)
+    best = names[rfecv.ranking_==1]
+
+    rfe = RFE(estimator, n_features_to_select=1)
+    rfe.fit(X,y)
+    ranks = sorted(zip(map(lambda x: round(x, 4), rfe.ranking_), names))
+
+    # reorder best using ranks
+    best_set = set(best)
+    best = [name for (i,name) in ranks if name in best_set]
+    #print "The best features:", ', '.join(best)
+    assert len(best) == len(best_set)
+
+    return best, ranks
+
 #--- old stuff --------#
 
 def get_clf(sclf,C=1.0,class_weight=None):
@@ -314,7 +379,7 @@ def estimate_predictions(df, features, goal, sels = ('all','pca2'),
 
 
 
-def feature_selection_RFE(fn ,ax=None, sel="all", goal="Linebreak", isclass=True,
+def feature_selection_RFE_draft(fn ,ax=None, sel="all", goal="Linebreak", isclass=True,
         verbosity=0, nf=7):
     X, y, names = data_prepare(fn, sel=sel, goal=goal, verbosity=verbosity-1)
     if verbosity > 1:
