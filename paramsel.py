@@ -35,7 +35,7 @@ def psel_grid_search(model, X, y, param_grid, scoring='roc_auc', cv=4, n_jobs=-1
         print
         print(clf.best_params_)
    
-   if verbosity > 1:
+    if verbosity > 1:
         print
         print("Grid scores on development set:")
         print
