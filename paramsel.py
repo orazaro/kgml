@@ -19,7 +19,7 @@ def param_grids(pgrid_str):
         gamma_range = 10.0 ** np.arange(-4, 3)
         pg = dict(gamma=gamma_range, C=C_range)
     elif pgrid_str == 'svm_poly':
-        pg = {'C':[0.001,0.01,0.1,1.0,10],'gamma':[0.1,0.01,0.001,0.0001],
+        pg = {'C':[0.001,0.01,0.1,1.0,10,100],'gamma':[0.1,0.01,0.001,0.0001],
                                                                 'coef0':[0,1]}
     else:
         raise ValueError("Unknown pgrid_str: {}".format(pgrid_str))
