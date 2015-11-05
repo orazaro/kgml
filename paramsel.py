@@ -24,6 +24,9 @@ def param_grids(pgrid_str):
     elif pgrid_str == 'C':
         C_range = 10.0 ** np.arange(-4, 4)
         pg = dict(C=C_range)
+    elif pgrid_str == 'gamma':
+        gamma_range = 10.0 ** np.arange(-4, 3)
+        pg = dict(gamma=gamma_range)
     else:
         raise ValueError("Unknown pgrid_str: {}".format(pgrid_str))
     return pg
