@@ -38,7 +38,7 @@ def psel_grid_search(model, X, y, param_grid, scoring='roc_auc', cv=4, n_jobs=-1
         name = model.name if hasattr(model,'name') else model.__class__.__name__
         print("Best parameters for the model {} found on development set:".format(name))
         print
-        print("{} Score: {}".format(clf.best_params_,clf.best_score_))
+        print("{}   Score: {}".format(clf.best_params_,clf.best_score_))
 
    
     if verbosity > 1:
