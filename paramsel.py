@@ -1,0 +1,66 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Author:   Oleg Razgulyaev 
+# License:  BSD 3 clause
+#
+# Parameters selection tools
+
+from __future__ import division
+import os
+
+from six import string_types
+
+from sklearn import grid_search
+
+def param_grids(pgrid_str):
+    if pgrid_str == 'svm_rbf':
+        C_range = 10.0 ** np.arange(-3, 4)
+        gamma_range = 10.0 ** np.arange(-4, 3)
+        pg = dict(gamma=gamma_range, C=C_range)
+    else:
+        raise ValueError("Unknown pgrid_str: {}".format(pgrid_str))
+    return pg
+
+def psel_grid_search(model, X, y, param_grid, scoring='roc_auc', cv=4, n_jobs=-1, verbosity=1):
+    """ Parameters selection using grid search.
+    """
+    if isinstance(param_grid, string_types):
+        param_grid = param_grids(param_grid)
+
+    clf = grid_search.GridSearchCV(model, param_grid, scoring=scoring, cv=cv, n_jobs=n_jobs, verbose=verbosity-1)
+    clf.fit(X, y)
+
+    if verbosity > 0:
+        print("Best parameters set found on development set:")
+        print
+        print(clf.best_params_)
+   
+   if verbosity > 1:
+        print
+        print("Grid scores on development set:")
+        print
+        for params, mean_score, scores in clf.grid_scores_:
+            print("%0.3f (+/-%0.03f) for %r"
+                  % (mean_score, scores.std() * 2, params))
+    
+    return clf.best_params_
+
+def test_psel_grid_search():
+    pass
+
+def test():
+    print "tests ok"
+
+if __name__ == '__main__':
+    import random,sys
+    random.seed(1)
+    import argparse
+    parser = argparse.ArgumentParser(description='ModSel.')
+    parser.add_argument('cmd', nargs='?', default='test')
+    args = parser.parse_args()
+    print >>sys.stderr,args 
+  
+    if args.cmd == 'test':
+        test()
+    else:
+        raise ValueError("bad cmd")
