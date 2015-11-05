@@ -38,7 +38,8 @@ def psel_grid_search(model, X, y, param_grid, scoring='roc_auc', cv=4, n_jobs=-1
         name = model.name if hasattr(model,'name') else model.__class__.__name__
         print("Best parameters for the model {} found on development set:".format(name))
         print
-        print(clf.best_params_)
+        print("{} Score: {}".format(clf.best_params_,clf.best_score_))
+
    
     if verbosity > 1:
         print
@@ -48,7 +49,7 @@ def psel_grid_search(model, X, y, param_grid, scoring='roc_auc', cv=4, n_jobs=-1
             print("%0.3f (+/-%0.03f) for %r"
                   % (mean_score, scores.std() * 2, params))
     
-    return clf.best_params_
+    return clf.best_params_, clf.best_score_
 
 def test_psel_grid_search():
     pass
