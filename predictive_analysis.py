@@ -212,7 +212,8 @@ def feature_selection_RFE(df, predictors=None, target=None ,ax=None, isclass=Tru
     ax1.plot(range(1, len(rfecv.grid_scores_) + 1), rfecv.grid_scores_)
     if ax is None: plt.show()
 
-    #print("Optimal number of features : %d" % rfecv.n_features_)
+    print("Optimal number of features : %d" % rfecv.n_features_)
+    print rfecv.ranking_
     best = names[rfecv.ranking_==1]
 
     rfe = RFE(estimator, n_features_to_select=1)
@@ -222,7 +223,7 @@ def feature_selection_RFE(df, predictors=None, target=None ,ax=None, isclass=Tru
     # reorder best using ranks
     best_set = set(best)
     best = [name for (i,name) in ranks if name in best_set]
-    #print "The best features:", ', '.join(best)
+    print "The best features:", ', '.join(best)
     assert len(best) == len(best_set)
 
     return best, ranks
