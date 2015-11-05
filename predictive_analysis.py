@@ -213,7 +213,8 @@ def feature_selection_RFE(df, predictors=None, target=None ,ax=None, isclass=Tru
     if ax is None: plt.show()
 
     print("Optimal number of features : %d" % rfecv.n_features_)
-    print rfecv.ranking_
+    print np.asarray(rfecv.ranking_)
+    print names
     best = names[np.asarray(rfecv.ranking_)==1]
 
     rfe = RFE(estimator, n_features_to_select=1)
