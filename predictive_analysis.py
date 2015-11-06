@@ -175,7 +175,7 @@ def feature_selection_RFE(df, predictors=None, target=None ,ax=None, isclass=Tru
         #estimator = get_clf('svm')    
         #estimator = get_clf('lg2',C=1.0,class_weight='auto')
         estimator = \
-            linear_model.LogisticRegression(penalty='l2', C=.1, class_weight='auto')
+            linear_model.LogisticRegression(penalty='l2', C=.01, class_weight='auto')
         scoring = 'roc_auc'
         cv = cross_validation.StratifiedKFold(y, 4)
     else:
