@@ -65,55 +65,42 @@ def add_quadratic_features(df, predictors, rm_noninform=True):
     return df_out 
 
 
-def forward_cv(model, df, response, selmax=16, verbosity=0):
+def forward_cv(df, predictors, target, model, n_folds=8, n_jobs=-1,
+        selmax=16, verbosity=0):
     """ Forward selection using model.
 
     Parameters
     ----------
-    model:
-    df : DataFrame 
-        with all possible predictors and response
-    response: str 
-        name of response column in data
 
     Returns
     -------
-    model: an "optimal" fitted statsmodels linear model
-           with an intercept
-           selected by forward selection
-           evaluated by adjusted R-squared
     selected: list
         selected predictors
-    Example:
-    --------
-    >> import pandas as pd
-    >> url = "http://data.princeton.edu/wws509/datasets/salary.dat"
-    >> data = pd.read_csv(url, sep='\\s+')
-    >> model = forward_selected(data, 'sl')
-
-    >> print model.model.formula
-    >> # sl ~ rk + yr + 1
-
-    >> print model.rsquared_adj
-    >> # 0.835190760538
     
-    References:
-    -----------
-    http://planspace.org/20150423-forward_selection_with_statsmodels/
-
+    Example
+    -------
+    References
+    ----------
     """
-    import statsmodels.formula.api as smf
-    remaining = set(data.columns)
-    remaining.remove(response)
+    from predictive_analysis import df_xyf
+    from model_selection import cross_val_predict_proba
+    from modsel import estimate_scores
+    
+    X,y,remaining = df_xyf(df,predictors=predictors,target=target)
+    remaining = set(remaining)
     selected = []
     current_score, best_new_score = 0.0, 0.0
     while remaining and current_score == best_new_score:
         scores_with_candidates = []
         for candidate in remaining:
-            formula = "{} ~ {} + 1".format(response,
-                                           ' + '.join(selected + [candidate]))
-            score = smf.ols(formula, data).fit().rsquared_adj
-            scores_with_candidates.append((score, candidate))
+            selected_candidate = selected + [candidate]
+            X,y,features = df_xyf(df, predictors=selected_candidate, target=target)
+            scoring = 'roc_auc'
+            cv1 = cross_validation.StratifiedKFold(y,n_folds)
+            y_proba, scores = cross_val_predict_proba(model, X, y, scoring=scoring, cv=cv1,
+                            n_jobs=n_jobs, verbose=0, fit_params=None, pre_dispatch='2*n_jobs')
+            scores_mean, me = estimate_scores(scores, scoring, sampling=False)
+            scores_with_candidates.append((scores_mean, candidate))
         scores_with_candidates.sort()
         best_new_score, best_candidate = scores_with_candidates.pop()
         if current_score < best_new_score:
@@ -123,10 +110,7 @@ def forward_cv(model, df, response, selmax=16, verbosity=0):
         if verbosity > 0:
             print current_score, selected
         if len(selected) >= selmax: break
-    formula = "{} ~ {} + 1".format(response,
-                                   ' + '.join(selected))
-    model = smf.ols(formula, data).fit()
-    return model, selected
+    return selected
 
 def forward_selected(data, response, selmax=16, verbosity=0):
     """Linear model designed by forward selection.
