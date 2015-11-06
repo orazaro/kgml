@@ -65,7 +65,7 @@ def add_quadratic_features(df, predictors, rm_noninform=True):
     return df_out 
 
 
-def forward_cv(df, predictors, target, model, n_folds=8, n_jobs=-1,
+def forward_cv(df, predictors, target, model, n_folds=8, n_jobs=-1, start=[],
         selmax=None, verbosity=0):
     """ Forward selection using model.
 
@@ -87,9 +87,9 @@ def forward_cv(df, predictors, target, model, n_folds=8, n_jobs=-1,
     from model_selection import cross_val_predict_proba
     from modsel import estimate_scores
     
-    X,y,remaining = df_xyf(df,predictors=predictors,target=target)
-    remaining = set(remaining)
-    selected = []
+    X,y,features = df_xyf(df,predictors=predictors,target=target)
+    remaining = set([e for e in features if e not in start])
+    selected = list(start)
     current_score, best_new_score = 0.0, 0.0
     while remaining and current_score == best_new_score:
         scores_with_candidates = []
