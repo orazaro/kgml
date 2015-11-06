@@ -111,7 +111,7 @@ def forward_cv(df, predictors, target, model, n_folds=8, n_jobs=-1,
         else:
             break
         if verbosity > 0:
-            print current_score, ' '.join(selected)
+            print "{:.4f}".format(current_score), ' '.join(selected)
         if selmax is not None and len(selected) >= selmax: break
     return selected
 
