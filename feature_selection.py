@@ -24,7 +24,7 @@ def remove_noninformative_columns(df):
     variance = np.var(df,axis=0)
     return df.iloc[:,list(variance>1E-15)]
 
-def add_quadratic_features(df, predictors, rm_noninform=True):
+def add_quadratic_features(df, predictors, rm_noninform=False):
     """ Add quadratic features based on the selected predictors
     
     Parameters
@@ -65,8 +65,8 @@ def add_quadratic_features(df, predictors, rm_noninform=True):
     return df_out 
 
 
-def forward_cv(df, predictors, target, model, n_folds=8, n_jobs=-1, start=[],
-        selmax=None, verbosity=0):
+def forward_cv(df, predictors, target, model, scoring = 'roc_auc', 
+        n_folds=8, n_jobs=-1, start=[], selmax=None, verbosity=0):
     """ Forward selection using model.
 
     Parameters
@@ -96,7 +96,6 @@ def forward_cv(df, predictors, target, model, n_folds=8, n_jobs=-1, start=[],
         for candidate in remaining:
             selected_candidate = selected + [candidate]
             X,y,features = df_xyf(df, predictors=selected_candidate, target=target)
-            scoring = 'roc_auc'
             cv1 = cross_validation.StratifiedKFold(y,n_folds)
             y_proba, scores = cross_val_predict_proba(model, X, y, scoring=scoring, cv=cv1,
                             n_jobs=n_jobs, verbose=0, fit_params=None, pre_dispatch='2*n_jobs')
