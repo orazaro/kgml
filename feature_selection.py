@@ -66,7 +66,7 @@ def add_quadratic_features(df, predictors, rm_noninform=True):
 
 
 def forward_cv(df, predictors, target, model, n_folds=8, n_jobs=-1,
-        selmax=16, verbosity=0):
+        selmax=None, verbosity=0):
     """ Forward selection using model.
 
     Parameters
@@ -82,6 +82,7 @@ def forward_cv(df, predictors, target, model, n_folds=8, n_jobs=-1,
     References
     ----------
     """
+    from sklearn import (metrics, cross_validation)
     from predictive_analysis import df_xyf
     from model_selection import cross_val_predict_proba
     from modsel import estimate_scores
@@ -99,7 +100,7 @@ def forward_cv(df, predictors, target, model, n_folds=8, n_jobs=-1,
             cv1 = cross_validation.StratifiedKFold(y,n_folds)
             y_proba, scores = cross_val_predict_proba(model, X, y, scoring=scoring, cv=cv1,
                             n_jobs=n_jobs, verbose=0, fit_params=None, pre_dispatch='2*n_jobs')
-            scores_mean, me = estimate_scores(scores, scoring, sampling=False)
+            scores_mean, me = estimate_scores(scores, scoring, sampling=False, verbose=0)
             scores_with_candidates.append((scores_mean, candidate))
         scores_with_candidates.sort()
         best_new_score, best_candidate = scores_with_candidates.pop()
@@ -107,9 +108,11 @@ def forward_cv(df, predictors, target, model, n_folds=8, n_jobs=-1,
             remaining.remove(best_candidate)
             selected.append(best_candidate)
             current_score = best_new_score
+        else:
+            break
         if verbosity > 0:
-            print current_score, selected
-        if len(selected) >= selmax: break
+            print current_score, ' '.join(selected)
+        if selmax is not None and len(selected) >= selmax: break
     return selected
 
 def forward_selected(data, response, selmax=16, verbosity=0):
