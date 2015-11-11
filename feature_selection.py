@@ -106,25 +106,13 @@ def forward_cv(df, predictors, target, model, scoring = 'roc_auc',
     selected = list(start)
     current_score, best_new_score = 0.0, 0.0
     while remaining and current_score == best_new_score:
-        if n_jobs != 1:
-            verbose=0
-            pre_dispatch='2*n_jobs'
-            parallel = Parallel(n_jobs=n_jobs, verbose=verbose,
-                        pre_dispatch=pre_dispatch)
-            scores_with_candidates = parallel(delayed(forward_cv_inner_loop)(
-                clone(model),df,selected,candidate,
-                target,scoring, cv1=None,n_folds=8)
-                for candidate in remaining)
-        else:
-            scores_with_candidates = []
-            for candidate in remaining:
-                selected_candidate = selected + [candidate]
-                X,y,features = df_xyf(df, predictors=selected_candidate, target=target)
-                cv1 = cross_validation.StratifiedKFold(y,n_folds)
-                y_proba, scores = cross_val_predict_proba(model, X, y, scoring=scoring, cv=cv1,
-                                n_jobs=n_jobs, verbose=0, fit_params=None, pre_dispatch='2*n_jobs')
-                scores_mean, me = estimate_scores(scores, scoring, sampling=False, verbose=0)
-                scores_with_candidates.append((scores_mean, candidate))
+        pre_dispatch='2*n_jobs'
+        parallel = Parallel(n_jobs=n_jobs, verbose=0,
+                    pre_dispatch=pre_dispatch)
+        scores_with_candidates = parallel(delayed(forward_cv_inner_loop)(
+            clone(model),df,selected,candidate,target,scoring,
+            cv1=None,n_folds=8)
+            for candidate in remaining)
         scores_with_candidates.sort()
         best_new_score, best_candidate = scores_with_candidates.pop()
         if current_score < best_new_score:
