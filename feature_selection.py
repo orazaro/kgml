@@ -69,6 +69,7 @@ def add_quadratic_features(df, predictors, rm_noninform=False):
 from predictive_analysis import df_xyf
 from model_selection import cross_val_predict_proba
 from modsel import estimate_scores
+from sklearn import (metrics, cross_validation)
 
 def forward_cv_inner_loop(model,df,selected,candidate,target,scoring,
         cv1=None,n_folds=8):
@@ -99,7 +100,6 @@ def forward_cv(df, predictors, target, model, scoring = 'roc_auc',
     References
     ----------
     """
-    from sklearn import (metrics, cross_validation)
     
     X,y,features = df_xyf(df,predictors=predictors,target=target)
     remaining = set([e for e in features if e not in start])
