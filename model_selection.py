@@ -304,7 +304,7 @@ def compute_auc(y, y_pred):
 def cross_val_predict_proba(estimator, X, y, scoring='roc_auc', cv=8, n_jobs=1, 
         verbose=0, fit_params=None,
         pre_dispatch='2*n_jobs'):
-    """
+    """ Predict probabilities using cross-validation.
     """
     if isinstance(cv,int):
         cv1 = cross_validation.StratifiedKFold(y,cv)
