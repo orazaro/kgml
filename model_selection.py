@@ -268,16 +268,22 @@ def _cross_val_predict(estimator, X, y, train, test, verbose,
     return (test,y_pred)
 
 
-def cross_val_predict(estimator, X, y, loss=None, cv=None, n_jobs=1, 
+def cross_val_predict(estimator, X, y, loss=None, cv=8, n_jobs=1, 
         verbose=0, fit_params=None, proba=False,
         pre_dispatch='2*n_jobs'):
+    """
+    """
+    if isinstance(cv,int):
+        cv1 = cross_validation.StratifiedKFold(y,cv)
+    else:
+        cv1 = cv
     fit_params = fit_params if fit_params is not None else {}
     parallel = Parallel(n_jobs=n_jobs, verbose=verbose,
                         pre_dispatch=pre_dispatch)
     results = parallel(
         delayed(_cross_val_predict)(clone(estimator), X, y, train, test,
                                   verbose, fit_params, proba)
-        for train, test in cv)
+        for train, test in cv1)
     y_pred = np.zeros(len(y))
     scores = []
     for (mask,y_p) in results:
@@ -295,16 +301,23 @@ def compute_auc(y, y_pred):
     fpr, tpr, _ = roc_curve(y, y_pred)
     return auc(fpr, tpr)
 
-def cross_val_predict_proba(estimator, X, y, scoring='roc_auc', cv=None, n_jobs=1, 
+def cross_val_predict_proba(estimator, X, y, scoring='roc_auc', cv=8, n_jobs=1, 
         verbose=0, fit_params=None,
         pre_dispatch='2*n_jobs'):
+    """
+    """
+    if isinstance(cv,int):
+        cv1 = cross_validation.StratifiedKFold(y,cv)
+    else:
+        cv1 = cv
+    
     fit_params = fit_params if fit_params is not None else {}
     parallel = Parallel(n_jobs=n_jobs, verbose=verbose,
                         pre_dispatch=pre_dispatch)
     results = parallel(
         delayed(_cross_val_predict)(clone(estimator), X, y, train, test,
                                   verbose, fit_params, proba=True)
-        for train, test in cv)
+        for train, test in cv1)
     y_pred = np.zeros(len(y))
     scores = []
     for (mask,y_p) in results:
