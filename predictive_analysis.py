@@ -159,8 +159,9 @@ def feature_selection_ET(df, predictors=None, target=None ,ax=None, isclass=True
     importances_sorted = [importances[indices[i]] for i in range(len(predictors))]
     return names_sorted,importances_sorted
 
-def feature_selection_RFE(df, predictors=None, target=None ,ax=None, isclass=True, 
-        verbosity=0, nf=7, class_weight='auto',prank=False):
+def feature_selection_RFE(df, est=None, predictors=None, target=None ,
+        ax=None, isclass=True, verbosity=0, nf=7, class_weight='auto',
+        prank=False, scoring=None):
     """
     """
     X, y, names = df_xyf(df, predictors=predictors, target=target)
@@ -170,13 +171,15 @@ def feature_selection_RFE(df, predictors=None, target=None ,ax=None, isclass=Tru
         print "names:", ",".join(names)
     
     # Create the RFE object and compute a cross-validated score.
-    if isclass:
+    if est is not None:
+        estimator = est
+        cv = cross_validation.StratifiedKFold(y, 4)
+    elif isclass:
         #estimator = svm.SVC(kernel="linear",C=1.0)
         #estimator = get_clf('svm')    
         #estimator = get_clf('lg2',C=1.0,class_weight='auto')
         estimator = \
             linear_model.LogisticRegression(penalty='l2', C=.01, class_weight='auto')
-        scoring = 'roc_auc'
         cv = cross_validation.StratifiedKFold(y, 4)
     else:
         if False:
@@ -186,8 +189,10 @@ def feature_selection_RFE(df, predictors=None, target=None ,ax=None, isclass=Tru
             estimator = RandomForestRegressor(n_estimators=100, max_depth=2, min_samples_leaf=2)
         else:
             estimator = linear_model.RidgeCV()
-        scoring = 'mean_squared_error'
         cv = 3
+    
+    if scoring is None:
+        scoring = 'roc_auc' if isclass else 'mean_squared_error'
 
     # The "accuracy" scoring is proportional to the number of correct
     # classifications
