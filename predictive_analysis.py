@@ -207,9 +207,13 @@ def feature_selection_RFE(df, predictors=None, target=None ,ax=None, isclass=Tru
     else:
         ax1 = ax
     # Plot number of features VS. cross-validation scores
+    ax1.set_title("Recursive Feature Elimination Curve")
     ax1.set_xlabel("Number of features selected")
     ax1.set_ylabel("Cross validation score ({})".format(scoring))
-    ax1.plot(range(1, len(rfecv.grid_scores_) + 1), rfecv.grid_scores_)
+    nf = len(rfecv.grid_scores_)
+    ax1.plot(range(1, nf + 1), rfecv.grid_scores_)
+    ax1.set_xticks(np.arange(0,nf+1,int(nf/50)+1))
+    plt.grid()
     if ax is None: plt.show()
 
     print("Optimal number of features : %d" % rfecv.n_features_)
