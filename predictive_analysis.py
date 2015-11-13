@@ -118,6 +118,8 @@ def feature_selection_ET(df, predictors=None, target=None ,ax=None, isclass=True
         importances (sorted) of the features
     """
     X, y, names = df_xyf(df, predictors=predictors, target=target)
+    print X.shape,y.shape,names
+    print np.unique(y,return_counts=True)
     nf_all = X.shape[1]
     
     if verbosity > 1:

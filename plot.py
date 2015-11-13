@@ -90,14 +90,23 @@ def plot_decision_boundary(clf, X, y, ax, sample_weight=None, names=None, title=
     assert X.shape[1] == 2
     if sample_weight is None:
         sample_weight = np.ones(X.shape[0])
-    h = .02  # step size in the mesh
-    b = h*50
     
     # create a mesh to plot in
-    x_min, x_max = X[:, 0].min() - b, X[:, 0].max() + b
-    y_min, y_max = X[:, 1].min() - b, X[:, 1].max() + b
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
-                         np.arange(y_min, y_max, h))
+    x_min, x_max = X[:, 0].min(), X[:, 0].max()
+    y_min, y_max = X[:, 1].min(), X[:, 1].max()
+    
+    nb = 20
+    bx = (x_max-x_min)/nb
+    by = (y_max-y_min)/nb
+    
+    x_min, x_max = x_min - bx, x_max + bx
+    y_min, y_max = y_min - by, y_max + by
+    
+    nh = 300
+    hx = (x_max-x_min)/nh
+    hy = (y_max-y_min)/nh
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, hx),
+                         np.arange(y_min, y_max, hy))
     
     Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
     Z = Z>0.5
