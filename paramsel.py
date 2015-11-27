@@ -8,6 +8,7 @@
 from __future__ import division
 import os
 import numpy as np
+import matplotlib.pyplot as plt
 
 from six import string_types
 
@@ -59,14 +60,14 @@ def psel_grid_search(model, X, y, param_grid, scoring='roc_auc', cv=4, n_jobs=-1
 
 
 def plot_lc_param(model, X, y, pname, plist, test_size=0.20,
-        ax=None, figsize=(14,6), verbosity=0):
+        ax=None, figsize=(14,6), verbosity=0, rs=None):
     """ Plot learning curve for the features.
     """
     from sklearn import (metrics, cross_validation)
 
-    X_train, X_test, y_train, y_test = cross_validation.train_test_split(
-        X, y, test_size=test_size, random_state=random_state)
-    s_train, s_test = [],[]
+    X_train, X_val, y_train, y_val = cross_validation.train_test_split(
+        X, y, test_size=test_size, random_state=rs)
+    s_train, s_val = [],[]
     for p in plist:
         setattr(model,pname,p)
         model.fit(X_train,y_train)
@@ -74,10 +75,10 @@ def plot_lc_param(model, X, y, pname, plist, test_size=0.20,
         y_train_proba = model.predict_proba(X_train)[:,1]
         s_train.append(metrics.roc_auc_score(y_train, y_train_proba))
 
-        y_test_proba = model.predict_proba(X_test)[:,1]
-        s_test.append(metrics.roc_auc_score(y_test, y_test_proba))
+        y_val_proba = model.predict_proba(X_val)[:,1]
+        s_val.append(metrics.roc_auc_score(y_val, y_val_proba))
         if verbosity>0:
-            print("{:3d}{:10.2f}{:10.2f}".format(len(s_train),s_train[-1],s_test[-1]))
+            print("{:3d}{:10.2f}{:10.2f}".format(len(s_train),s_train[-1],s_val[-1]))
 
     if ax is None:
         fig,ax1 = plt.subplots(1,1,figsize=figsize)
@@ -87,7 +88,7 @@ def plot_lc_param(model, X, y, pname, plist, test_size=0.20,
     ax1.set_xlabel(pname)
     ax1.set_ylabel("Roc Auc Score")
     ax1.plot(plist, s_train,label='train')
-    ax1.plot(plist, s_test,label='test')
+    ax1.plot(plist, s_val,label='val')
     plt.grid()
     plt.legend(loc='lower right')
     if ax is None: plt.show()
