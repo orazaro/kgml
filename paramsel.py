@@ -68,6 +68,9 @@ def plot_lc_param(model, X, y, pname, plist, test_size=0.20,
     X_train, X_val, y_train, y_val = cross_validation.train_test_split(
         X, y, test_size=test_size, random_state=rs)
     s_train, s_val = [],[]
+    if verbosity>0:
+        print("{:>20s}{:>10s}{:>10s}".format(pname[:18],"train","val"))
+        print("-"*40)
     for p in plist:
         setattr(model,pname,p)
         model.fit(X_train,y_train)
@@ -78,7 +81,7 @@ def plot_lc_param(model, X, y, pname, plist, test_size=0.20,
         y_val_proba = model.predict_proba(X_val)[:,1]
         s_val.append(metrics.roc_auc_score(y_val, y_val_proba))
         if verbosity>0:
-            print("{:3d}{:10.2f}{:10.2f}".format(len(s_train),s_train[-1],s_val[-1]))
+            print("{:20}{:10.2f}{:10.2f}".format(p,s_train[-1],s_val[-1]))
 
     if ax is None:
         fig,ax1 = plt.subplots(1,1,figsize=figsize)
