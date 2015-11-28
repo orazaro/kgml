@@ -63,6 +63,7 @@ def plot_lc_param_train_val(model, X_train, y_train, X_val, y_val,
     pname, plist, ax=None, figsize=(14,6), verbosity=0, rs=None):
     """ Plot learning curve for the features.
     """
+    from sklearn import metrics
     s_train, s_val = [],[]
     if verbosity>0:
         print("{:>20s}{:>10s}{:>10s}".format(pname[:18],"train","val"))
@@ -96,7 +97,7 @@ def plot_lc_param(model, X, y, pname, plist, test_size=0.20,
         ax=None, figsize=(14,6), verbosity=0, rs=None):
     """ Plot learning curve for the features.
     """
-    from sklearn import (metrics, cross_validation)
+    from sklearn import cross_validation
 
     X_train, X_val, y_train, y_val = cross_validation.train_test_split(
         X, y, test_size=test_size, random_state=rs)
