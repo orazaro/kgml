@@ -59,14 +59,10 @@ def psel_grid_search(model, X, y, param_grid, scoring='roc_auc', cv=4, n_jobs=-1
     return clf.best_params_, clf.best_score_
 
 
-def plot_lc_param(model, X, y, pname, plist, test_size=0.20,
-        ax=None, figsize=(14,6), verbosity=0, rs=None):
+def plot_lc_param_train_val(model, X_train, y_train, X_val, y_val, 
+    pname, plist, ax=None, figsize=(14,6), verbosity=0, rs=None):
     """ Plot learning curve for the features.
     """
-    from sklearn import (metrics, cross_validation)
-
-    X_train, X_val, y_train, y_val = cross_validation.train_test_split(
-        X, y, test_size=test_size, random_state=rs)
     s_train, s_val = [],[]
     if verbosity>0:
         print("{:>20s}{:>10s}{:>10s}".format(pname[:18],"train","val"))
@@ -96,6 +92,17 @@ def plot_lc_param(model, X, y, pname, plist, test_size=0.20,
     plt.legend(loc='lower right')
     if ax is None: plt.show()
 
+def plot_lc_param(model, X, y, pname, plist, test_size=0.20,
+        ax=None, figsize=(14,6), verbosity=0, rs=None):
+    """ Plot learning curve for the features.
+    """
+    from sklearn import (metrics, cross_validation)
+
+    X_train, X_val, y_train, y_val = cross_validation.train_test_split(
+        X, y, test_size=test_size, random_state=rs)
+    
+    return plot_lc_param_train_val(model, X_train, y_train, X_val, y_val,
+        pname, plist, ax=ax, figsize=figsize, verbosity=verbosity, rs=rs)
 
 def test_psel_grid_search():
     pass
