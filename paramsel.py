@@ -78,7 +78,7 @@ def plot_lc_param_train_val(model, X_train, y_train, X_val, y_val,
         y_val_proba = model.predict_proba(X_val)[:,1]
         s_val.append(metrics.roc_auc_score(y_val, y_val_proba))
         if verbosity>0:
-            print("{:20}{:10.2f}{:10.2f}".format(p,s_train[-1],s_val[-1]))
+            print("{:20}{:10.3f}{:10.3f}".format(p,s_train[-1],s_val[-1]))
 
     if ax is None:
         fig,ax1 = plt.subplots(1,1,figsize=figsize)
