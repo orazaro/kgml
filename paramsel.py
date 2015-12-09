@@ -112,6 +112,47 @@ def plot_lc_param(model, X, y, pname, plist, test_size=0.20,
     return plot_lc_param_train_val(model, X_train, y_train, X_val, y_val,
         pname, plist, ax=ax, figsize=figsize, verbosity=verbosity, rs=rs, y_min=y_min)
 
+def plot_lc_param_cv(model, X, y, pname, plist, cv=3, n_jobs=1,
+        ax=None, figsize=(14,6), verbosity=0, rs=None, y_min = 0.75):
+    """ Plot learning curve for the features using CV.
+    """
+    from sklearn import metrics
+    s_train, s_val = [],[]
+    if verbosity>0:
+        print("{:>20s}{:>10s}{:>10s}".format(pname[:18],"train","val"))
+        print("-"*40)
+    for p in plist:
+        setattr(model,pname,p)
+        X_train,y_train = X,y
+        
+        model.fit(X_train,y_train)
+        y_train_proba = model.predict_proba(X_train)[:,1]
+        s_train.append(metrics.roc_auc_score(y_train, y_train_proba))
+
+        X_val,y_val = X,y
+        y_val_proba,_ = cross_val_predict_proba(model, X_val, y_val, scoring=None, cv=cv,
+                n_jobs=n_jobs, verbose=0, fit_params=None, pre_dispatch='2*n_jobs')
+
+        s_val.append(metrics.roc_auc_score(y_val, y_val_proba))
+        if verbosity>0:
+            print("{:20}{:10.3f}{:10.3f}".format(p,s_train[-1],s_val[-1]))
+
+    if ax is None:
+        fig,ax1 = plt.subplots(1,1,figsize=figsize)
+    else:
+        ax1 = ax
+    ax1.set_title("Learning Curve")
+    ax1.set_xlabel(pname)
+    ax1.set_ylabel("Roc Auc Score")
+    ax1.plot(plist, s_train,label='train')
+    ax1.plot(plist, s_val,label='val')
+    ymin, ymax = ax1.get_ylim()
+    if ymin < y_min and ymax > y_min:
+        ax1.set_ylim(y_min,ymax)
+    plt.grid()
+    plt.legend(loc='lower right')
+    if ax is None: plt.show()
+
 #--- helpers -----------------#
 
 def make_skewed_data(n_samples=5000,n_features=20,n_classes=2):
