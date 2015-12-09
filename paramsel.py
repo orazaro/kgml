@@ -117,6 +117,7 @@ def plot_lc_param_cv(model, X, y, pname, plist, cv=3, n_jobs=1,
     """ Plot learning curve for the features using CV.
     """
     from sklearn import metrics
+    from model_selection import cross_val_predict_proba
     s_train, s_val = [],[]
     if verbosity>0:
         print("{:>20s}{:>10s}{:>10s}".format(pname[:18],"train","val"))
