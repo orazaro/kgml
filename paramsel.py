@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 from six import string_types
 
-from sklearn import grid_search
+from sklearn import grid_search, cross_validation
 
 def param_grids(pgrid_str):
     if pgrid_str == 'svm_rbf':
@@ -32,11 +32,15 @@ def param_grids(pgrid_str):
         raise ValueError("Unknown pgrid_str: {}".format(pgrid_str))
     return pg
 
-def psel_grid_search(model, X, y, param_grid, scoring='roc_auc', cv=4, n_jobs=-1, verbosity=1):
+def psel_grid_search(model, X, y, param_grid, scoring='roc_auc', cv=4, n_jobs=-1, verbosity=1,
+        rs=None):
     """ Parameters selection using grid search.
     """
     if isinstance(param_grid, string_types):
         param_grid = param_grids(param_grid)
+
+    if isinstance(cv, (float,)) and 0 < cv < 1:
+        cv = cross_validation.StratifiedShuffleSplit(y, 1, test_size=cv, random_state=rs) 
 
     clf = grid_search.GridSearchCV(model, param_grid, scoring=scoring, cv=cv, n_jobs=n_jobs, verbose=int(verbosity>2))
     clf.fit(X, y)
@@ -108,10 +112,37 @@ def plot_lc_param(model, X, y, pname, plist, test_size=0.20,
     return plot_lc_param_train_val(model, X_train, y_train, X_val, y_val,
         pname, plist, ax=ax, figsize=figsize, verbosity=verbosity, rs=rs, y_min=y_min)
 
+#--- helpers -----------------#
+
+def make_skewed_data(n_samples=5000,n_features=20,n_classes=2):
+    from sklearn.datasets.samples_generator import (make_classification, make_regression)
+    X, y = make_classification(n_samples=n_samples, n_features=n_features, n_classes=2,
+        n_clusters_per_class=2, n_informative=8, n_redundant=2,
+        random_state=1)
+    # create unbalamced classes
+    plus = np.where(y>0)[0]
+    minus = np.where(y<=0)[0]
+    plus_sel = random.sample(plus,int(len(plus)/25))
+    sel = np.r_[minus,plus_sel]
+    np.sort(sel)
+    return X[sel,:],y[sel]
+
+#--- tests -----------------#
+
+
 def test_psel_grid_search():
-    pass
+    import sklearn.linear_model as lm
+    X, y = make_skewed_data(n_samples=5000)
+    print np.unique(y, return_counts=True)
+    clf = lm.LogisticRegression(penalty='l2', dual=True, C=1.0,
+            class_weight='auto', random_state=1,
+                    solver='lbfgs')
+    param_grid = param_grids('C')
+    psel_grid_search(clf, X, y, param_grid, scoring='roc_auc', cv=4, n_jobs=-1, verbosity=2)
+    psel_grid_search(clf, X, y, param_grid, scoring='roc_auc', cv=0.2, n_jobs=-1, verbosity=2)
 
 def test():
+    test_psel_grid_search()
     print "tests ok"
 
 if __name__ == '__main__':
