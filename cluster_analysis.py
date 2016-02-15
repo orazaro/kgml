@@ -18,6 +18,37 @@ random_state = 1
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 
+def plot_pca(df, features, target):
+    """ Linear dimensionality reduction using Singular Value Decomposition 
+        and plot the result.
+    """
+    from sklearn.decomposition import PCA
+    from sklearn.preprocessing import StandardScaler
+
+    color = df[target]
+    df_1 = df[features]
+    #print df_1.columns
+    values = df_1.values
+    values = StandardScaler().fit_transform(values)
+    reduced_data = PCA(n_components=2,whiten=False).fit_transform(values)
+    
+    # use kgml lib
+    from plot import rand_jitter
+    rand_jitter2 = lambda x:rand_jitter(x,0.1)
+
+    cmap = plt.get_cmap('bwr')
+    df_2 = pd.DataFrame(reduced_data,columns=('PC1','PC2'))
+    #print df.shape,np.unique(df['dplus'],return_counts=True)
+    #df1 = df.apply(rand_jitter2, axis=0)
+    df_3 = df_2
+    xcolor = color
+
+    fig,ax = plt.subplots(figsize=(10,10))
+    ax.scatter(df_3.iloc[:,0], df_3.iloc[:,1],c=xcolor,cmap=cmap,s=25)
+    ax.set_xlabel('Principal Component 1')
+    ax.set_ylabel('Principal Component 2')
+
+
 def find_clusters(ax,reduced_data, n_clusters = 2, color='blue', cmap=plt.get_cmap('bwr'),
     title='K-means clustering on the dataset\n'
           'Centroids are marked with white cross'):
