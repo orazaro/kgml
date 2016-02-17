@@ -103,7 +103,7 @@ def cross_val_estimate(estimator, X, y, n_folds=8, n_jobs=1, verbosity=1):
     return y_proba, scores
 
 
-def estimate_model(df, model, predictors, target='dplus', tord=False,
+def estimate_model(df, model, predictors, target='goal', tord=False,
                    tohist=True, n_folds=8, n_jobs=-1, verbosity=1):
     """ Estimate the model and plot results.
 
