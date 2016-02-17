@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Author:   Oleg Razgulyaev 
+# Author:   Oleg Razgulyaev
 # License:  BSD 3 clause
 """
-    Model selection 
+    Model selection
 """
+from __future__ import division, print_function
 
-import random, os, logging, json
+import random
+import os
+import logging
+import json
 import numpy as np
 from scipy.stats import randint as sp_randint
 from pprint import pformat
@@ -18,7 +22,165 @@ from sklearn import grid_search, cross_validation
 from sklearn.base import clone
 from sklearn.externals.joblib import Parallel, delayed
 
+
 logger = logging.getLogger(__name__)
+random_state = 1
+
+# --- estimate and plot model using cross-validation
+
+def cross_val_estimate(estimator, X, y, n_folds=8, n_jobs=1, verbosity=1):
+    """ Estimate the estimator using cross-validation.
+
+    - Calculate probabilities of the target (dplus) returned by classificator
+        using cross-validation technique: predict targets for validation part
+        after training estimator on training part inside cross-validation cycle
+    - Estimate scores of classificator using roc_auc as a metric
+    - Calculate LogLoss and Brier score loss (mean squared error) to estimate
+        quality of predicted probabilities
+    - Calculate sensitivity and specificity using the best threshold for their
+        harmonic mean
+    - Print classification report using the best threshold for F1-score
+
+    Parameters
+    ----------
+    estimator: BaseEstimator-like
+        an estimator to estimate
+    X: array, shape=(n_samples, n_features)
+        the train data samples with values of their features
+    y: array, shape=(n_samples,))
+        the targets
+    n_folds: int, optional (default=8)
+        number of folds in the cross-validation
+    n_jobs:int, optional (default=1)
+        number of cores to use to speed up calculations
+    verbosity: int, optional (default=1)
+        level of verbosity
+
+    Returns
+    -------
+    y_proba: array
+        numpy array of predicted probabilities
+    scores: array
+        numpy array of cross-validated scores
+    """
+    from sklearn import (metrics, cross_validation)
+    from .model_selection import cross_val_predict_proba
+    from .modsel import (
+        estimate_scores,
+        precision_sensitivity_specificity, best_threshold)
+
+    y_true = y
+    scoring = 'roc_auc'
+    cv1 = cross_validation.StratifiedKFold(y, n_folds)
+    y_proba, scores = cross_val_predict_proba(
+        estimator, X, y, scoring=scoring, cv=cv1, n_jobs=n_jobs, verbose=0,
+        fit_params=None, pre_dispatch='2*n_jobs')
+
+    print("\nScores: ", " ".join(["{:.2f}".format(e) for e in scores]))
+    scores_mean, me = estimate_scores(scores, scoring, sampling=False)
+
+    best_thr1, best_thr2 = best_threshold(y_true, y_proba)
+    precision, sensitivity, specificity = precision_sensitivity_specificity(
+        y_true, y_proba, threshold=best_thr2)
+    print()
+    print(
+        "LogLoss: {:1.3f} | Brier score loss: {:1.3f} | sensitivity(recall): "
+        "{:1.2f} and specificity: {:1.2f} with threshold={:1.2f}".format(
+            metrics.log_loss(y_true, y_proba),
+            metrics.brier_score_loss(y_true, y_proba),
+            sensitivity,
+            specificity,
+            best_thr2)
+    )
+
+    target_names = ['class 0', 'class 1']
+
+    print("Threshold={:1.2f}:".format(best_thr1))
+    print(metrics.classification_report(
+        y_true, np.asarray(y_proba > best_thr1, dtype=int),
+        target_names=target_names))
+
+    return y_proba, scores
+
+
+def estimate_model(df, model, predictors, target='dplus', tord=False,
+                   tohist=True, n_folds=8, n_jobs=-1, verbosity=1):
+    """ Estimate the model and plot results.
+
+    - calculate probabilities of the target (dplus) returned by classificator
+        using cross-validation
+    - estimate scores of classificator using roc_auc as a metric
+    - calculate LogLoss and Brier score loss (mean squared error) to estimate
+        quality of predicted probabilities
+    - calculate sensitivity and specificity using the best threshold for their
+        harmonic mean
+    - print classification report using the best threshold for F1-score
+    - plot the predicted probability histograms for every class separately
+    - approximate the probability density functions for every class for
+        comparison
+    - plot ROC curve based on these cross-validated predictions of the
+        probability
+
+    Parameters
+    ----------
+    df: DataFrame shape=(n_samples, n_columns)
+        dataset with all features and the targets
+    model: Model-like
+        a model to estimate
+        derivative of the class model.Model
+    predictors: list of str
+        names of the predictors to use for training/predicting
+    target: str, optional (default='dplus')
+        target to predict
+    tord: bool, optional (default=False)
+        to use round_down (to balance classes by rounding down the high class )
+    tohist: bool, optional (default=True)
+        plot histograms
+    n_folds: int, optional (default=8)
+        number of folds in the cross-validation
+    n_jobs:int, optional (default=1)
+        number of cores to use to speed up calculations
+    verbosity: int, optional (default=1)
+        level of verbosity
+
+    Returns
+    -------
+    y: array
+        true values of the target
+    y_proba: array
+        predicted probabilities
+    scores: array
+        cross-validated scores
+    """
+    from .predictive_analysis import df_xyf
+    from .plot import plot_estimates
+    from .imbalanced import round_down
+
+    if verbosity > 0:
+        print("Model:", model.name)
+    if verbosity > 1:
+        print("Predictors:", predictors)
+    X, y, features = df_xyf(df, predictors=predictors, target=target)
+    if tord:
+        X, y, _ = round_down(X, y)
+    y_proba, scores = cross_val_estimate(model, X, y, n_folds=n_folds,
+                                         n_jobs=n_jobs)
+    if verbosity > 0:
+        plot_estimates(y, y_proba, bins=20, figsize=(12, 8), tohist=tohist)
+    return y, y_proba, scores
+
+
+def test_estimate_model(nfolds=8, n_jobs=1):
+    # import matplotlib.pyplot as plt
+    df, predictors = load_train_df()
+    from .classifier import SVCL
+    y, y_proba, scores = estimate_model(
+        df, SVCL(class_weight='auto', probability=True),
+        predictors, n_folds=nfolds, n_jobs=n_jobs, verbosity=0)
+    # plt.show()
+
+
+# --- END OF estimate and plot model using cross-validation
 
 def cv_run(estimator, X, y, scoring='roc_auc', n_folds=16, n_iter=4, n_jobs=None, random_state=None):
     """
@@ -218,16 +380,16 @@ def split_cv_grid(X,y,cv,n_samples=0.1):
 def make_cv_grid(X,y,cv=None,n_samples=0.1, verbose=0):
     # select small sample for grid_search 
     if isinstance(cv,int): 
-        if verbose>0: print "cv:int"
+        if verbose>0: print("cv:int")
         cv1 = cross_validation.KFold(X.shape[0],cv)
     elif isinstance(cv,float):
-        if verbose>0: print "cv:float"
+        if verbose>0: print("cv:float")
         cv1 = cross_validation.KFold(X.shape[0])
     elif not cv:
-        if verbose>0: print "cv:not"
+        if verbose>0: print("cv:not")
         cv1 = cross_validation.KFold(X.shape[0])
     else:
-        if verbose>0: print "cv:ok"
+        if verbose>0: print("cv:ok")
         cv=list(cv) # to stop generator
         #if verbose: print "cv:",len(cv),"cv[0]:",cv[0]
         cv1 = cv
@@ -237,7 +399,7 @@ def make_cv_grid(X,y,cv=None,n_samples=0.1, verbose=0):
     elif n_samples < 1:
         n_samples = int(N*n_samples)
         if n_samples < 50:
-            if verbose>0: print "Warning: too low n_samples:", n_samples
+            if verbose>0: print("Warning: too low n_samples:", n_samples)
     if n_samples<=2 or n_samples >= N:
         return cv1,X,y
     
@@ -387,7 +549,7 @@ def make_grid_search(clf, X, y, cv=4, n_samples=0.1,
     cv_grid,X_grid,y_grid = make_cv_grid(X,y,cv,n_samples)
     
     if verbose:
-        print "Search estimator parameters..",
+        print("Search estimator parameters..",end=" ")
     if n_iter>0 and clf in ('rf','ef','gb'):
         gs = grid_search.RandomizedSearchCV(est, param_distributions=parameters, n_iter=n_iter, 
             cv=cv_grid, n_jobs=-1, verbose=verbose-1).fit(X_grid,y_grid)
@@ -395,8 +557,8 @@ def make_grid_search(clf, X, y, cv=4, n_samples=0.1,
         gs = grid_search.GridSearchCV(est, parameters, 
             cv=cv_grid, n_jobs=-1, verbose=verbose-1).fit(X_grid,y_grid)
     if verbose:
-        print gs.best_params_
-        print "Pre Score:", gs.best_estimator_.score(X,y)
+        print(gs.best_params_)
+        print("Pre Score:", gs.best_estimator_.score(X,y))
     #return clone(gs.best_estimator_)
     return gs
 
