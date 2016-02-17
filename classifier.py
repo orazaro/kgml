@@ -624,7 +624,7 @@ def create_df_circles(N=3000, circles=1, p=0.05, p2=0.01, rx=0.03):
     return pd.DataFrame(np.c_[X, y], columns=('x', 'y', 'goal'))
 
 
-def check_model(model, X, y, test_size=0.20, train_stat=False):
+def check_model(model, X, y, test_size=0.20, train_stat=False, random_state=None):
     """
     """
     X_train, X_test, y_train, y_test = cross_validation.train_test_split(
