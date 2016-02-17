@@ -12,21 +12,14 @@ import random
 import numpy as np
 import logging
 
-from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
-from sklearn.metrics import (mean_absolute_error, mean_squared_error,
-                             make_scorer)
-from sklearn.metrics import make_scorer, roc_auc_score
-from sklearn import metrics
+from sklearn.base import BaseEstimator, ClassifierMixin
 
 import sklearn.linear_model as lm
-from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
+from sklearn.naive_bayes import GaussianNB, MultinomialNB
 from sklearn.ensemble import (RandomForestClassifier,
-                              GradientBoostingClassifier,
-                              AdaBoostClassifier)
-from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
+                              GradientBoostingClassifier,)
 from sklearn import svm
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.linear_model import SGDClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis as QDA
 
@@ -38,10 +31,7 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.datasets.samples_generator import (make_classification, )
 from sklearn import (metrics, cross_validation)
 
-import sklearn.linear_model as lm
-
 # kgml
-from .base import check_n_jobs
 from .imbalanced import round_down
 from .modsel import bootstrap_632
 from .paramsel import param_grids
@@ -56,7 +46,7 @@ def get_clf(cl, n_jobs=1, random_state=0, class_weight='balanced'):
     lm1 = {'C': [0.0001, 0.001, 0.01, 0.1, 0.3, 1, 3, 10]}
     C_range = 10.0 ** np.arange(-5, 3)
     C_range = np.hstack([C_range, [0.3, 3]])
-    lm2 = dict(C=C_range)
+    # lm2 = dict(C=C_range)
     rf1 = {'max_depth': [2, 4, 8, 16, 24, 32]}
 
     if cl == 'rf2':
@@ -113,33 +103,42 @@ def get_clf(cl, n_jobs=1, random_state=0, class_weight='balanced'):
                             class_weight=class_weight)
     elif cl == 'svmL1g':
         # est3 = svm.SVC(kernel='linear',verbose=0)
-        est3 = svm.LinearSVC(loss='l2',penalty='l1',dual=False,verbose=0,class_weight=class_weight)
-        clf = grid_search.GridSearchCV(est3, lm1, cv=4, n_jobs=n_jobs, verbose=0)
+        est3 = svm.LinearSVC(loss='l2', penalty='l1', dual=False, verbose=0,
+                             class_weight=class_weight)
+        clf = grid_search.GridSearchCV(est3, lm1, cv=4, n_jobs=n_jobs,
+                                       verbose=0)
     elif cl == 'svmL2g':
-        #est3 = svm.SVC(kernel='linear',verbose=0)
-        est3 = svm.LinearSVC(loss='l1',penalty='l2',verbose=0,class_weight=class_weight)
-        clf = grid_search.GridSearchCV(est3, lm1, cv=4, n_jobs=n_jobs, verbose=0)
+        # est3 = svm.SVC(kernel='linear',verbose=0)
+        est3 = svm.LinearSVC(loss='l1', penalty='l2', verbose=0,
+                             class_weight=class_weight)
+        clf = grid_search.GridSearchCV(est3, lm1, cv=4, n_jobs=n_jobs,
+                                       verbose=0)
     elif cl == 'svmRg':
-        #C_range = 10.0 ** np.arange(-2, 9)
-        #gamma_range = 10.0 ** np.arange(-5, 4)
+        # C_range = 10.0 ** np.arange(-2, 9)
+        # gamma_range = 10.0 ** np.arange(-5, 4)
         C_range = 10.0 ** np.arange(-3, 4)
         gamma_range = 10.0 ** np.arange(-4, 3)
         svm2 = dict(gamma=gamma_range, C=C_range)
-        est3 = svm.SVC(kernel='rbf',verbose=0,class_weight=class_weight)
-        clf = grid_search.GridSearchCV(est3, svm2, cv=4, n_jobs=n_jobs, verbose=0)
+        est3 = svm.SVC(kernel='rbf', verbose=0, class_weight=class_weight)
+        clf = grid_search.GridSearchCV(est3, svm2, cv=4, n_jobs=n_jobs,
+                                       verbose=0)
     elif cl == 'svmP3':
-        svm1 = {'C':[0.001,0.01,0.1,1.0,10],'gamma':[0.1,0.01,0.001,0.0001]}
-        svm3 = {'C':[0.001,0.01,0.1,1.0,10],'gamma':[0.1,0.01,0.001,0.0001],
-                                                        'coef0':[0,1]}
-        est4 = svm.SVC(kernel='poly',degree=3,verbose=0,class_weight=class_weight)
-        clf = grid_search.GridSearchCV(est4, svm3, cv=4, n_jobs=n_jobs, verbose=0)
+        # svm1 = {'C':[0.001,0.01,0.1,1.0,10],'gamma':[0.1,0.01,0.001,0.0001]}
+        svm3 = {'C': [0.001, 0.01, 0.1, 1.0, 10],
+                'gamma': [0.1, 0.01, 0.001, 0.0001],
+                'coef0': [0, 1]}
+        est4 = svm.SVC(kernel='poly', degree=3, verbose=0,
+                       class_weight=class_weight)
+        clf = grid_search.GridSearchCV(est4, svm3, cv=4, n_jobs=n_jobs,
+                                       verbose=0)
     elif cl == 'mnb':
         clf = MultinomialNB(alpha=1.0)
     elif cl == 'gnb':
         clf = GaussianNB()
     elif cl == 'knn':
-        knn1 = {'n_neighbors':2**np.arange(0, 8)}
-        clf = grid_search.GridSearchCV(KNeighborsClassifier(), knn1, cv=4, n_jobs=n_jobs, verbose=0)
+        knn1 = {'n_neighbors': 2 ** np.arange(0, 8)}
+        clf = grid_search.GridSearchCV(KNeighborsClassifier(), knn1, cv=4,
+                                       n_jobs=n_jobs, verbose=0)
     elif cl == 'knn100':
         clf = KNeighborsClassifier(n_neighbors=100)
     elif cl == 'knn1k':
@@ -149,10 +148,12 @@ def get_clf(cl, n_jobs=1, random_state=0, class_weight='balanced'):
     elif cl == 'qda':
         clf = QDA()
     elif cl == 'gb':
-        gb1 = {'max_depth':[1,2,4,8],'n_estimators':[10,20,40,80,160]}
+        gb1 = {'max_depth': [1, 2, 4, 8],
+               'n_estimators': [10, 20, 40, 80, 160]}
         clf = grid_search.GridSearchCV(
-            GradientBoostingClassifier(learning_rate=0.1,
-                random_state=random_state,verbose=0,subsample=1.0), 
+            GradientBoostingClassifier(
+                learning_rate=0.1,
+                random_state=random_state, verbose=0, subsample=1.0),
             gb1, cv=4, n_jobs=n_jobs, verbose=0)
     elif cl == 'rcv':
         clf = RidgeCV_proba()
@@ -161,11 +162,12 @@ def get_clf(cl, n_jobs=1, random_state=0, class_weight='balanced'):
     elif cl == 'lr':
         clf = LinearRegression_proba()
     else:
-        raise ValueError("bad cl:%s"%cl)
+        raise ValueError("bad cl:%s" % cl)
 
     return clf
 
-###------- Base Classifier Model -----------###
+# ------- Base Classifier Model -----------###
+
 
 class Model(BaseEstimator):
     """ The base class to inherit from it all our meta estimators.
@@ -373,7 +375,6 @@ class LR2(Model):
             penalty='l2', dual=False, C=self.C,
             class_weight=self.class_weight, random_state=self.rs,
             solver='lbfgs')
-        # clf=lm.LogisticRegression(penalty='l2', C=.01, class_weight='balanced')
         return clf
 
 
@@ -575,7 +576,7 @@ class SVCPg(Model):
 # --- helpers -----------------#
 
 
-def make_skewed_data():
+def make_skewed_data(random_state=None):
     X, y = make_classification(
         n_samples=5000, n_features=20, n_classes=2,
         n_clusters_per_class=2, n_informative=8, n_redundant=2,
@@ -624,7 +625,8 @@ def create_df_circles(N=3000, circles=1, p=0.05, p2=0.01, rx=0.03):
     return pd.DataFrame(np.c_[X, y], columns=('x', 'y', 'goal'))
 
 
-def check_model(model, X, y, test_size=0.20, train_stat=False, random_state=None):
+def check_model(model, X, y, test_size=0.20, train_stat=False,
+                random_state=None):
     """
     """
     X_train, X_test, y_train, y_test = cross_validation.train_test_split(
@@ -660,38 +662,42 @@ def check_model(model, X, y, test_size=0.20, train_stat=False, random_state=None
         print("train stats:")
         print_stats()
 
-###------- Base Classifier Model -----------###
+# ------- Base Classifier Model -----------###
+
 
 class LinearRegression_proba(lm.LinearRegression):
-  def predict_proba(self,X):
-    y = self.predict(X)
-    y = 1./(1+np.exp(-(y-0.5)))
-    return np.vstack((1-y,y)).T
+    def predict_proba(self, X):
+        y = self.predict(X)
+        y = 1./(1+np.exp(-(y-0.5)))
+        return np.vstack((1-y, y)).T
+
 
 class LassoCV_proba(lm.LassoCV):
-  def predict_proba(self,X):
-    logger.debug('alpha_=%s',self.alpha_)
-    y = self.predict(X)
-    y = 1./(1+np.exp(-(y-0.5)))
-    return np.vstack((1-y,y)).T
+    def predict_proba(self, X):
+        logger.debug('alpha_=%s', self.alpha_)
+        y = self.predict(X)
+        y = 1./(1+np.exp(-(y-0.5)))
+        return np.vstack((1-y, y)).T
+
 
 class RidgeCV_proba(lm.RidgeCV):
-  def predict_proba(self,X):
-    logger.debug('alpha_=%s',self.alpha_)
-    y = self.predict(X)
-    if 0:
-        y_min,y_max = y.min(),y.max()
-        if y_max>y_min:
-            y = (y-y_min)/(y_max-y_min)
-    else:
-        y = 1./(1+np.exp(-(y-0.5)))
-    return np.vstack((1-y,y)).T
+    def predict_proba(self, X):
+        logger.debug('alpha_=%s', self.alpha_)
+        y = self.predict(X)
+        if 0:
+            y_min, y_max = y.min(), y.max()
+            if y_max > y_min:
+                y = (y-y_min)/(y_max-y_min)
+        else:
+            y = 1./(1+np.exp(-(y-0.5)))
+        return np.vstack((1-y, y)).T
+
 
 class KNeighborsClassifier_proba(KNeighborsClassifier):
-  def predict_proba(self,X):
-    y = super(KNeighborsClassifier_proba, self).predict_proba(X)
-    y[np.isnan(y)]=0.5
-    return y
+    def predict_proba(self,X):
+        y = super(KNeighborsClassifier_proba, self).predict_proba(X)
+        y[np.isnan(y)]=0.5
+        return y
 
 class SVC_proba(svm.SVC):
   def predict_proba(self,X):
