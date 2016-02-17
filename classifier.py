@@ -1,101 +1,125 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Author:   Oleg Razgulyaev 
+# Author:   Oleg Razgulyaev
 # License:  BSD 3 clause
 """
     Classifiers
 """
+from __future__ import division, print_function
 
-import sys, random
+import sys
+import random
 import numpy as np
 import logging
 
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
-from sklearn.metrics import mean_absolute_error, mean_squared_error, make_scorer
+from sklearn.metrics import (mean_absolute_error, mean_squared_error,
+                             make_scorer)
 from sklearn.metrics import make_scorer, roc_auc_score
 from sklearn import metrics
 
 import sklearn.linear_model as lm
-from sklearn.naive_bayes import BernoulliNB,GaussianNB,MultinomialNB
-from sklearn.ensemble import (RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier)
+from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
+from sklearn.ensemble import (RandomForestClassifier,
+                              GradientBoostingClassifier,
+                              AdaBoostClassifier)
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn import svm
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import SGDClassifier
-from sklearn.lda import LDA
-from sklearn.qda import QDA
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis as QDA
 
-from base import check_n_jobs
+from sklearn import grid_search
+import pandas as pd
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.datasets.samples_generator import (make_classification, )
+from sklearn import (metrics, cross_validation)
+
+import sklearn.linear_model as lm
+
+# kgml
+from .base import check_n_jobs
+from .imbalanced import round_down
+from .modsel import bootstrap_632
+from .paramsel import param_grids
+from .modsel import (precision_sensitivity_specificity, best_threshold)
 
 logger = logging.getLogger(__name__)
 
-from sklearn.ensemble import RandomForestClassifier
-import sklearn.linear_model as lm
-from sklearn import svm
-from sklearn.naive_bayes import MultinomialNB,GaussianNB
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.lda import LDA
-from sklearn.qda import QDA
-from sklearn.ensemble import (RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier)
 
-from sklearn import grid_search
-
-def get_clf(cl,n_jobs=1,random_state=0,class_weight='auto'):
+def get_clf(cl, n_jobs=1, random_state=0, class_weight='auto'):
     """ Select clasifier by name
     """
-    lm1 = {'C':[0.0001, 0.001, 0.01, 0.1, 0.3, 1, 3, 10]}
+    lm1 = {'C': [0.0001, 0.001, 0.01, 0.1, 0.3, 1, 3, 10]}
     C_range = 10.0 ** np.arange(-5, 3)
-    C_range = np.hstack([C_range,[0.3,3]])
+    C_range = np.hstack([C_range, [0.3, 3]])
     lm2 = dict(C=C_range)
-    rf1 = {'max_depth':[2,4,8,16,24,32]}
+    rf1 = {'max_depth': [2, 4, 8, 16, 24, 32]}
 
-    if cl=='rf2':
-        clf = RandomForestClassifier(n_estimators=100, min_samples_leaf=1,
+    if cl == 'rf2':
+        clf = RandomForestClassifier(
+                n_estimators=100, min_samples_leaf=1,
                 max_features='auto', class_weight=class_weight,
                 n_jobs=n_jobs, random_state=random_state, verbose=0)
-    elif cl=='rf':
-        clf1 = RandomForestClassifier(n_estimators=100, max_depth=2,
+    elif cl == 'rf':
+        clf1 = RandomForestClassifier(
+                n_estimators=100, max_depth=2,
                 max_features='auto', class_weight=class_weight,
                 n_jobs=n_jobs, random_state=random_state, verbose=0)
-        clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs, verbose=0)
-    elif cl=='dt':
+        clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs,
+                                       verbose=0)
+    elif cl == 'dt':
         from sklearn.tree import DecisionTreeClassifier
-        clf1 = DecisionTreeClassifier(max_depth=2, max_features='auto', class_weight=class_weight)
-        clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs, verbose=0)
-    elif cl=='lr2':
-        clf = lm.LogisticRegression(penalty='l2', dual=True, tol=0.0001, 
-                             C=1, fit_intercept=True, intercept_scaling=1.0, 
-                             class_weight=class_weight, random_state=random_state)
+        clf1 = DecisionTreeClassifier(max_depth=2, max_features='auto',
+                                      class_weight=class_weight)
+        clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs,
+                                       verbose=0)
+    elif cl == 'lr2':
+        clf = lm.LogisticRegression(
+                    penalty='l2', dual=True, tol=0.0001,
+                    C=1, fit_intercept=True, intercept_scaling=1.0,
+                    class_weight=class_weight, random_state=random_state)
 
-    elif cl=='lr1':
-        clf = lm.LogisticRegression(penalty='l1', dual=False, tol=0.0001, 
-                             C=1.0, fit_intercept=True, intercept_scaling=1.0, 
-                             class_weight=class_weight, random_state=random_state)
-    elif cl=='lr2g':
-        est2 = lm.LogisticRegression(penalty='l2', dual=True, tol=0.0001, 
-             C=1, fit_intercept=True, intercept_scaling=1.0, 
-             class_weight=class_weight, random_state=random_state)
-        clf = grid_search.GridSearchCV(est2, lm1, cv=4, n_jobs=n_jobs, verbose=0)
-    elif cl=='lr1g':
-        est1 = lm.LogisticRegression(penalty='l1', dual=False, tol=0.0001, 
-             C=1, fit_intercept=True, intercept_scaling=1.0, 
-             class_weight=class_weight, random_state=random_state)
-        clf = grid_search.GridSearchCV(est1, lm1, cv=4, n_jobs=n_jobs, verbose=0)
-    elif cl=='svmL':
-        clf = svm.LinearSVC(C=1.0,loss='l2',penalty='l2',dual=True,verbose=0,class_weight=class_weight)
-    elif cl=='svmL1':
-        clf = svm.LinearSVC(C=1.0,loss='l2',penalty='l1',dual=False,verbose=0,class_weight=class_weight)
-    elif cl=='svmL2':
-        clf = svm.LinearSVC(C=1.0,loss='l1',penalty='l2',verbose=0,class_weight=class_weight)
-    elif cl=='svmL1g':
-        #est3 = svm.SVC(kernel='linear',verbose=0)
+    elif cl == 'lr1':
+        clf = lm.LogisticRegression(
+                    penalty='l1', dual=False, tol=0.0001,
+                    C=1.0, fit_intercept=True, intercept_scaling=1.0,
+                    class_weight=class_weight, random_state=random_state)
+    elif cl == 'lr2g':
+        est2 = lm.LogisticRegression(
+                    penalty='l2', dual=True, tol=0.0001,
+                    C=1, fit_intercept=True, intercept_scaling=1.0,
+                    class_weight=class_weight, random_state=random_state)
+        clf = grid_search.GridSearchCV(est2, lm1, cv=4, n_jobs=n_jobs,
+                                       verbose=0)
+    elif cl == 'lr1g':
+        est1 = lm.LogisticRegression(
+                    penalty='l1', dual=False, tol=0.0001,
+                    C=1, fit_intercept=True, intercept_scaling=1.0,
+                    class_weight=class_weight, random_state=random_state)
+        clf = grid_search.GridSearchCV(est1, lm1, cv=4, n_jobs=n_jobs,
+                                       verbose=0)
+    elif cl == 'svmL':
+        clf = svm.LinearSVC(C=1.0, loss='l2', penalty='l2', dual=True,
+                            verbose=0, class_weight=class_weight)
+    elif cl == 'svmL1':
+        clf = svm.LinearSVC(C=1.0, loss='l2', penalty='l1', dual=False,
+                            verbose=0, class_weight=class_weight)
+    elif cl == 'svmL2':
+        clf = svm.LinearSVC(C=1.0, loss='l1', penalty='l2', verbose=0,
+                            class_weight=class_weight)
+    elif cl == 'svmL1g':
+        # est3 = svm.SVC(kernel='linear',verbose=0)
         est3 = svm.LinearSVC(loss='l2',penalty='l1',dual=False,verbose=0,class_weight=class_weight)
         clf = grid_search.GridSearchCV(est3, lm1, cv=4, n_jobs=n_jobs, verbose=0)
-    elif cl=='svmL2g':
+    elif cl == 'svmL2g':
         #est3 = svm.SVC(kernel='linear',verbose=0)
         est3 = svm.LinearSVC(loss='l1',penalty='l2',verbose=0,class_weight=class_weight)
         clf = grid_search.GridSearchCV(est3, lm1, cv=4, n_jobs=n_jobs, verbose=0)
-    elif cl=='svmRg':
+    elif cl == 'svmRg':
         #C_range = 10.0 ** np.arange(-2, 9)
         #gamma_range = 10.0 ** np.arange(-5, 4)
         C_range = 10.0 ** np.arange(-3, 4)
@@ -103,38 +127,38 @@ def get_clf(cl,n_jobs=1,random_state=0,class_weight='auto'):
         svm2 = dict(gamma=gamma_range, C=C_range)
         est3 = svm.SVC(kernel='rbf',verbose=0,class_weight=class_weight)
         clf = grid_search.GridSearchCV(est3, svm2, cv=4, n_jobs=n_jobs, verbose=0)
-    elif cl=='svmP3':
+    elif cl == 'svmP3':
         svm1 = {'C':[0.001,0.01,0.1,1.0,10],'gamma':[0.1,0.01,0.001,0.0001]}
         svm3 = {'C':[0.001,0.01,0.1,1.0,10],'gamma':[0.1,0.01,0.001,0.0001],
                                                         'coef0':[0,1]}
         est4 = svm.SVC(kernel='poly',degree=3,verbose=0,class_weight=class_weight)
         clf = grid_search.GridSearchCV(est4, svm3, cv=4, n_jobs=n_jobs, verbose=0)
-    elif cl=='mnb':
+    elif cl == 'mnb':
         clf = MultinomialNB(alpha=1.0)
-    elif cl=='gnb':
+    elif cl == 'gnb':
         clf = GaussianNB()
-    elif cl=='knn':
+    elif cl == 'knn':
         knn1 = {'n_neighbors':2**np.arange(0, 8)}
         clf = grid_search.GridSearchCV(KNeighborsClassifier(), knn1, cv=4, n_jobs=n_jobs, verbose=0)
-    elif cl=='knn100':
+    elif cl == 'knn100':
         clf = KNeighborsClassifier(n_neighbors=100)
-    elif cl=='knn1k':
+    elif cl == 'knn1k':
         clf = KNeighborsClassifier(n_neighbors=1024)
-    elif cl=='lda':
+    elif cl == 'lda':
         clf = LDA()
-    elif cl=='qda':
+    elif cl == 'qda':
         clf = QDA()
-    elif cl=='gb':
+    elif cl == 'gb':
         gb1 = {'max_depth':[1,2,4,8],'n_estimators':[10,20,40,80,160]}
         clf = grid_search.GridSearchCV(
             GradientBoostingClassifier(learning_rate=0.1,
                 random_state=random_state,verbose=0,subsample=1.0), 
             gb1, cv=4, n_jobs=n_jobs, verbose=0)
-    elif cl=='rcv':
+    elif cl == 'rcv':
         clf = RidgeCV_proba()
-    elif cl=='lcv':
+    elif cl == 'lcv':
         clf = LassoCV_proba()
-    elif cl=='lr':
+    elif cl == 'lr':
         clf = LinearRegression_proba()
     else:
         raise ValueError("bad cl:%s"%cl)
@@ -142,32 +166,6 @@ def get_clf(cl,n_jobs=1,random_state=0,class_weight='auto'):
     return clf
 
 ###------- Base Classifier Model -----------###
-
-from __future__ import division, print_function
-import random
-import logging
-
-import pandas as pd
-import numpy as np
-
-random_state = 1
-
-
-from sklearn.base import BaseEstimator
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.calibration import CalibratedClassifierCV
-from sklearn import grid_search
-from sklearn.datasets.samples_generator import (make_classification, )
-from sklearn import (metrics, cross_validation)
-
-import sklearn.linear_model as lm
-
-from .kgml.imbalanced import round_down
-from .kgml.modsel import bootstrap_632
-from .kgml.paramsel import param_grids
-from .kgml.modsel import (precision_sensitivity_specificity, best_threshold)
-
 
 class Model(BaseEstimator):
     """ The base class to inherit from it all our meta estimators.
@@ -230,56 +228,6 @@ class Model(BaseEstimator):
             else:
                 name += '.sig'
         return name
-
-    def df_xyf(self, df, predictors=None, target='dplus', feasel=None):
-        """ Extract samples and target numpy arrays and its names from the DataFrame.
-        """
-        from .kgml.predictive_analysis import df_xyf
-        from features import features_selected
-        if feasel is None and hasattr(self, 'feasel'):
-            feasel = self.feasel
-        if feasel is None:
-            return df_xyf(df, predictors=predictors, target=target)
-        if feasel in features_selected:
-            if feasel in ('LR2q', 'SVCLq'):
-                from .kgml.feature_selection import add_quadratic_features
-                predictors = [e for e in df.columns if e not in (
-                    'pid', 'dplus', 'long', 'perp', 'area')]
-                df_quad = add_quadratic_features(df, predictors,
-                                                 rm_noninform=False)
-                if feasel == 'LR2q':
-                    predictors = features_selected[feasel][:6]
-                else:
-                    predictors = features_selected[feasel][:12]
-                return df_xyf(df_quad, predictors=predictors, target=target)
-            elif feasel in ('SVCL_PC', 'LR2_PC'):
-                from sklearn.decomposition import PCA
-                from sklearn.preprocessing import StandardScaler
-                from sklearn.pipeline import Pipeline
-                pline = [("scaler", StandardScaler()),
-                         ("pca", PCA(n_components=None, whiten=False)), ]
-                rd = Pipeline(pline)
-                predictors = [e for e in df.columns if e not in (
-                    'pid', 'dplus', 'long', 'perp', 'area')]
-                values = df[predictors].values
-                reduced_data = rd.fit_transform(values)
-                pred_pca = ["PC{:d}".format(i + 1) for i in range(
-                    reduced_data.shape[1])]
-                df2 = pd.DataFrame(reduced_data, columns=pred_pca)
-                df2['dplus'] = df['dplus'].values
-                return df_xyf(df2, predictors=features_selected[feasel],
-                              target=target)
-            elif feasel == 'LR2b':  # first 8 features from LR2 set
-                return df_xyf(df, predictors=features_selected[feasel][:8],
-                              target=target)
-            elif feasel == 'SVCLb':  # first 11 features from SVCL set
-                return df_xyf(df, predictors=features_selected[feasel][:11],
-                              target=target)
-            else:
-                return df_xyf(df, predictors=features_selected[feasel],
-                              target=target)
-        else:
-            raise ValueError("bad feasel: {}".format(self.feasel))
 
     def fit(self, X, y):
         """ Fit meta estimator using train dataset and targets
@@ -411,7 +359,7 @@ class Model(BaseEstimator):
 
 
 class LR2(Model):
-    def __init__(self, C=0.01, class_weight='auto', rounddown=False,
+    def __init__(self, C=1.0, class_weight='auto', rounddown=False,
                  use_scaler=2, clb=0):
         super(LR2, self).__init__(rounddown=rounddown)
         self.C = C
@@ -430,7 +378,7 @@ class LR2(Model):
 
 
 class LR1(Model):
-    def __init__(self, C=0.1, class_weight='auto', rounddown=False,
+    def __init__(self, C=1.0, class_weight='auto', rounddown=False,
                  use_scaler=2, clb=0):
         super(LR1, self).__init__(rounddown=rounddown)
         self.C = C
@@ -454,8 +402,6 @@ class LR2CV(LR2):
             scoring='roc_auc', cv=3, n_jobs=1,
             class_weight=self.class_weight, solver='liblinear')
         return clf
-
-from sklearn import svm
 
 
 class SVCL(Model):
@@ -825,7 +771,7 @@ class RoundClassifier(BaseEstimator, ClassifierMixin):
 
 
 def test():
-    print "tests ok"
+    print("tests ok")
 
 if __name__ == '__main__':
     random.seed(1)
@@ -833,7 +779,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Tuner.')
     parser.add_argument('cmd', nargs='?', default='test')
     args = parser.parse_args()
-    print >>sys.stderr,args 
+    print(args, file=sys.stderr) 
   
     if args.cmd == 'test':
         test()
