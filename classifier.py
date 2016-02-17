@@ -50,7 +50,7 @@ from .modsel import (precision_sensitivity_specificity, best_threshold)
 logger = logging.getLogger(__name__)
 
 
-def get_clf(cl, n_jobs=1, random_state=0, class_weight='auto'):
+def get_clf(cl, n_jobs=1, random_state=0, class_weight='balanced'):
     """ Select clasifier by name
     """
     lm1 = {'C': [0.0001, 0.001, 0.01, 0.1, 0.3, 1, 3, 10]}
@@ -213,7 +213,7 @@ class Model(BaseEstimator):
             name = self._model_name
         else:
             name = self.__class__.__name__
-        if hasattr(self, 'class_weight') and self.class_weight == 'auto':
+        if hasattr(self, 'class_weight') and self.class_weight == 'balanced':
             name += 'w'
         if hasattr(self, 'rounddown') and self.rounddown:
             name += 'd'
@@ -359,7 +359,7 @@ class Model(BaseEstimator):
 
 
 class LR2(Model):
-    def __init__(self, C=1.0, class_weight='auto', rounddown=False,
+    def __init__(self, C=1.0, class_weight='balanced', rounddown=False,
                  use_scaler=2, clb=0):
         super(LR2, self).__init__(rounddown=rounddown)
         self.C = C
@@ -370,15 +370,15 @@ class LR2(Model):
 
     def _get_clf(self, sclf):
         clf = lm.LogisticRegression(
-            penalty='l2', dual=True, C=self.C,
+            penalty='l2', dual=False, C=self.C,
             class_weight=self.class_weight, random_state=self.rs,
             solver='lbfgs')
-        # clf=lm.LogisticRegression(penalty='l2', C=.01, class_weight='auto')
+        # clf=lm.LogisticRegression(penalty='l2', C=.01, class_weight='balanced')
         return clf
 
 
 class LR1(Model):
-    def __init__(self, C=1.0, class_weight='auto', rounddown=False,
+    def __init__(self, C=1.0, class_weight='balanced', rounddown=False,
                  use_scaler=2, clb=0):
         super(LR1, self).__init__(rounddown=rounddown)
         self.C = C
@@ -415,7 +415,7 @@ class SVCL(Model):
     ----------
     http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
     """
-    def __init__(self, C=0.001, class_weight='auto', probability=False,
+    def __init__(self, C=0.001, class_weight='balanced', probability=False,
                  rounddown=False, clb=0):
         super(SVCL, self).__init__(rounddown=rounddown)
         self.C = C
@@ -444,7 +444,7 @@ class LSVC(Model):
     http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html
     """
     def __init__(self, C=1.0, loss='squared_hinge', penalty='l2', dual=True,
-                 class_weight='auto', rounddown=False, clb=0):
+                 class_weight='balanced', rounddown=False, clb=0):
         super(LSVC, self).__init__(rounddown=rounddown)
         self.C = C
         self.loss = loss
@@ -464,7 +464,7 @@ class LSVC(Model):
 
 class SVC(Model):
     def __init__(self, C=1.0, kernel='rbf', degree=3, gamma=0.0002, coef0=1.0,
-                 class_weight='auto', probability=False, rounddown=False,
+                 class_weight='balanced', probability=False, rounddown=False,
                  clb=0, n_jobs=1):
         super(SVC, self).__init__(rounddown=rounddown)
         self.C = C
@@ -499,7 +499,7 @@ class SVC(Model):
 
 class SVCR(SVC):
     def __init__(self, C=1.0, degree=3, gamma=0.0002, coef0=1.0,
-                 class_weight='auto', probability=False, rounddown=False,
+                 class_weight='balanced', probability=False, rounddown=False,
                  clb=0, n_jobs=1):
         super(SVCR, self).__init__(
             C=C, kernel='rbf', degree=degree, gamma=gamma, coef0=coef0,
@@ -509,7 +509,7 @@ class SVCR(SVC):
 
 class SVCP(SVC):
     def __init__(self, C=1.0, degree=3, gamma=0.0001, coef0=1.0,
-                 class_weight='auto', probability=False, rounddown=False,
+                 class_weight='balanced', probability=False, rounddown=False,
                  clb=0, n_jobs=1):
         super(SVCP, self).__init__(
             C=C, kernel='poly', degree=degree, gamma=gamma, coef0=coef0,
@@ -518,7 +518,7 @@ class SVCP(SVC):
 
 
 class SVCRg(Model):
-    def __init__(self, class_weight='auto', probability=False,
+    def __init__(self, class_weight='balanced', probability=False,
                  rounddown=False, clb=0, n_jobs=1,
                  pgrid_str=None):
         super(SVCRg, self).__init__(rounddown=rounddown)
@@ -546,7 +546,7 @@ class SVCRg(Model):
 
 
 class SVCPg(Model):
-    def __init__(self, class_weight='auto', probability=False,
+    def __init__(self, class_weight='balanced', probability=False,
                  rounddown=False, clb=0, n_jobs=1, pdegree=2,
                  pgrid_str=None):
         super(SVCPg, self).__init__(rounddown=rounddown)
