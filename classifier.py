@@ -151,7 +151,6 @@ import pandas as pd
 import numpy as np
 
 random_state = 1
-logger = logging.getLogger(__name__)
 
 
 from sklearn.base import BaseEstimator
