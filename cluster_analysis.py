@@ -18,7 +18,7 @@ random_state = 1
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 
-def plot_pca(df, features, target):
+def plot_pca(df, features, target, components=(0,1), figsize=(10,10)):
     """ Linear dimensionality reduction using Singular Value Decomposition 
         and plot the result.
     """
@@ -30,7 +30,8 @@ def plot_pca(df, features, target):
     #print df_1.columns
     values = df_1.values
     values = StandardScaler().fit_transform(values)
-    reduced_data = PCA(n_components=2,whiten=False).fit_transform(values)
+    reduced_data = PCA(n_components=max(components)+1,whiten=False).fit_transform(values)
+    reduced_data = reduced_data[:,components]
     
     # use kgml lib
     from plot import rand_jitter
@@ -43,10 +44,10 @@ def plot_pca(df, features, target):
     df_3 = df_2
     xcolor = color
 
-    fig,ax = plt.subplots(figsize=(10,10))
+    fig,ax = plt.subplots(figsize=figsize)
     ax.scatter(df_3.iloc[:,0], df_3.iloc[:,1],c=xcolor,cmap=cmap,s=25)
-    ax.set_xlabel('Principal Component 1')
-    ax.set_ylabel('Principal Component 2')
+    ax.set_xlabel('Principal Component {}'.format(components[0]+1))
+    ax.set_ylabel('Principal Component {}'.format(components[1]+1))
 
 
 def find_clusters(ax,reduced_data, n_clusters = 2, color='blue', cmap=plt.get_cmap('bwr'),

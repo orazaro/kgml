@@ -141,6 +141,582 @@ def get_clf(cl,n_jobs=1,random_state=0,class_weight='auto'):
 
     return clf
 
+###------- Base Classifier Model -----------###
+
+from __future__ import division, print_function
+import random
+import logging
+
+import pandas as pd
+import numpy as np
+
+random_state = 1
+logger = logging.getLogger(__name__)
+
+
+from sklearn.base import BaseEstimator
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn import grid_search
+from sklearn.datasets.samples_generator import (make_classification, )
+from sklearn import (metrics, cross_validation)
+
+import sklearn.linear_model as lm
+
+from .kgml.imbalanced import round_down
+from .kgml.modsel import bootstrap_632
+from .kgml.paramsel import param_grids
+from .kgml.modsel import (precision_sensitivity_specificity, best_threshold)
+
+
+class Model(BaseEstimator):
+    """ The base class to inherit from it all our meta estimators.
+
+    Parameters
+    ----------
+    sclf: str, optional (default=None)
+        name of the base estimator if we want to use this class (Model)
+        as our meta estimator (do not inherit)
+    use_scaler: int, optional (default=2)
+        to use standard scaler during transformation phase
+    rounddown: bool, optional (default=False)
+        round down classes in the training dataset before fitting
+    n_jobs:int, optional (default=1)
+        number of cores to use to speed up calculations
+    rs:int, optional (default=random_state)
+        random seed to initialize the random generator
+        by default will use the global parameter random_state
+
+    Attributes
+    ----------
+    Examples
+    --------
+    References
+    ----------
+    """
+    def __init__(self, sclf=None, use_scaler=2, rounddown=False,
+                 n_jobs=1, rs=None):
+        self.sclf = sclf
+        self.use_scaler = use_scaler
+        self.rounddown = rounddown
+        self.n_jobs = n_jobs
+        self.rs = rs
+
+    @property
+    def name(self):
+        """ The name of the derived class of the estimator.
+        Returns
+        -------
+        name: str
+            the name of the estimator constracted dinamically and depended
+            of the properties of current estimator
+        """
+        if hasattr(self, '_model_name'):
+            name = self._model_name
+        else:
+            name = self.__class__.__name__
+        if hasattr(self, 'class_weight') and self.class_weight == 'auto':
+            name += 'w'
+        if hasattr(self, 'rounddown') and self.rounddown:
+            name += 'd'
+        if hasattr(self, 'probability') and self.probability:
+            name += 'p'
+        if hasattr(self, 'pdegree'):
+            name += 'P{:d}'.format(self.pdegree)
+
+        if hasattr(self, 'clb') and self.clb != 0:
+            if self.clb > 0:
+                name += '.iso'
+            else:
+                name += '.sig'
+        return name
+
+    def df_xyf(self, df, predictors=None, target='dplus', feasel=None):
+        """ Extract samples and target numpy arrays and its names from the DataFrame.
+        """
+        from .kgml.predictive_analysis import df_xyf
+        from features import features_selected
+        if feasel is None and hasattr(self, 'feasel'):
+            feasel = self.feasel
+        if feasel is None:
+            return df_xyf(df, predictors=predictors, target=target)
+        if feasel in features_selected:
+            if feasel in ('LR2q', 'SVCLq'):
+                from .kgml.feature_selection import add_quadratic_features
+                predictors = [e for e in df.columns if e not in (
+                    'pid', 'dplus', 'long', 'perp', 'area')]
+                df_quad = add_quadratic_features(df, predictors,
+                                                 rm_noninform=False)
+                if feasel == 'LR2q':
+                    predictors = features_selected[feasel][:6]
+                else:
+                    predictors = features_selected[feasel][:12]
+                return df_xyf(df_quad, predictors=predictors, target=target)
+            elif feasel in ('SVCL_PC', 'LR2_PC'):
+                from sklearn.decomposition import PCA
+                from sklearn.preprocessing import StandardScaler
+                from sklearn.pipeline import Pipeline
+                pline = [("scaler", StandardScaler()),
+                         ("pca", PCA(n_components=None, whiten=False)), ]
+                rd = Pipeline(pline)
+                predictors = [e for e in df.columns if e not in (
+                    'pid', 'dplus', 'long', 'perp', 'area')]
+                values = df[predictors].values
+                reduced_data = rd.fit_transform(values)
+                pred_pca = ["PC{:d}".format(i + 1) for i in range(
+                    reduced_data.shape[1])]
+                df2 = pd.DataFrame(reduced_data, columns=pred_pca)
+                df2['dplus'] = df['dplus'].values
+                return df_xyf(df2, predictors=features_selected[feasel],
+                              target=target)
+            elif feasel == 'LR2b':  # first 8 features from LR2 set
+                return df_xyf(df, predictors=features_selected[feasel][:8],
+                              target=target)
+            elif feasel == 'SVCLb':  # first 11 features from SVCL set
+                return df_xyf(df, predictors=features_selected[feasel][:11],
+                              target=target)
+            else:
+                return df_xyf(df, predictors=features_selected[feasel],
+                              target=target)
+        else:
+            raise ValueError("bad feasel: {}".format(self.feasel))
+
+    def fit(self, X, y):
+        """ Fit meta estimator using train dataset and targets
+
+        Parameters
+        ----------
+        X: array, shape=(n_samples, n_features)
+            train data samples with values of their features
+        y: array, shape=(n_samples,))
+            targets
+        """
+        self.PipelineList = []
+        if self.use_scaler > 0:
+            self.PipelineList.append(
+                ("scaler", StandardScaler(with_mean=(self.use_scaler > 1)))
+            )
+        self._pipeline_append(self.PipelineList)
+        self.PipelineList.append(("est", self._get_clf(self.sclf)))
+
+        self.rd = Pipeline(self.PipelineList)
+
+        if self.rounddown:
+            X, y, _ = round_down(X, y)
+
+        # TODO fix this hack
+        # if clb < 0 use sigmoid (HACK)
+        if hasattr(self, 'clb') and self.clb != 0:
+            if hasattr(self, 'clb_method'):
+                method = self.clb_method
+            elif self.clb < 0:
+                method = 'sigmoid'
+            else:
+                method = 'isotonic'
+            clb = self.clb if self.clb > 0 else -self.clb
+            cv = bootstrap_632(len(y), clb, random_state=self.rs)
+            self.rd = CalibratedClassifierCV(self.rd, cv=cv, method=method)
+
+        self.rd.fit(X, y)
+        # adjust threshold
+        if hasattr(self.rd, 'predict_proba'):
+            y_prob = self.rd.predict_proba(X)[:, 1]
+            self.threshold, self.threshold2 = best_threshold(y, y_prob)
+        else:
+            self.threshold = self.threshold2 = None
+
+        return self
+
+    def _pipeline_append(self, pipelineList):
+        """ Append any transformers into current pipeline.
+
+        Virtual function: allows derived classes to append any new
+        transformers into current pipeline. By default does nothing.
+
+        Parameters
+        ----------
+        pipelineList: list
+            a list that should be added transformers
+        """
+        pass
+
+    def predict_proba(self, X):
+        """Posterior probabilities of classification
+
+        This function returns posterior probabilities of classification
+        according to each class on an array of test vectors X.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            The samples.
+
+        Returns
+        -------
+        C : array, shape (n_samples, n_classes)
+            The predicted probas.
+        """
+        if hasattr(self.rd, "predict_proba"):
+            return self.rd.predict_proba(X)
+        else:
+            raise RuntimeError("rd without predict_proba")
+
+    def predict(self, X):
+        """Predict the target of new samples.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            The samples.
+
+        Returns
+        -------
+        C : array, shape (n_samples,)
+            The predicted class.
+        """
+        if hasattr(self.rd, "predict_proba") and self.threshold:
+            y_prob = self.rd.predict_proba(X)[:, 1]
+            return np.asarray(y_prob > self.threshold, dtype=int)
+        else:
+            return self.rd.predict(X)
+
+    def get_param_grid(self, randomized=True):
+        "get param_grid for this model to use with GridSearch"
+        return []
+
+    def _get_clf(self, sclf):
+        if sclf is None:
+            raise NotImplementedError('virtual function')
+        else:
+            from .kgml.classifier import get_clf
+            return get_clf(sclf, n_jobs=self.n_jobs, random_state=self.rs)
+
+    @property
+    def coef_(self):
+        """
+        """
+        clf = self.rd.named_steps['est']
+        if hasattr(clf, 'coef_'):
+            return clf.coef_
+        elif hasattr(clf, 'feature_importances_'):
+            return clf.feature_importances_
+        else:
+            raise RuntimeError("est without coef_ of feature_importances_")
+
+    @property
+    def clf_(self):
+        """
+        """
+        return self.rd.named_steps['est']
+
+
+class LR2(Model):
+    def __init__(self, C=0.01, class_weight='auto', rounddown=False,
+                 use_scaler=2, clb=0):
+        super(LR2, self).__init__(rounddown=rounddown)
+        self.C = C
+        self.class_weight = class_weight
+        self.rounddown = rounddown
+        self.use_scaler = use_scaler
+        self.clb = clb
+
+    def _get_clf(self, sclf):
+        clf = lm.LogisticRegression(
+            penalty='l2', dual=True, C=self.C,
+            class_weight=self.class_weight, random_state=self.rs,
+            solver='lbfgs')
+        # clf=lm.LogisticRegression(penalty='l2', C=.01, class_weight='auto')
+        return clf
+
+
+class LR1(Model):
+    def __init__(self, C=0.1, class_weight='auto', rounddown=False,
+                 use_scaler=2, clb=0):
+        super(LR1, self).__init__(rounddown=rounddown)
+        self.C = C
+        self.class_weight = class_weight
+        self.rounddown = rounddown
+        self.use_scaler = use_scaler
+        self.clb = clb
+
+    def _get_clf(self, sclf):
+        clf = lm.LogisticRegression(
+            penalty='l1', dual=False, C=self.C,
+            class_weight=self.class_weight, random_state=self.rs,
+            solver='liblinear')
+        return clf
+
+
+class LR2CV(LR2):
+    def _get_clf(self, sclf):
+        clf = lm.LogisticRegressionCV(
+            Cs=10, penalty='l2', dual=True,
+            scoring='roc_auc', cv=3, n_jobs=1,
+            class_weight=self.class_weight, solver='liblinear')
+        return clf
+
+from sklearn import svm
+
+
+class SVCL(Model):
+    """ C-Support Vector Classification.
+
+    The implementation is based on libsvm. The fit time complexity is more
+    than quadratic with the number of samples which makes it hard to scale
+    to dataset with more than a couple of 10000 samples.
+
+    References
+    ----------
+    http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
+    """
+    def __init__(self, C=0.001, class_weight='auto', probability=False,
+                 rounddown=False, clb=0):
+        super(SVCL, self).__init__(rounddown=rounddown)
+        self.C = C
+        self.class_weight = class_weight
+        self.probability = probability
+        self.rounddown = rounddown
+        self.clb = clb
+
+    def _get_clf(self, sclf):
+        clf = svm.SVC(
+            C=self.C, kernel='linear', probability=self.probability,
+            class_weight=self.class_weight, verbose=0, random_state=self.rs)
+        return clf
+
+
+class LSVC(Model):
+    """ Linear Support Vector Classification.
+
+    Similar to SVC with parameter kernel=’linear’, but implemented in terms
+    of liblinear rather than libsvm, so it has more flexibility in the choice
+    of penalties and loss functions and should scale better (to large numbers
+    of samples).
+
+    References
+    ----------
+    http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html
+    """
+    def __init__(self, C=1.0, loss='squared_hinge', penalty='l2', dual=True,
+                 class_weight='auto', rounddown=False, clb=0):
+        super(LSVC, self).__init__(rounddown=rounddown)
+        self.C = C
+        self.loss = loss
+        self.penalty = penalty
+        self.dual = dual
+        self.class_weight = class_weight
+        self.rounddown = rounddown
+        self.clb = clb
+
+    def _get_clf(self, sclf):
+        clf = svm.LinearSVC(C=self.C, loss=self.loss, penalty=self.penalty,
+                            dual=self.dual, verbose=0,
+                            class_weight=self.class_weight,
+                            random_state=self.rs)
+        return clf
+
+
+class SVC(Model):
+    def __init__(self, C=1.0, kernel='rbf', degree=3, gamma=0.0002, coef0=1.0,
+                 class_weight='auto', probability=False, rounddown=False,
+                 clb=0, n_jobs=1):
+        super(SVC, self).__init__(rounddown=rounddown)
+        self.C = C
+        self.kernel = kernel
+        self.degree = degree
+        self.gamma = gamma
+        self.coef0 = coef0
+        self.class_weight = class_weight
+        self.probability = probability
+        self.rounddown = rounddown
+        self.clb = clb
+        self.n_jobs = n_jobs
+
+    @property
+    def _model_name(self):
+        name = self.__class__.__name__
+        if self.kernel == 'rbf':
+            name += '.rbf.'
+        elif self.kernel == 'poly':
+            name += '.poly{:d}.'.format(self.degree)
+        else:
+            name += "." + self.kernel + "."
+        return name
+
+    def _get_clf(self, sclf):
+        clf = svm.SVC(C=self.C, kernel=self.kernel, degree=self.degree,
+                      gamma=self.gamma, coef0=self.coef0,
+                      probability=self.probability, verbose=0,
+                      class_weight=self.class_weight)
+        return clf
+
+
+class SVCR(SVC):
+    def __init__(self, C=1.0, degree=3, gamma=0.0002, coef0=1.0,
+                 class_weight='auto', probability=False, rounddown=False,
+                 clb=0, n_jobs=1):
+        super(SVCR, self).__init__(
+            C=C, kernel='rbf', degree=degree, gamma=gamma, coef0=coef0,
+            class_weight=class_weight, probability=probability,
+            rounddown=rounddown, clb=clb, n_jobs=n_jobs)
+
+
+class SVCP(SVC):
+    def __init__(self, C=1.0, degree=3, gamma=0.0001, coef0=1.0,
+                 class_weight='auto', probability=False, rounddown=False,
+                 clb=0, n_jobs=1):
+        super(SVCP, self).__init__(
+            C=C, kernel='poly', degree=degree, gamma=gamma, coef0=coef0,
+            class_weight=class_weight, probability=probability,
+            rounddown=rounddown, clb=clb, n_jobs=n_jobs)
+
+
+class SVCRg(Model):
+    def __init__(self, class_weight='auto', probability=False,
+                 rounddown=False, clb=0, n_jobs=1,
+                 pgrid_str=None):
+        super(SVCRg, self).__init__(rounddown=rounddown)
+        self.class_weight = class_weight
+        self.probability = probability
+        self.rounddown = rounddown
+        self.clb = clb
+        self.n_jobs = n_jobs
+        self.pgrid_str = pgrid_str
+
+    def _get_clf(self, sclf):
+        C_range = 10.0 ** np.arange(-3, 4)
+        # gamma_range = 10.0 ** np.arange(-4, 3)
+        # svm3 = dict(gamma=gamma_range, C=C_range)
+        # svm2 = dict(gamma=gamma_range)
+        svm1 = dict(C=C_range)
+        pg = svm1 if self.pgrid_str is None else param_grids(self.pgrid_str)
+        est3 = svm.SVC(C=1.0, kernel='rbf', gamma=0.1,
+                       probability=self.probability, verbose=0,
+                       class_weight=self.class_weight)
+        ncv = 4
+        clf = grid_search.GridSearchCV(est3, pg, scoring='roc_auc', cv=ncv,
+                                       n_jobs=self.n_jobs, verbose=0)
+        return clf
+
+
+class SVCPg(Model):
+    def __init__(self, class_weight='auto', probability=False,
+                 rounddown=False, clb=0, n_jobs=1, pdegree=2,
+                 pgrid_str=None):
+        super(SVCPg, self).__init__(rounddown=rounddown)
+        self.class_weight = class_weight
+        self.probability = probability
+        self.rounddown = rounddown
+        self.clb = clb
+        self.n_jobs = n_jobs
+        self.pdegree = pdegree
+        self.pgrid_str = pgrid_str
+
+    def _get_clf(self, sclf):
+        # svm3 = {'C':[0.001,0.01,0.1,1.0,10],
+        # 'gamma':[0.1,0.01,0.001,0.0001], 'coef0':[0,1]}
+        # svm2 = {'gamma':[0.1,0.01,0.001,0.0001], 'coef0':[0,1]}
+        svm1 = {'C': [0.001, 0.01, 0.1, 1.0, 10, 100], 'coef0': [0, 1]}
+        pg = svm1 if self.pgrid_str is None else param_grids(self.pgrid_str)
+        est4 = svm.SVC(C=1.0, kernel='poly', gamma=0.1,
+                       probability=self.probability, degree=self.pdegree,
+                       verbose=0, class_weight=self.class_weight)
+        clf = grid_search.GridSearchCV(est4, pg, scoring='roc_auc', cv=4,
+                                       n_jobs=self.n_jobs, verbose=0)
+        return clf
+
+
+# --- helpers -----------------#
+
+
+def make_skewed_data():
+    X, y = make_classification(
+        n_samples=5000, n_features=20, n_classes=2,
+        n_clusters_per_class=2, n_informative=8, n_redundant=2,
+        random_state=random_state)
+    # create unbalamced classes
+    plus = np.where(y > 0)[0]
+    minus = np.where(y <= 0)[0]
+    plus_sel = random.sample(plus, int(len(plus) / 25))
+    sel = np.r_[minus, plus_sel]
+    np.sort(sel)
+    return X[sel, :], y[sel]
+
+
+def create_df_circles(N=3000, circles=1, p=0.05, p2=0.01, rx=0.03):
+    """ Create skewed dataset with circles.
+    """
+    p = p / circles
+    X = np.random.rand(N, 2)
+    X = X * 2 - 1.0
+    X1 = X + np.random.randn(N, 2) * rx
+
+    if circles == 1:
+        y = (X1[:, 0] ** 2 + X1[:, 1] ** 2) < p
+        y = np.asarray(y, dtype=int)
+    elif circles == 2:
+        c1 = (-0.5, -0.5)
+        y1 = ((X1[:, 0] + c1[0]) ** 2 + (X1[:, 1] + c1[1]) ** 2) < p
+        c2 = (0.2, 0.2)
+        y2 = ((X1[:, 0] + c2[0]) ** 2 + (X1[:, 1] + c2[1]) ** 2) < p
+        y = np.asarray(y1 | y2, dtype=int)
+    elif circles == 3:
+        c1 = (-0.5, -0.5)
+        y1 = ((X1[:, 0] + c1[0]) ** 2 + (X1[:, 1] + c1[1]) ** 2) < p
+        c2 = (0.3, -0.2)
+        y2 = ((X1[:, 0] + c2[0]) ** 2 + (X1[:, 1] + c2[1]) ** 2) < p
+        c3 = (-0.4, 0.5)
+        y3 = ((X1[:, 0] + c3[0]) ** 2 + (X1[:, 1] + c3[1]) ** 2) < p
+        y = np.asarray(y1 | y2 | y3, dtype=int)
+    else:
+        raise ValueError("wrong number of circles: {}".format(circles))
+
+    # add even noise
+    noise = (np.random.rand(N) < p2) + 0
+    y = (y + noise) % 2
+    print("Classes balance:", np.unique(y, return_counts=True))
+    return pd.DataFrame(np.c_[X, y], columns=('x', 'y', 'goal'))
+
+
+def check_model(model, X, y, test_size=0.20, train_stat=False):
+    """
+    """
+    X_train, X_test, y_train, y_test = cross_validation.train_test_split(
+        X, y, test_size=test_size, random_state=random_state)
+    model.fit(X_train, y_train)
+    print("model: {}".format(model.name))
+    # print(model.PipelineList)
+    y_pred = model.predict(X_test)
+    # print("y_pred:",y_pred)
+    y_proba = model.predict_proba(X_test)[:, 1]
+    # print("y_proba:", model.predict_proba(X_test))
+    target_names = ['class 0', 'class 1']
+    y_true = y_test
+
+    def print_stats():
+        print(metrics.classification_report(y_true, y_pred,
+              target_names=target_names))
+        print("roc_auc_score: {:1.4f} | LogLoss: {:1.3f} | Brier score loss:"
+              " {:1.3f}".format(metrics.roc_auc_score(y_true, y_proba),
+                                metrics.log_loss(y_true, y_proba),
+                                metrics.brier_score_loss(y_true, y_proba)))
+        if hasattr(model, 'threshold') and model.threshold:
+            precision, sensitivity, specificity = \
+                precision_sensitivity_specificity(y_true, y_proba,
+                                                  threshold=model.threshold)
+            print("sensitivity(recall): {:1.2f} and specificity: {:1.2f}"
+                  " with threshold={:1.2f}".format(
+                      sensitivity, specificity, model.threshold))
+    print_stats()
+    if train_stat:
+        y_pred, y_true = model.predict(X_train), y_train
+        y_proba = model.predict_proba(X_train)[:, 1]
+        print("train stats:")
+        print_stats()
+
+###------- Base Classifier Model -----------###
+
 class LinearRegression_proba(lm.LinearRegression):
   def predict_proba(self,X):
     y = self.predict(X)
