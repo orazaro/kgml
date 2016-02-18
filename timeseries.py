@@ -56,11 +56,11 @@ def ts_plots(rets, figsize=(12, 10)):
     autocorrelation_plot(rets, ax=axgen.next())
     # ax.set_title("autocorrelation plot")
 
+
 def plot_autocorr(series, lags=25):
     import matplotlib.pyplot as plt
-    fig = plt.figure(figsize=(12,8))
+    fig = plt.figure(figsize=(12, 8))
     ax1 = fig.add_subplot(211)
     fig = sm.graphics.tsa.plot_acf(series.squeeze(), lags=lags, ax=ax1)
     ax2 = fig.add_subplot(212)
     fig = sm.graphics.tsa.plot_pacf(series, lags=25, ax=ax2)
-
