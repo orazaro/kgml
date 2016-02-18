@@ -64,3 +64,18 @@ def plot_autocorr(series, lags=25):
     fig = sm.graphics.tsa.plot_acf(series.squeeze(), lags=lags, ax=ax1)
     ax2 = fig.add_subplot(212)
     fig = sm.graphics.tsa.plot_pacf(series, lags=25, ax=ax2)
+
+
+def plot_autocorr2(series, lags=30, ylim=(-0.2, 0.2), figsize=(12, 4)):
+    import matplotlib.pyplot as plt
+    fig, axarr = plt.subplots(1, 2, sharex=False, sharey=False,
+                              figsize=figsize)
+    axgen = (e for e in np.array(axarr).ravel())
+    ax = axgen.next()
+    sm.graphics.tsa.plot_acf(series, lags=lags, ax=ax)
+    ax.set_title("Autocorrelation")
+    ax.set_ylim(ylim)
+    ax = axgen.next()
+    sm.graphics.tsa.plot_pacf(series, lags=lags, ax=ax)
+    ax.set_title("Partial Autocorrelation")
+    ax.set_ylim(ylim)
