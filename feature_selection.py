@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Author:   Oleg Razgulyaev 
+# Author:   Oleg Razgulyaev
 # License:  BSD 3 clause
 """
-    Feature selectors 
+    Feature selectors
 """
+from __future__ import division, print_function
 
-import sys, random, os, logging
+import sys
+import random
+import os
+import logging
 
 import numpy as np
 
@@ -19,12 +23,13 @@ from sklearn.externals.joblib import Parallel, delayed
 
 logger = logging.getLogger(__name__)
 
+
 def remove_noninformative_columns(df):
     """ Remove noninformative columns:
         - with variance < 1E-15
     """
-    variance = np.var(df,axis=0)
-    return df.iloc[:,list(variance>1E-15)]
+    variance = np.var(df, axis=0)
+    return df.iloc[:, list(variance>1E-15)]
 
 def add_quadratic_features(df, predictors, rm_noninform=False):
     """ Add quadratic features based on the selected predictors
@@ -122,7 +127,7 @@ def forward_cv(df, predictors, target, model, scoring = 'roc_auc',
         else:
             break
         if verbosity > 0:
-            print "{:.4f}".format(current_score), ' '.join(selected)
+            print("{:.4f}".format(current_score), ' '.join(selected))
         if selmax is not None and len(selected) >= selmax: break
     return selected
 
@@ -181,7 +186,7 @@ def forward_selected(data, response, selmax=16, verbosity=0):
             selected.append(best_candidate)
             current_score = best_new_score
         if verbosity > 0:
-            print current_score, selected
+            print(current_score, selected)
         if len(selected) >= selmax: break
     formula = "{} ~ {} + 1".format(response,
                                    ' + '.join(selected))
@@ -207,20 +212,20 @@ def f_regression_select(X, y, maxf = 300, pvals = True, names = None, verbose = 
         b = a[:maxf]
         def out():
             if min(maxf,len(b)) > 100:
-                print >>sys.stderr,"F_select(%d):"%len(b),b[:90],"...",b[-10:]
+                print("F_select(%d):"%len(b),b[:90],"...",b[-10:], file=sys.stderr)
             else:
-                print >>sys.stderr,"F_select(%d):"%len(b),b[:maxf]
+                print("F_select(%d):"%len(b),b[:maxf], file=sys.stderr)
         def out2():
-            print >>sys.stderr,"F_select(%d):" % len(b)
+            print("F_select(%d):" % len(b), file=sys.stderr)
             def pr(m1,m2):
                 for i in range(m1,m2):
                     row = b[i]
-                    print >>sys.stderr,"%10s %10.2f %15g %10d" % (row[3],row[0],row[1],row[2])
+                    print("%10s %10.2f %15g %10d" % (row[3],row[0],row[1],row[2]), file=sys.stderr)
             n = min(len(b),maxf)
             m = 90 if n > 100 else n
             pr(0,m)
             if n > 100:
-                print >>sys.stderr,"..."
+                print("...", file=sys.stderr)
                 pr(len(b)-10,len(b))
         if verbose > 1:
             out2()
@@ -228,16 +233,132 @@ def f_regression_select(X, y, maxf = 300, pvals = True, names = None, verbose = 
             out()
     return np.asarray(idx_sel, dtype=int)
 
+
+# --- plot learning curves for feature selection ----------------#
+
+def calc_auc_cv(model, df, predictors, target, cv=8, n_jobs=-1):
+    from .predictive_analysis import df_xyf
+    from .model_selection import cross_val_predict_proba
+    from sklearn.metrics import roc_auc_score
+
+    X, y, features = df_xyf(df, predictors=predictors, target=target)
+    y_proba, _ = cross_val_predict_proba(
+        model, X, y, scoring=None, cv=cv, n_jobs=n_jobs, verbose=0,
+        fit_params=None, pre_dispatch='2*n_jobs')
+    return roc_auc_score(y, y_proba)
+
+
+def plot_lc_features(model, df_train, df_val, predictors, target, df_test=None,
+                     cv=8, n_jobs=-1, ax=None, y_min=0.75):
+    """ Plot learning curve for the features.
+    """
+    import matplotlib.pyplot as plt
+    s_train, s_val, s_test = [], [], []
+    nf = len(predictors)
+    for i in range(1, (nf + 1)):
+        s_train.append(calc_auc_cv(model, df_train, predictors[:i], target,
+                       cv=cv, n_jobs=n_jobs))
+        s_val.append(calc_auc_cv(model, df_val, predictors[:i], target, cv=cv,
+                                 n_jobs=n_jobs))
+        if df_test is not None:
+            s_test.append(calc_auc_cv(model, df_test, predictors[:i], target,
+                                      cv=cv, n_jobs=n_jobs))
+    if ax is None:
+        fig, ax1 = plt.subplots(1, 1, figsize=(14, 6))
+    else:
+        ax1 = ax
+    ax1.set_title("Feature Learning Curve")
+    ax1.set_xlabel("Features selected")
+    ax1.set_ylabel("Roc Auc Score")
+    ax1.plot(range(1, nf + 1), s_train, label='train')
+    ax1.plot(range(1, nf + 1), s_val, label='val')
+    ymin, ymax = ax1.get_ylim()
+    if ymin < y_min and ymax > y_min:
+        ax1.set_ylim(y_min, ymax)
+    if df_test is not None:
+        ax1.plot(range(1, nf + 1), s_test, label='test')
+    ax1.set_xticks(np.arange(0, nf + 1, 1))
+    plt.grid()
+    plt.legend(loc='lower right')
+    if ax is None:
+        plt.show()
+
+# --- tests ----------------------------#
+
+from sklearn.datasets.samples_generator import (make_classification, )
+
+
+def make_skewed_dataframe(n_samples=5000, n_features=20):
+    X, y = make_classification(
+        n_samples=n_samples, n_features=n_features, n_classes=2,
+        n_clusters_per_class=2, n_informative=8, n_redundant=2,
+        random_state=random_state)
+    # create unbalamced classes
+    plus = np.where(y > 0)[0]
+    minus = np.where(y <= 0)[0]
+    plus_sel = random.sample(plus, int(len(plus) / 25))
+    sel = np.r_[minus, plus_sel]
+    np.sort(sel)
+    names = ["f{:02d}".format(i) for i in range(X.shape[1])]
+    df = pd.DataFrame(np.c_[X[sel, :], y[sel]], columns=names + ['goal'])
+    return df
+
+
+def test_plot_lc_features(plton=False):
+    from sklearn.cross_validation import StratifiedShuffleSplit
+    from kgml.classifier import get_clf
+    model = get_clf('lr2')
+    df = make_skewed_dataframe(n_samples=1000)
+    y = df['goal']
+    sss = StratifiedShuffleSplit(y, 1, test_size=0.5, random_state=0)
+    train, test = list(sss)[0]
+    print(df.shape, max(train), max(test))
+    if plton:
+        plot_lc_features(
+            model, df.iloc[train, :], df.iloc[test, :],
+            predictors=df.columns, target='goal', cv=8, n_jobs=-1, ax=None)
+
+
+def test(args=None):
+    if False:
+        print_feature_names()
+        shorten_feature_names()
+    else:
+        test_plot_lc_features()
+    print("Test OK", file=sys.stderr)
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description='Commands.')
+    parser.add_argument('cmd', nargs='?', default='test', help="make")
+    parser.add_argument('-rs', type=int, default=0, help="random_state")
+    parser.add_argument('-log', type=str, default='info', help="random_state")
+
+    args = parser.parse_args()
+    print(args, file=sys.stderr)
+    if args.rs:
+        random_state = args.rs
+    if random_state:
+        random.seed(random_state)
+        np.random.seed(random_state)
+
+    if args.cmd == 'test':
+        test(args)
+    else:
+        raise ValueError("bad cmd")
+
+# ------ tests
+
 def test_f_regression_select():
-    print "==> a lot of features"
+    print("==> a lot of features")
     X, y = make_regression(n_samples=20000, n_features=200, n_informative=150,
                              shuffle=False, random_state=0)
     idx_sel = f_regression_select(X, y, verbose=2)
-    print "==> few ones"
+    print("==> few ones")
     X, y = make_regression(n_samples=200, n_features=20, n_informative=5, noise=0.5,
                              shuffle=False, random_state=0)
     idx_sel = f_regression_select(X, y, verbose=1)
-    print "tests ok"
+    print("tests ok")
 
 if __name__ == '__main__':
     random.seed(1)
@@ -245,7 +366,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Feature selectors.')
     parser.add_argument('cmd', nargs='?', default='test')
     args = parser.parse_args()
-    print >>sys.stderr,args 
+    print(args, file=sys.stderr)
   
     if args.cmd == 'test':
         test_f_regression_select()
