@@ -573,6 +573,55 @@ class SVCPg(Model):
         return clf
 
 
+class RF(Model):
+    def __init__(self,
+                 n_estimators=10,
+                 min_samples_leaf=1,
+                 max_depth=None,
+                 max_features='auto',
+                 n_jobs=1,
+                 class_weight='balanced', rounddown=False,
+                 use_scaler=2, clb=0):
+        super(RF, self).__init__(rounddown=rounddown)
+        self.n_estimators = n_estimators
+        self.min_samples_leaf = min_samples_leaf
+        self.max_depth = max_depth
+        self.max_features = max_features
+        self.n_jobs = n_jobs
+        self.class_weight = class_weight
+        self.rounddown = rounddown
+        self.use_scaler = use_scaler
+        self.clb = clb
+
+    def _get_clf(self, sclf):
+        clf = RandomForestClassifier(
+                n_estimators=self.n_estimators,
+                min_samples_leaf=self.min_samples_leaf,
+                max_depth=self.max_depth,
+                max_features=self.max_features,
+                class_weight=self.class_weight,
+                n_jobs=self.n_jobs,
+                random_state=self.rs,
+                verbose=0)
+        return clf
+
+
+class RFg(RF):
+    def _get_clf(self, sclf):
+        clf1 = RandomForestClassifier(
+                n_estimators=self.n_estimators,
+                min_samples_leaf=self.min_samples_leaf,
+                max_depth=self.max_depth,
+                max_features=self.max_features,
+                class_weight=self.class_weight,
+                n_jobs=1,
+                random_state=self.rs,
+                verbose=0)
+        rf1 = {'max_depth': [2, 4, 8, 16, 24, 32]}
+        clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=self.n_jobs,
+                                       verbose=0)
+        return clf
+
 # --- helpers -----------------#
 
 
