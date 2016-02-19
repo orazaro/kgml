@@ -285,10 +285,8 @@ def plot_lc_features(model, df_train, df_val, predictors, target, df_test=None,
 
 # --- tests ----------------------------#
 
-from sklearn.datasets.samples_generator import (make_classification, )
-
-
 def make_skewed_dataframe(n_samples=5000, n_features=20):
+    from sklearn.datasets.samples_generator import (make_classification, )
     X, y = make_classification(
         n_samples=n_samples, n_features=n_features, n_classes=2,
         n_clusters_per_class=2, n_informative=8, n_redundant=2,
@@ -318,36 +316,6 @@ def test_plot_lc_features(plton=False):
             model, df.iloc[train, :], df.iloc[test, :],
             predictors=df.columns, target='goal', cv=8, n_jobs=-1, ax=None)
 
-
-def test(args=None):
-    if False:
-        print_feature_names()
-        shorten_feature_names()
-    else:
-        test_plot_lc_features()
-    print("Test OK", file=sys.stderr)
-
-if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser(description='Commands.')
-    parser.add_argument('cmd', nargs='?', default='test', help="make")
-    parser.add_argument('-rs', type=int, default=0, help="random_state")
-    parser.add_argument('-log', type=str, default='info', help="random_state")
-
-    args = parser.parse_args()
-    print(args, file=sys.stderr)
-    if args.rs:
-        random_state = args.rs
-    if random_state:
-        random.seed(random_state)
-        np.random.seed(random_state)
-
-    if args.cmd == 'test':
-        test(args)
-    else:
-        raise ValueError("bad cmd")
-
-# ------ tests
 
 def test_f_regression_select():
     print("==> a lot of features")
