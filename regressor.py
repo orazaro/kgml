@@ -5,8 +5,10 @@
 """
     estimators tuner
 """
+from __future__ import division, print_function
 
-import sys, random
+import sys
+import random
 import numpy as np
 
 from sklearn.base import BaseEstimator, RegressorMixin, TransformerMixin
@@ -20,6 +22,7 @@ import sklearn.linear_model as lm
 from sklearn import grid_search
 
 from base import check_n_jobs
+from classifier import Model
 
 "add link coef_ to feature_importances_"
 for cla in [RandomForestRegressor,GradientBoostingRegressor,ExtraTreesRegressor]:
@@ -137,12 +140,12 @@ def scorer_gbr_lad(clf, X, y, verbose=1):
     y_pred = clf.predict(X)
     score = -mean_absolute_error(y, y_pred)
     if verbose >0:
-        print >>sys.stderr,"Eout=",-score
+        print("Eout=", -score, file=sys.stderr)
         if 'staged_predict' in dir(clf):
             if verbose>0: print("Staged predicts (Eout)")
             for i,y_pred in enumerate(clf.staged_predict(X)):
                 Eout = mean_absolute_error(y,y_pred)
-                if verbose>0: print "tree %3d, test score %f" % (i+1,Eout)
+                if verbose>0: print("tree %3d, test score %f" % (i+1,Eout))
     return score
 
 """
@@ -159,9 +162,97 @@ class GBRegressor(GradientBoostingRegressor):
 """
 
 
+# ------- Base Regressor Model -----------###
+
+class RModel(Model):
+    """ The base class to inherit from it all our meta estimators.
+
+    Parameters
+    ----------
+    sclf: str, optional (default=None)
+        name of the base estimator if we want to use this class (Model)
+        as our meta estimator (do not inherit)
+    use_scaler: int, optional (default=2)
+        to use standard scaler during transformation phase
+    rounddown: bool, optional (default=False)
+        round down classes in the training dataset before fitting
+    n_jobs:int, optional (default=1)
+        number of cores to use to speed up calculations
+    rs:int, optional (default=random_state)
+        random seed to initialize the random generator
+        by default will use the global parameter random_state
+
+    Attributes
+    ----------
+    Examples
+    --------
+    References
+    ----------
+    """
+    def __init__(self, sclf=None, use_scaler=2,
+                 n_jobs=1, rs=None):
+        self.sclf = sclf
+        self.use_scaler = use_scaler
+        self.n_jobs = n_jobs
+        self.rs = rs
+
+    def _get_clf(self, sclf):
+        if sclf is None:
+            raise NotImplementedError('virtual function')
+        else:
+            return get_rgr(sclf, n_jobs=self.n_jobs, random_state=self.rs)
+
+
+class LR(RModel):
+    def __init__(self, use_scaler=2):
+        super(LR, self).__init__()
+        self.use_scaler = use_scaler
+
+    def _get_clf(self, sclf):
+        clf = lm.LinearRegression()
+        return clf
+
+
+class Ridge(RModel):
+    def __init__(self, use_scaler=2):
+        super(Ridge, self).__init__()
+        self.use_scaler = use_scaler
+
+    def _get_clf(self, sclf):
+        clf = lm.RidgeCV()
+        return clf
+
+
+class Lasso(RModel):
+    def __init__(self, use_scaler=2):
+        super(Lasso, self).__init__()
+        self.use_scaler = use_scaler
+
+    def _get_clf(self, sclf):
+        clf = lm.LassoCV();
+        return clf
+
+class RF(RModel):
+    def __init__(self, use_scaler=2, n_estimators=10, max_depth=2,
+                 max_features='auto', n_jobs=1,
+                 random_state=None):
+        super(RF, self).__init__()
+        self.use_scaler = use_scaler
+        self.n_estimators = n_estimators
+        self.max_depth = max_depth
+        self.max_features = max_features
+        self.n_jobs = n_jobs
+        self.random_state = random_state
+
+    def _get_clf(self, sclf):
+        clf = RandomForestRegressor(
+                n_estimators=self.n_estimators, max_depth=self.max_depth,
+                max_features=self.max_features, n_jobs=self.n_jobs,
+                random_state=self.random_state, verbose=0)
+        return clf
 
 def test():
-    print "tests ok"
+    print("tests ok")
 
 if __name__ == '__main__':
     random.seed(1)

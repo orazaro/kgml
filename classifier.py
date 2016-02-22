@@ -194,14 +194,6 @@ class Model(BaseEstimator):
     References
     ----------
     """
-    def __init__(self, sclf=None, use_scaler=2, rounddown=False,
-                 n_jobs=1, rs=None):
-        self.sclf = sclf
-        self.use_scaler = use_scaler
-        self.rounddown = rounddown
-        self.n_jobs = n_jobs
-        self.rs = rs
-
     @property
     def name(self):
         """ The name of the derived class of the estimator.
@@ -251,7 +243,7 @@ class Model(BaseEstimator):
 
         self.rd = Pipeline(self.PipelineList)
 
-        if self.rounddown:
+        if hasattr(self, 'rounddown') and self.rounddown:
             X, y, _ = round_down(X, y)
 
         # TODO fix this hack
@@ -268,6 +260,7 @@ class Model(BaseEstimator):
             self.rd = CalibratedClassifierCV(self.rd, cv=cv, method=method)
 
         self.rd.fit(X, y)
+
         # adjust threshold
         if hasattr(self.rd, 'predict_proba'):
             y_prob = self.rd.predict_proba(X)[:, 1]
@@ -289,27 +282,6 @@ class Model(BaseEstimator):
             a list that should be added transformers
         """
         pass
-
-    def predict_proba(self, X):
-        """Posterior probabilities of classification
-
-        This function returns posterior probabilities of classification
-        according to each class on an array of test vectors X.
-
-        Parameters
-        ----------
-        X : array-like, shape (n_samples, n_features)
-            The samples.
-
-        Returns
-        -------
-        C : array, shape (n_samples, n_classes)
-            The predicted probas.
-        """
-        if hasattr(self.rd, "predict_proba"):
-            return self.rd.predict_proba(X)
-        else:
-            raise RuntimeError("rd without predict_proba")
 
     def predict(self, X):
         """Predict the target of new samples.
@@ -334,13 +306,6 @@ class Model(BaseEstimator):
         "get param_grid for this model to use with GridSearch"
         return []
 
-    def _get_clf(self, sclf):
-        if sclf is None:
-            raise NotImplementedError('virtual function')
-        else:
-            from .kgml.classifier import get_clf
-            return get_clf(sclf, n_jobs=self.n_jobs, random_state=self.rs)
-
     @property
     def coef_(self):
         """
@@ -360,7 +325,68 @@ class Model(BaseEstimator):
         return self.rd.named_steps['est']
 
 
-class LR2(Model):
+class CModel(Model):
+    """ The base class to inherit from it all our meta estimators.
+
+    Parameters
+    ----------
+    sclf: str, optional (default=None)
+        name of the base estimator if we want to use this class (Model)
+        as our meta estimator (do not inherit)
+    use_scaler: int, optional (default=2)
+        to use standard scaler during transformation phase
+    rounddown: bool, optional (default=False)
+        round down classes in the training dataset before fitting
+    n_jobs:int, optional (default=1)
+        number of cores to use to speed up calculations
+    rs:int, optional (default=random_state)
+        random seed to initialize the random generator
+        by default will use the global parameter random_state
+
+    Attributes
+    ----------
+    Examples
+    --------
+    References
+    ----------
+    """
+    def __init__(self, sclf=None, use_scaler=2, rounddown=False,
+                 n_jobs=1, rs=None):
+        self.sclf = sclf
+        self.use_scaler = use_scaler
+        self.rounddown = rounddown
+        self.n_jobs = n_jobs
+        self.rs = rs
+
+    def predict_proba(self, X):
+        """Posterior probabilities of classification
+
+        This function returns posterior probabilities of classification
+        according to each class on an array of test vectors X.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            The samples.
+
+        Returns
+        -------
+        C : array, shape (n_samples, n_classes)
+            The predicted probas.
+        """
+        if hasattr(self.rd, "predict_proba"):
+            return self.rd.predict_proba(X)
+        else:
+            raise RuntimeError("rd without predict_proba")
+
+    def _get_clf(self, sclf):
+        if sclf is None:
+            raise NotImplementedError('virtual function')
+        else:
+            return get_clf(sclf, n_jobs=self.n_jobs, random_state=self.rs)
+
+
+class LR2(CModel):
     def __init__(self, C=1.0, class_weight='balanced', rounddown=False,
                  use_scaler=2, clb=0):
         super(LR2, self).__init__(rounddown=rounddown)
@@ -378,7 +404,7 @@ class LR2(Model):
         return clf
 
 
-class LR1(Model):
+class LR1(CModel):
     def __init__(self, C=1.0, class_weight='balanced', rounddown=False,
                  use_scaler=2, clb=0):
         super(LR1, self).__init__(rounddown=rounddown)
@@ -405,7 +431,7 @@ class LR2CV(LR2):
         return clf
 
 
-class SVCL(Model):
+class SVCL(CModel):
     """ C-Support Vector Classification.
 
     The implementation is based on libsvm. The fit time complexity is more
@@ -432,7 +458,7 @@ class SVCL(Model):
         return clf
 
 
-class LSVC(Model):
+class LSVC(CModel):
     """ Linear Support Vector Classification.
 
     Similar to SVC with parameter kernel=’linear’, but implemented in terms
@@ -463,7 +489,7 @@ class LSVC(Model):
         return clf
 
 
-class SVC(Model):
+class SVC(CModel):
     def __init__(self, C=1.0, kernel='rbf', degree=3, gamma=0.0002, coef0=1.0,
                  class_weight='balanced', probability=False, rounddown=False,
                  clb=0, n_jobs=1):
@@ -518,7 +544,7 @@ class SVCP(SVC):
             rounddown=rounddown, clb=clb, n_jobs=n_jobs)
 
 
-class SVCRg(Model):
+class SVCRg(CModel):
     def __init__(self, class_weight='balanced', probability=False,
                  rounddown=False, clb=0, n_jobs=1,
                  pgrid_str=None):
@@ -546,7 +572,7 @@ class SVCRg(Model):
         return clf
 
 
-class SVCPg(Model):
+class SVCPg(CModel):
     def __init__(self, class_weight='balanced', probability=False,
                  rounddown=False, clb=0, n_jobs=1, pdegree=2,
                  pgrid_str=None):
@@ -573,7 +599,7 @@ class SVCPg(Model):
         return clf
 
 
-class RF(Model):
+class RF(CModel):
     def __init__(self,
                  n_estimators=10,
                  min_samples_leaf=1,
@@ -711,7 +737,7 @@ def check_model(model, X, y, test_size=0.20, train_stat=False,
         print("train stats:")
         print_stats()
 
-# ------- Base Classifier Model -----------###
+# ------- Base Classifier CModel -----------###
 
 
 class LinearRegression_proba(lm.LinearRegression):
