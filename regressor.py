@@ -276,6 +276,30 @@ class RF(RModel):
         return clf
 
 
+class KNN(RModel):
+    def __init__(self, use_scaler=2, n_neighbors= 3):
+        super(KNN, self).__init__()
+        self.use_scaler = use_scaler
+        self.n_neighbors = n_neighbors
+
+    def _get_clf(self, sclf):
+        return KNeighborsRegressor(self.n_neighbors)
+
+
+class KNNg(RModel):
+    def __init__(self, use_scaler=2, n_jobs=1):
+        super(KNNg, self).__init__()
+        self.use_scaler = use_scaler
+        self.n_jobs = n_jobs
+
+    def _get_clf(self, sclf):
+        knn1 = {'n_neighbors': 2 ** np.arange(0, 8)}
+        clf = grid_search.GridSearchCV(
+                KNeighborsRegressor(), knn1, cv=4, n_jobs=self.n_jobs,
+                verbose=0)
+        return clf
+
+
 def test():
     print("tests ok")
 
