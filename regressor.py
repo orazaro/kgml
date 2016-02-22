@@ -277,7 +277,7 @@ class RF(RModel):
 
 
 class KNN(RModel):
-    def __init__(self, use_scaler=2, n_neighbors= 3):
+    def __init__(self, use_scaler=2, n_neighbors=3):
         super(KNN, self).__init__()
         self.use_scaler = use_scaler
         self.n_neighbors = n_neighbors
