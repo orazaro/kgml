@@ -2,6 +2,7 @@
 Remove code output from the ipynb files (ipython notebook) to reduce size
 Usage: python remove_output.py notebook.ipynb [ > without_output.ipynb ]
 Modified from remove_output by Minrk
+Fixed to v3 by Oleg Razgulyaev
 """
 import sys
 import io
