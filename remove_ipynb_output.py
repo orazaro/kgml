@@ -6,7 +6,8 @@ Modified from remove_output by Minrk
 import sys
 import io
 import os
-from IPython.nbformat.current import read, write
+#from IPython.nbformat.current import read, write
+from nbformat import read, write
 
 
 def remove_outputs(nb):
@@ -19,10 +20,12 @@ def remove_outputs(nb):
 if __name__ == '__main__':
     fname = sys.argv[1]
     with io.open(fname, 'r') as f:
-        nb = read(f, 'json')
+        # nb = read(f, 'json')
+        nb = read(f, 3)
     remove_outputs(nb)
     base, ext = os.path.splitext(fname)
     new_ipynb = "%s_removed%s" % (base, ext)
     with io.open(new_ipynb, 'w', encoding='utf8') as f:
-        write(nb, f, 'json')
+        # write(nb, f, 'json')
+        write(nb, f, 3)
     print "wrote %s" % new_ipynb
