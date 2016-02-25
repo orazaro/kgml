@@ -21,6 +21,7 @@ from sklearn import svm, linear_model
 from sklearn import grid_search, cross_validation
 from sklearn.base import clone
 from sklearn.externals.joblib import Parallel, delayed
+from sklearn.metrics import roc_auc_score
 
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ random_state = 1
 
 # --- estimate and plot model using cross-validation
 
-def cross_val_estimate(estimator, X, y, n_folds=8, n_jobs=1, verbosity=1):
+def cross_val_estimate(estimator, X, y, cv1=None, n_folds=8, n_jobs=1, verbosity=1):
     """ Estimate the estimator using cross-validation.
 
     - Calculate probabilities of the target (dplus) returned by classificator
@@ -71,7 +72,8 @@ def cross_val_estimate(estimator, X, y, n_folds=8, n_jobs=1, verbosity=1):
 
     y_true = y
     scoring = 'roc_auc'
-    cv1 = cross_validation.StratifiedKFold(y, n_folds)
+    if cv1 is None:
+        cv1 = cross_validation.StratifiedKFold(y, n_folds)
     y_proba, scores = cross_val_predict_proba(
         estimator, X, y, scoring=scoring, cv=cv1, n_jobs=n_jobs, verbose=0,
         fit_params=None, pre_dispatch='2*n_jobs')
@@ -103,7 +105,7 @@ def cross_val_estimate(estimator, X, y, n_folds=8, n_jobs=1, verbosity=1):
     return y_proba, scores
 
 
-def estimate_model(df, model, predictors, target='goal', tord=False,
+def estimate_model(df, model, predictors, target='goal', cv1=None, tord=False,
                    tohist=True, n_folds=8, n_jobs=-1, verbosity=1):
     """ Estimate the model and plot results.
 
@@ -163,7 +165,7 @@ def estimate_model(df, model, predictors, target='goal', tord=False,
     X, y, features = df_xyf(df, predictors=predictors, target=target)
     if tord:
         X, y, _ = round_down(X, y)
-    y_proba, scores = cross_val_estimate(model, X, y, n_folds=n_folds,
+    y_proba, scores = cross_val_estimate(model, X, y, cv1=cv1, n_folds=n_folds,
                                          n_jobs=n_jobs)
     if verbosity > 0:
         plot_estimates(y, y_proba, bins=20, figsize=(12, 8), tohist=tohist)
@@ -486,7 +488,9 @@ def cross_val_predict_proba(estimator, X, y, scoring='roc_auc', cv=8, n_jobs=1,
         y_pred[mask] = y_p
         if scoring == 'roc_auc':
             y_test = y[mask]
-            scores.append(compute_auc(y_test, y_p))
+            if len(np.unique(y_test)) > 1:
+                scores.append(compute_auc(y_test, y_p))
+                # scores.append(roc_auc_score(y_test, y_p))
     return np.asarray(y_pred),np.asarray(scores)
 
 ### Regression specific
