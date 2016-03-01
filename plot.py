@@ -251,7 +251,12 @@ def plot_estimates(y_true, y_proba, bins=20, figsize=(8,5), tohist=True):
     plt.suptitle("Predicted probability distributions",fontsize=14)
 
 
-def plot_confusion_matrix(cm, target_names, title='Confusion matrix', cmap=plt.cm.Blues):
+def plot_confusion_matrix(y_test, y_pred, target_names,
+                          title='Confusion matrix', cmap=plt.cm.Blues):
+    """ Calculate and plot confusion_matrix. """
+    from sklearn.metrics import confusion_matrix
+    cm = confusion_matrix(y_test, y_pred)
+    plt.figure()
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
     plt.colorbar()
@@ -261,3 +266,4 @@ def plot_confusion_matrix(cm, target_names, title='Confusion matrix', cmap=plt.c
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
+    return cm

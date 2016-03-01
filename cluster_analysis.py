@@ -164,7 +164,7 @@ def plot3d_manifold(df, target='appid', classes=['app0', 'app6', 'app23'],
     if ax2 is None:
         plt.show()
 
-def select_elev_azim(**args):
+def select_elev_azim(df, **args):
     fig  = plt.figure(figsize=(16, 64))
 
     i = 0
@@ -178,7 +178,7 @@ def select_elev_azim(**args):
             args['ax2'] = ax
             args['legend_on'] = False
             args['s'] = 50
-            plot3d_manifold(**args)
+            plot3d_manifold(df, **args)
 
 
 
