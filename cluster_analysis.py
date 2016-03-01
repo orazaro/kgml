@@ -102,6 +102,71 @@ def find_clusters(ax,reduced_data, n_clusters = 2, color='blue', cmap=plt.get_cm
 
     return kmeans.predict(reduced_data)
 
+
+# --------- Manifolds ---------------------------------#
+
+def plot3d_manifold(df, target='appid', classes=['app0', 'app6', 'app23'],
+                    xyz_labels=['T1', 'T2', 'T3'],
+                    elev=None, azim=None, fsize=10, s=100, colors="ygr",
+                    title="", ax2=None, legend_on=True):
+    from mpl_toolkits.mplot3d import Axes3D
+
+    if ax2 is None:
+        fig = plt.figure(figsize=(fsize, fsize))
+        ax = fig.add_subplot(111, projection='3d')
+    else:
+        ax = ax2
+
+    X_label = xyz_labels[0]
+    Y_label = xyz_labels[1]
+    Z_label = xyz_labels[2]
+
+    for c, m, app in [
+            (colors[0], 'o', classes[0]),
+            (colors[1], 'o', classes[1]),
+            (colors[2], 'o', classes[2])]:
+        df1 = df[df[target] == app]
+        xs = df1[X_label]
+        ys = df1[Y_label]
+        zs = df1[Z_label]
+        ax.scatter3D(xs, ys, zs, c=c, marker=m, s=s, depthshade=False)
+
+    ax.set_xlabel(X_label)
+    ax.set_ylabel(Y_label)
+    ax.set_zlabel(Z_label)
+    ax.view_init(elev, azim)
+    if title:
+        ax.set_title(title)
+    
+    if legend_on:
+        r_proxy = plt.Rectangle((0, 0), 1, 1, fc=colors[0])
+        g_proxy = plt.Rectangle((0, 0), 1, 1, fc=colors[1])
+        b_proxy = plt.Rectangle((0, 0), 1, 1, fc=colors[2])
+        ax.legend([r_proxy, g_proxy, b_proxy],classes)
+    
+    if ax2 is None:
+        plt.show()
+
+def select_elev_azim(**args):
+    fig  = plt.figure(figsize=(16, 64))
+
+    i = 0
+    for elev in range(0, 200, 20):
+        for azim in range(0, 200, 20):
+            i += 1
+            ax = fig.add_subplot(20 ,5, i, projection='3d')
+            args['elev'] = elev
+            args['azim'] = azim
+            args['title'] = "elev={} azim={}".format(elev, azim)
+            args['ax2'] = ax
+            args['legend_on'] = False
+            args['s'] = 50
+            plot3d_manifold(**args)
+
+
+
+# --------- Tests -------------------------------------#
+
 def test(args):
     print >>sys.stderr,"Test OK"
 
