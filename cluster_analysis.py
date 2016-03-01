@@ -18,6 +18,23 @@ random_state = 1
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 
+
+def do_pca(df, features, target, n_components=3, use_scaler=True):
+    from sklearn.decomposition import PCA
+    from sklearn.preprocessing import StandardScaler
+
+    values = df[features].values
+    if use_scaler:
+        values = StandardScaler().fit_transform(values)
+    pca = PCA(n_components=n_components, whiten=False)
+    reduced_data = pca.fit_transform(values)
+    pred_pca = ["PC{:d}".format(i+1) for i in range(reduced_data.shape[1])]
+
+    df_pca = pd.DataFrame(reduced_data,columns=pred_pca)
+    df_pca[target] = df[target].values
+
+    return df_pca, pred_pca
+
 def plot_pca(df, features, target, components=(0,1), figsize=(10,10)):
     """ Linear dimensionality reduction using Singular Value Decomposition 
         and plot the result.
