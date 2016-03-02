@@ -18,8 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class MahalanobisClassifier(BaseEstimator, ClassifierMixin):
-    """
-    Classifier with rounding classes
+    """ Mahalanobis Classifier.
     """
     def __init__(self, est, rup=0, find_cutoff=False):
         self.est = est
