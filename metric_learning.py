@@ -18,7 +18,8 @@ from sklearn.covariance import EmpiricalCovariance, MinCovDet
 logger = logging.getLogger(__name__)
 
 
-def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None):
+def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None,
+                           figsize=(15, 8)):
     """ Comparison of Manifold Learning methods.
 
         Author: Jake Vanderplas -- <vanderplas@astro.washington.edu>
@@ -40,18 +41,21 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None):
     else:
         color = y
 
-    print(X.shape, color.shape, np.unique(color))
-
-    fig = plt.figure(figsize=(15, 8))
+    fig = plt.figure(figsize=figsize)
 
     plt.suptitle("Manifold Learning with %i points, %i neighbors"
                  % (X.shape[0], n_neighbors), fontsize=14)
 
-    from sklearn.decomposition import PCA
+    from sklearn.decomposition import PCA, KernelPCA
     from sklearn.preprocessing import StandardScaler
     from sklearn.pipeline import make_pipeline
-    transformer = make_pipeline(StandardScaler(), PCA(n_components=10))
+    kpca = KernelPCA(n_components=2, kernel="rbf",
+                     fit_inverse_transform=True, gamma=None)
+    pca = PCA(n_components=2)
+    transformer = make_pipeline(StandardScaler(), pca)
     X2 = transformer.fit_transform(X)
+    transformer = make_pipeline(StandardScaler(), kpca)
+    X3 = transformer.fit_transform(X)
 
     if False:
         try:
@@ -71,6 +75,13 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None):
         ax = fig.add_subplot(251)
         plt.scatter(X2[:, 0], X2[:, 1], c=color, cmap=plt.cm.Spectral)
         plt.title("PCA")
+        ax.xaxis.set_major_formatter(NullFormatter())
+        ax.yaxis.set_major_formatter(NullFormatter())
+        plt.axis('tight')
+        
+        ax = fig.add_subplot(256)
+        plt.scatter(X3[:, 0], X3[:, 1], c=color, cmap=plt.cm.Spectral)
+        plt.title("KPCA")
         ax.xaxis.set_major_formatter(NullFormatter())
         ax.yaxis.set_major_formatter(NullFormatter())
         plt.axis('tight')
