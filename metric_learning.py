@@ -97,7 +97,7 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None,
                     eigen_solver='auto',
                     method=method).fit_transform(X)
         except:
-            pass
+            Y = np.zeros(X.shape)
         t1 = time()
         print("%s: %.2g sec" % (methods[i], t1 - t0))
 
