@@ -78,7 +78,7 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None,
         ax.xaxis.set_major_formatter(NullFormatter())
         ax.yaxis.set_major_formatter(NullFormatter())
         plt.axis('tight')
-        
+
         ax = fig.add_subplot(256)
         plt.scatter(X3[:, 0], X3[:, 1], c=color, cmap=plt.cm.Spectral)
         plt.title("KPCA")
