@@ -12,38 +12,45 @@ import random
 import numpy as np
 import logging
 
-from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
+from sklearn.covariance import EmpiricalCovariance, MinCovDet
+from sklearn.neighbors import KNeighborsClassifier
 
 logger = logging.getLogger(__name__)
 
 
-class MahalanobisClassifier(BaseEstimator, ClassifierMixin):
-    """ Mahalanobis Classifier.
+class MahalanobisClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
+    """ Mahalanobis Classifier and Transformer.
     """
-    def __init__(self, est, rup=0, find_cutoff=False):
+    def __init__(self, n_knn=5, est=None):
+        self.n_knn = n_knn
         self.est = est
-        self.rup = rup
-        self.find_cutoff = find_cutoff
 
-    def fit(self, X, y):
-        from imbalanced import (find_best_cutoff, round_smote,
-                                round_down, round_up)
-        if self.rup > 0:
-            X1, y1, _ = round_up(X, y)
-        elif self.rup < 0:
-            if self.rup < -1:
-                X1, y1 = round_smote(X, y)
-            else:
-                X1, y1, _ = round_down(X, y)
+    def fit(self, X, y, targets=None):
+        if targets is None:
+            self.targets_ = np.unique(y)
+            self.targets_.sort()
         else:
-            X1, y1 = X, y
-        self.est.fit(X1, y1)
-        if self.find_cutoff:
-            ypp = self.predict_proba(X)[:, 1]
-            self.cutoff = find_best_cutoff(y, ypp)
-        else:
-            self.cutoff = 0.5
+            self.targets_ = targets
+
+        Covariance = MinCovDet if False else EmpiricalCovariance
+        self.covs_ = [Covariance().fit(X[y == target, :])
+                      for target in self.targets_]
+
+        if self.est is None:
+            self.est = KNeighborsClassifier(self.n_knn)
+
         return self
+
+    def transform(self, X):
+        X_new = []
+        for cov in self.covs_:
+            x_dist = cov.mahalanobis(X)**0.5
+            print("x_dist:", x_dist)
+            X_new.append(x_dist)
+        X_new = np.array(X_new)
+        print("X_new:", X_new.shape)
+        return X_new.T
 
     def predict_proba(self, X):
         X = np.asarray(X)
