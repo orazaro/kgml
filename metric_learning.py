@@ -23,7 +23,7 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None,
     """ Comparison of Manifold Learning methods.
 
         Author: Jake Vanderplas -- <vanderplas@astro.washington.edu>
-        Modified by Oleg Razgulyaev
+        Modified by: Oleg Razgulyaev
     """
     from time import time
 
