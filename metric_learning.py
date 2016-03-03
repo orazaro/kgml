@@ -56,25 +56,24 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None,
     def estimate(X, y):
         try:
             estimator = make_pipeline(
-                KNeighborsClassifier(n_neighbors=n_neighbors, weights="uniform"))
+                KNeighborsClassifier(n_neighbors=n_neighbors,
+                                     weights="uniform"))
             y_pred = cross_val_predict(estimator, X, y, cv=8, n_jobs=-1)
             f1_score = metrics.f1_score(y, y_pred, average='macro')
         except:
             f1_score = 0.0
         return f1_score
-    
-    print("{:<20s}{:>12s}{:>12s}".format('transformer', 'time(Sec)', 'f1_score'))
-    
+
+    print("{:<20s}{:>12s}{:>12s}".format('transformer', 'time(Sec)',
+          'f1_score'))
+
     t0 = time()
     f1_score = estimate(X, y)
     t1 = time()
     print("{:20s}{:12.2g}{:12.2f}".format('None', t1 - t0, f1_score))
 
-    kpca = KernelPCA(n_components=2, kernel="rbf",
-                     fit_inverse_transform=True, gamma=None)
-    pca = PCA(n_components=2)
-
     t0 = time()
+    pca = PCA(n_components=2)
     transformer = make_pipeline(StandardScaler(), pca)
     X2 = transformer.fit_transform(X)
     f1_score_1 = estimate(X2, y)
@@ -82,7 +81,9 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None,
     print("{:20s}{:12.2g}{:12.2f}".format('PCA', (t1 - t0), f1_score_1))
 
     t0 = time()
-    transformer = make_pipeline(pca)
+    kpca = KernelPCA(n_components=2, kernel="rbf",
+                     fit_inverse_transform=True, gamma=None)
+    transformer = make_pipeline(StandardScaler(), kpca)
     X3 = transformer.fit_transform(X)
     f1_score_2 = estimate(X3, y)
     t1 = time()
@@ -173,7 +174,8 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None,
     Y = se.fit_transform(X)
     f1_score = estimate(Y, y)
     t1 = time()
-    print("{:20s}{:12.2g}{:12.2f}".format('SpectralEmbedding', t1 - t0, f1_score))
+    print("{:20s}{:12.2g}{:12.2f}".format('SpectralEmbedding', t1 - t0,
+                                          f1_score))
     ax = fig.add_subplot(259)
     plt.scatter(Y[:, 0], Y[:, 1], c=color, cmap=plt.cm.Spectral)
     plt.title("SpectralEmbedding ({:.2f})".format(f1_score))
