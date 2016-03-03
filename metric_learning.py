@@ -159,6 +159,13 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None,
     plt.show()
 
 
+def test_plot_manifold_learning():
+    from sklearn.datasets import make_circles
+    np.random.seed(0)
+    X, y = make_circles(n_samples=400, factor=.3, noise=.05)
+    plot_manifold_learning(X, y, n_neighbors=10, colors=None)
+
+
 class MahalanobisTransformer(BaseEstimator, TransformerMixin):
     """ Mahalanobis Transformer.
     """
@@ -180,6 +187,7 @@ class MahalanobisTransformer(BaseEstimator, TransformerMixin):
 
 
 def test():
+    test_plot_manifold_learning()
     print("tests ok")
 
 if __name__ == '__main__':
