@@ -30,6 +30,7 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None,
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
     from matplotlib.ticker import NullFormatter
+    from sklearn.neighbors import KNeighborsClassifier
 
     from sklearn import manifold
 
@@ -49,13 +50,43 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None,
     from sklearn.decomposition import PCA, KernelPCA
     from sklearn.preprocessing import StandardScaler
     from sklearn.pipeline import make_pipeline
+    from sklearn import metrics
+    from sklearn.cross_validation import cross_val_predict
+
+    def estimate(X, y):
+        try:
+            estimator = make_pipeline(
+                KNeighborsClassifier(n_neighbors=n_neighbors, weights="uniform"))
+            y_pred = cross_val_predict(estimator, X, y, cv=8, n_jobs=-1)
+            f1_score = metrics.f1_score(y, y_pred, average='macro')
+        except:
+            f1_score = 0.0
+        return f1_score
+    
+    print("{:<20s}{:>12s}{:>12s}".format('transformer', 'time(Sec)', 'f1_score'))
+    
+    t0 = time()
+    f1_score = estimate(X, y)
+    t1 = time()
+    print("{:20s}{:12.2g}{:12.2f}".format('None', t1 - t0, f1_score))
+
     kpca = KernelPCA(n_components=2, kernel="rbf",
                      fit_inverse_transform=True, gamma=None)
     pca = PCA(n_components=2)
+
+    t0 = time()
     transformer = make_pipeline(StandardScaler(), pca)
     X2 = transformer.fit_transform(X)
-    transformer = make_pipeline(StandardScaler(), kpca)
+    f1_score_1 = estimate(X2, y)
+    t1 = time()
+    print("{:20s}{:12.2g}{:12.2f}".format('PCA', (t1 - t0), f1_score_1))
+
+    t0 = time()
+    transformer = make_pipeline(pca)
     X3 = transformer.fit_transform(X)
+    f1_score_2 = estimate(X3, y)
+    t1 = time()
+    print("{:20s}{:12.2g}{:12.2f}".format('KPCA', (t1 - t0), f1_score_2))
 
     if False:
         try:
@@ -74,14 +105,14 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None,
     else:
         ax = fig.add_subplot(251)
         plt.scatter(X2[:, 0], X2[:, 1], c=color, cmap=plt.cm.Spectral)
-        plt.title("PCA")
+        plt.title("PCA ({:.2f})".format(f1_score_1))
         ax.xaxis.set_major_formatter(NullFormatter())
         ax.yaxis.set_major_formatter(NullFormatter())
         plt.axis('tight')
 
         ax = fig.add_subplot(256)
         plt.scatter(X3[:, 0], X3[:, 1], c=color, cmap=plt.cm.Spectral)
-        plt.title("KPCA")
+        plt.title("KPCA ({:.2f})".format(f1_score_2))
         ax.xaxis.set_major_formatter(NullFormatter())
         ax.yaxis.set_major_formatter(NullFormatter())
         plt.axis('tight')
@@ -98,23 +129,27 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None,
                     method=method).fit_transform(X)
         except:
             Y = np.zeros(X.shape)
+        # print("%s: %.2g sec" % (methods[i], t1 - t0))
+        f1_score = estimate(Y, y)
         t1 = time()
-        print("%s: %.2g sec" % (methods[i], t1 - t0))
+        print("{:20s}{:12.2g}{:12.2f}".format(methods[i], t1 - t0, f1_score))
 
         ax = fig.add_subplot(252 + i)
         plt.scatter(Y[:, 0], Y[:, 1], c=color, cmap=plt.cm.Spectral)
-        plt.title("%s (%.2g sec)" % (labels[i], t1 - t0))
+        # plt.title("%s (%.2g sec)" % (labels[i], t1 - t0))
+        plt.title("{:s} ({:.2f})".format(labels[i], f1_score))
         ax.xaxis.set_major_formatter(NullFormatter())
         ax.yaxis.set_major_formatter(NullFormatter())
         plt.axis('tight')
 
     t0 = time()
     Y = manifold.Isomap(n_neighbors, n_components).fit_transform(X)
+    f1_score = estimate(Y, y)
     t1 = time()
-    print("Isomap: %.2g sec" % (t1 - t0))
+    print("{:20s}{:12.2g}{:12.2f}".format('Isomap', t1 - t0, f1_score))
     ax = fig.add_subplot(257)
     plt.scatter(Y[:, 0], Y[:, 1], c=color, cmap=plt.cm.Spectral)
-    plt.title("Isomap (%.2g sec)" % (t1 - t0))
+    plt.title("Isomap ({:.2f})".format(f1_score))
     ax.xaxis.set_major_formatter(NullFormatter())
     ax.yaxis.set_major_formatter(NullFormatter())
     plt.axis('tight')
@@ -122,11 +157,12 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None,
     t0 = time()
     mds = manifold.MDS(n_components, max_iter=100, n_init=1)
     Y = mds.fit_transform(X)
+    f1_score = estimate(Y, y)
     t1 = time()
-    print("MDS: %.2g sec" % (t1 - t0))
+    print("{:20s}{:12.2g}{:12.2f}".format('MDS', t1 - t0, f1_score))
     ax = fig.add_subplot(258)
     plt.scatter(Y[:, 0], Y[:, 1], c=color, cmap=plt.cm.Spectral)
-    plt.title("MDS (%.2g sec)" % (t1 - t0))
+    plt.title("MDS ({:.2f})".format(f1_score))
     ax.xaxis.set_major_formatter(NullFormatter())
     ax.yaxis.set_major_formatter(NullFormatter())
     plt.axis('tight')
@@ -135,11 +171,12 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None,
     se = manifold.SpectralEmbedding(n_components=n_components,
                                     n_neighbors=n_neighbors)
     Y = se.fit_transform(X)
+    f1_score = estimate(Y, y)
     t1 = time()
-    print("SpectralEmbedding: %.2g sec" % (t1 - t0))
+    print("{:20s}{:12.2g}{:12.2f}".format('SpectralEmbedding', t1 - t0, f1_score))
     ax = fig.add_subplot(259)
     plt.scatter(Y[:, 0], Y[:, 1], c=color, cmap=plt.cm.Spectral)
-    plt.title("SpectralEmbedding (%.2g sec)" % (t1 - t0))
+    plt.title("SpectralEmbedding ({:.2f})".format(f1_score))
     ax.xaxis.set_major_formatter(NullFormatter())
     ax.yaxis.set_major_formatter(NullFormatter())
     plt.axis('tight')
@@ -147,11 +184,12 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None,
     t0 = time()
     tsne = manifold.TSNE(n_components=n_components, init='pca', random_state=0)
     Y = tsne.fit_transform(X)
+    f1_score = estimate(Y, y)
     t1 = time()
-    print("t-SNE: %.2g sec" % (t1 - t0))
+    print("{:20s}{:12.2g}{:12.2f}".format('t-SNE', t1 - t0, f1_score))
     ax = fig.add_subplot(2, 5, 10)
     plt.scatter(Y[:, 0], Y[:, 1], c=color, cmap=plt.cm.Spectral)
-    plt.title("t-SNE (%.2g sec)" % (t1 - t0))
+    plt.title("t-SNE ({:.2f})".format(f1_score))
     ax.xaxis.set_major_formatter(NullFormatter())
     ax.yaxis.set_major_formatter(NullFormatter())
     plt.axis('tight')
