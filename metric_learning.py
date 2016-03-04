@@ -14,6 +14,7 @@ import logging
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.covariance import EmpiricalCovariance, MinCovDet
+from metric_learn import ITML, LSML, SDML
 
 logger = logging.getLogger(__name__)
 
@@ -224,6 +225,34 @@ class MahalanobisTransformer(BaseEstimator, TransformerMixin):
     def transform(self, X):
         X_new = [cov.mahalanobis(X)**0.5 for cov in self.covs_]
         return np.array(X_new).T
+
+
+# ------ supervised metric learning ----------#
+
+# Convert ITML, LSML, SDML into sklearn compatible classes
+
+NUM_CONSTRAINTS = 60
+
+
+class ITML_sk(ITML):
+    def fit(self, X, y):
+        num_constraints = NUM_CONSTRAINTS
+        constraints = ITML.prepare_constraints(y, len(X), num_constraints)
+        return super(ITML_sk, self).fit(X, constraints)
+
+
+class LSML_sk(LSML):
+    def fit(self, X, y):
+        num_constraints = NUM_CONSTRAINTS
+        constraints = LSML.prepare_constraints(y, num_constraints)
+        return super(LSML_sk, self).fit(X, constraints)
+
+
+class SDML_sk(SDML):
+    def fit(self, X, y):
+        num_constraints = NUM_CONSTRAINTS
+        constraints = SDML.prepare_constraints(y, len(X), num_constraints)
+        return super(SDML_sk, self).fit(X, constraints)
 
 
 def test():
