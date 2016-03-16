@@ -11,12 +11,12 @@ import numpy as np
 import statsmodels.api as sm
 from pandas.tools.plotting import lag_plot, autocorrelation_plot
 
-def running_mean(x, N):
+def running_mean(x, N=5):
     """
     from http://stackoverflow.com/questions/13728392/\
     moving-average-or-running-mean
     """
-    cumsum = numpy.cumsum(numpy.insert(x, 0, 0)) 
+    cumsum = np.cumsum(np.insert(x, 0, 0)) 
     return (cumsum[N:] - cumsum[:-N]) / N 
 
 
