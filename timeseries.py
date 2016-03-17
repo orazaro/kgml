@@ -21,7 +21,7 @@ def running_mean(x, N=5):
     return (cumsum[N:] - cumsum[:-N]) / N
 
 
-def smooth(x, window_len=11, window='hanning'):
+def smooth_convolve(x, window_len=11, window='hanning'):
     """smooth the data using a window with requested size.
 
     This method is based on the convolution of a scaled window with the signal.
@@ -81,6 +81,26 @@ def smooth(x, window_len=11, window='hanning'):
     y = np.convolve(w/w.sum(), s, mode='valid')
     # return y
     return y[(int(window_len/2)):-(int(window_len/2))]
+
+
+def smooth_running_mean(x, N=5):
+    """
+    https://habrahabr.ru/post/134375/
+    """
+    assert N % 2 == 1
+    w = np.ones(N, 'd')
+    y = np.convolve(w/w.sum(), x, mode='same')
+    # fix edges
+    n_len = len(y)
+    hw = int((N - 1) / 2)
+    for i in range(0, hw):
+        k1 = 0
+        k2 = 2 * i + 1
+        # print(k1, k2, x[k1:k2].sum())
+        y[i] = x[k1:k2].sum() / k2
+        # print(n_len-k2, n_len, x[n_len-k2:n_len].sum())
+        y[n_len-1-i] = x[n_len-k2:n_len].sum() / k2
+    return y
 
 
 def calc_jarque_bera(ts_data, verbosity=1):
