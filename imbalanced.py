@@ -13,7 +13,7 @@ from sklearn import metrics
 from smote import SMOTE
 
 
-def balance_x_train(x_train, y_train):
+def balance_y_train(y_train):
     """ Balance classes in the train dataset.
     """
     sel_train = np.arange(len(y_train))
@@ -26,13 +26,13 @@ def balance_x_train(x_train, y_train):
     return sel
 
 
-def test_balance_x_train():
+def test_balance_y_train():
     x_train = np.arange(25)
     y_train = (x_train % 3 == 0).astype(int)
     r = np.unique(y_train, return_counts=True)
     print(r)
     assert r[1][0] != r[1][1]
-    sel = balance_x_train(x_train, y_train)
+    sel = balance_y_train(y_train)
     r = np.unique(y_train[sel], return_counts=True)
     print(r)
     assert r[1][0] == r[1][1]
