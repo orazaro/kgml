@@ -671,6 +671,16 @@ def jaccard_binary_index(y_true, y_pred):
     or_sum = np.logical_or(y_true == 1, y_pred == 1).sum()
     return float(and_sum) / or_sum if or_sum > 0 else 0.0
 
+
+def test_jaccard_binary_index():
+    y_test = np.array([0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0])
+    y_pred = np.array([0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0])
+    sk_jaccard_score = metrics.jaccard_similarity_score(y_test, y_pred)
+    print(sk_jaccard_score)
+    jaccard_index = jaccard_binary_index(y_test, y_pred)
+    print(jaccard_index)
+    assert jaccard_index == 0.5
+
 # --- helpers -----------------#
 
 
