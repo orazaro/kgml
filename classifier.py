@@ -648,6 +648,29 @@ class RFg(RF):
                                        verbose=0)
         return clf
 
+
+# --- classification metrics --#
+
+def jaccard_binary_index(y_true, y_pred):
+    """ Jaccard binary index.
+
+    Jaccard binary index as defined in
+    https://en.wikipedia.org/wiki/Jaccard_index
+
+    Parameters
+    ----------
+    y_true: array, shape = [n_points,]
+        True binary class values
+    y_pred: array, shape = [n_points,]
+        Predicted binary class values
+    """
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+    assert y_true.shape == y_pred.shape
+    and_sum = np.logical_and(y_true == 1, y_pred == 1).sum()
+    or_sum = np.logical_or(y_true == 1, y_pred == 1).sum()
+    return float(and_sum) / or_sum if or_sum > 0 else 0.0
+
 # --- helpers -----------------#
 
 
