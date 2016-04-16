@@ -200,7 +200,7 @@ class Model(BaseEstimator):
         Returns
         -------
         name: str
-            the name of the estimator constracted dinamically and depended
+            the name of the estimator constructed dynamically and depended
             of the properties of current estimator
         """
         if hasattr(self, '_model_name'):
