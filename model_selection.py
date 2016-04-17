@@ -7,7 +7,6 @@
 """
 from __future__ import division, print_function
 
-import random
 import os
 import logging
 import json
@@ -159,7 +158,10 @@ def estimate_model(df, model, predictors, target='goal', cv1=None, tord=False,
     from .imbalanced import round_down
 
     if verbosity > 0:
-        print("Model:", model.name)
+        if hasattr(model, 'name'):
+            print("Model:", model.name)
+        else:
+            print("Model:", model.__class__.__name__)
     if verbosity > 1:
         print("Predictors:", predictors)
     X, y, features = df_xyf(df, predictors=predictors, target=target)
