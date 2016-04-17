@@ -20,6 +20,9 @@ from sklearn import svm, linear_model
 from sklearn import grid_search, cross_validation
 from sklearn.base import clone
 from sklearn.externals.joblib import Parallel, delayed
+from sklearn.metrics import roc_curve, auc
+
+from regressor import MaeRegressor
 
 
 logger = logging.getLogger(__name__)
@@ -392,92 +395,102 @@ def find_params(model, X, y, scoring='roc_auc', n_folds=16, n_iter=4,
 
     return params
 
-def split_cv_grid(X,y,cv,n_samples=0.1):
+
+def split_cv_grid(X, y, cv, n_samples=0.1):
     N = X.shape[0]
     if n_samples < 1:
         n_samples = int(N*n_samples)+1
-    if n_samples==1 or n_samples >= N:
+    if n_samples == 1 or n_samples >= N:
         raise ValueError("bad n_samples=%d" % n_samples)
-    
-    small = np.random.choice(N,n_samples, replace=False)
+
+    small = np.random.choice(N, n_samples, replace=False)
     small.sort()
-    d1 = dict(zip(small,range(len(small))))
+    d1 = dict(zip(small, range(len(small))))
     big = np.array([x for x in range(N) if x not in d1])
     # big already sorted
-    d2 = dict(zip(big,range(len(big))))
-    X1, y1 = X[small,:],y[small] 
+    d2 = dict(zip(big, range(len(big))))
+    X1, y1 = X[small, :], y[small]
     assert len(d1) == X1.shape[0]
-    X2, y2 = X[big,:],y[big] 
-    def grid(cv1,d):
+    X2, y2 = X[big, :], y[big]
+
+    def grid(cv1, d):
         cv_grid = []
-        for (train,test) in cv1:
+        for (train, test) in cv1:
             x1 = [d[i] for i in train if i in d]
             x2 = [d[i] for i in test if i in d]
-            cv_grid.append( (np.asarray(x1),np.asarray(x2)) )
+            cv_grid.append((np.asarray(x1), np.asarray(x2)))
         return cv_grid
     assert X1.shape[0]+X2.shape[0] == N
-    return grid(cv,d1),X1,y1,grid(cv,d2),X2,y2
+    return grid(cv, d1), X1, y1, grid(cv, d2), X2, y2
 
-def make_cv_grid(X,y,cv=None,n_samples=0.1, verbose=0):
-    # select small sample for grid_search 
-    if isinstance(cv,int): 
-        if verbose>0: print("cv:int")
-        cv1 = cross_validation.KFold(X.shape[0],cv)
-    elif isinstance(cv,float):
-        if verbose>0: print("cv:float")
+
+def make_cv_grid(X, y, cv=None, n_samples=0.1, verbose=0):
+    # select small sample for grid_search
+    if isinstance(cv, int):
+        if verbose > 0:
+            print("cv:int")
+        cv1 = cross_validation.KFold(X.shape[0], cv)
+    elif isinstance(cv, float):
+        if verbose > 0:
+            print("cv:float")
         cv1 = cross_validation.KFold(X.shape[0])
     elif not cv:
-        if verbose>0: print("cv:not")
+        if verbose > 0:
+            print("cv:not")
         cv1 = cross_validation.KFold(X.shape[0])
     else:
-        if verbose>0: print("cv:ok")
-        cv=list(cv) # to stop generator
-        #if verbose: print "cv:",len(cv),"cv[0]:",cv[0]
+        if verbose > 0:
+            print("cv:ok")
+        cv = list(cv)  # to stop generator
+        # if verbose: print "cv:",len(cv),"cv[0]:",cv[0]
         cv1 = cv
     N = X.shape[0]
     if n_samples == 0:
-        return cv1,X,y
+        return cv1, X, y
     elif n_samples < 1:
         n_samples = int(N*n_samples)
         if n_samples < 50:
-            if verbose>0: print("Warning: too low n_samples:", n_samples)
-    if n_samples<=2 or n_samples >= N:
-        return cv1,X,y
-    
-    small = np.random.choice(N,n_samples, replace=False)
+            if verbose > 0:
+                print("Warning: too low n_samples:", n_samples)
+    if n_samples <= 2 or n_samples >= N:
+        return cv1, X, y
+
+    small = np.random.choice(N, n_samples, replace=False)
     small.sort()
-    d = dict(zip(small,range(len(small))))
-    X_grid, y_grid = X[small,:],y[small] 
+    d = dict(zip(small, range(len(small))))
+    X_grid, y_grid = X[small, :], y[small]
     assert len(d) == X_grid.shape[0]
     cv_grid = []
-    for (train,test) in cv1:
+    for (train, test) in cv1:
         x1 = [d[i] for i in train if i in small]
         x2 = [d[i] for i in test if i in small]
-        cv_grid.append( (np.asarray(x1),np.asarray(x2)) )
-    return cv_grid,X_grid,y_grid
+        cv_grid.append((np.asarray(x1), np.asarray(x2)))
+    return cv_grid, X_grid, y_grid
+
 
 def _cross_val_predict(estimator, X, y, train, test, verbose,
-                     fit_params, proba=False):
+                       fit_params, proba=False):
     """Inner loop for cross validation"""
     X_train = X[train]
     X_test = X[test]
     y_train = y[train]
-    
+
     estimator.fit(X_train, y_train, **fit_params)
     if proba:
-        y_pred = estimator.predict_proba(X_test)[:,1]
+        y_pred = estimator.predict_proba(X_test)[:, 1]
     else:
         y_pred = estimator.predict(X_test)
-    return (test,y_pred)
+    return (test, y_pred)
 
 
-def cross_val_predict(estimator, X, y, loss=None, cv=8, n_jobs=1, 
+def cross_val_predict(
+        estimator, X, y, loss=None, cv=8, n_jobs=1,
         verbose=0, fit_params=None, proba=False,
         pre_dispatch='2*n_jobs'):
     """
     """
-    if isinstance(cv,int):
-        cv1 = cross_validation.StratifiedKFold(y,cv)
+    if isinstance(cv, int):
+        cv1 = cross_validation.StratifiedKFold(y, cv)
     else:
         cv1 = cv
     fit_params = fit_params if fit_params is not None else {}
@@ -485,11 +498,11 @@ def cross_val_predict(estimator, X, y, loss=None, cv=8, n_jobs=1,
                         pre_dispatch=pre_dispatch)
     results = parallel(
         delayed(_cross_val_predict)(clone(estimator), X, y, train, test,
-                                  verbose, fit_params, proba)
+                                    verbose, fit_params, proba)
         for train, test in cv1)
     y_pred = np.zeros(len(y))
     scores = []
-    for (mask,y_p) in results:
+    for (mask, y_p) in results:
         y_pred[mask] = y_p
         if loss:
             y_test = y[mask]
@@ -497,111 +510,127 @@ def cross_val_predict(estimator, X, y, loss=None, cv=8, n_jobs=1,
     if loss:
         scores = np.asarray(scores)
 
-    return np.asarray(y_pred),scores
+    return np.asarray(y_pred), scores
 
-from sklearn.metrics import roc_curve, auc
+
 def compute_auc(y, y_pred):
     fpr, tpr, _ = roc_curve(y, y_pred)
     return auc(fpr, tpr)
 
-def cross_val_predict_proba(estimator, X, y, scoring='roc_auc', cv=8, n_jobs=1, 
+
+def cross_val_predict_proba(
+        estimator, X, y, scoring='roc_auc', cv=8, n_jobs=1,
         verbose=0, fit_params=None,
         pre_dispatch='2*n_jobs'):
     """ Predict probabilities using cross-validation.
     """
-    if isinstance(cv,int):
-        cv1 = cross_validation.StratifiedKFold(y,cv)
+    if isinstance(cv, int):
+        cv1 = cross_validation.StratifiedKFold(y, cv)
     else:
         cv1 = cv
-    
+
     fit_params = fit_params if fit_params is not None else {}
     parallel = Parallel(n_jobs=n_jobs, verbose=verbose,
                         pre_dispatch=pre_dispatch)
     results = parallel(
         delayed(_cross_val_predict)(clone(estimator), X, y, train, test,
-                                  verbose, fit_params, proba=True)
+                                    verbose, fit_params, proba=True)
         for train, test in cv1)
     y_pred = np.zeros(len(y))
     scores = []
-    for (mask,y_p) in results:
+    for (mask, y_p) in results:
         y_pred[mask] = y_p
         if scoring == 'roc_auc':
             y_test = y[mask]
             if len(np.unique(y_test)) > 1:
                 scores.append(compute_auc(y_test, y_p))
                 # scores.append(roc_auc_score(y_test, y_p))
-    return np.asarray(y_pred),np.asarray(scores)
+    return np.asarray(y_pred), np.asarray(scores)
 
-### Regression specific
-from regressor import MaeRegressor
+# --- Regression specific
 
-def make_grid_search(clf, X, y, cv=4, n_samples=0.1, 
-    n_estimators = 10, kernel='rbf', 
-    n_iter=0,
-    verbose=0): 
-    alphas = {'alpha':[10*(0.1**i) for i in range(10)]}
-    svm1 = {'C':[0.001,0.01,0.1],'gamma':[0.1,0.01,0.001,0.0001]}        
-    #svm1 = {'C':[0.0001, 0.001, 0.01, 0.1, 1, 10],'gamma':[0.1,0.01,0.001]}        
-    rf1 = {'max_depth':[6,12,24],'min_samples_leaf':[1,3,6,9,12,15,18,21,24,27,30]}
-    sgd1 = {'alpha':alphas['alpha'],'loss':['huber'],'epsilon':[0.0001,0.001,0.01,0.1]}
 
-    param_dist_rf = {"max_depth": sp_randint(3,30),#[3, None],
-              #"max_features": sp_randint(1, X.shape[1]),
-              #"min_samples_split": sp_randint(1, 11),
-              "min_samples_leaf": sp_randint(1,30),
-              #"bootstrap": [True, False],
-              #"criterion": ["gini", "entropy"]
+def make_grid_search(
+        clf, X, y, cv=4, n_samples=0.1,
+        n_estimators=10, kernel='rbf',
+        n_iter=0,
+        verbose=0):
+    alphas = {'alpha': [10*(0.1**i) for i in range(10)]}
+    svm1 = {'C': [0.001, 0.01, 0.1], 'gamma': [0.1, 0.01, 0.001, 0.0001]}
+    # svm1 = {'C':[0.0001, 0.001, 0.01, 0.1, 1, 10],'gamma':[0.1,0.01,0.001]}
+    rf1 = {'max_depth': [6, 12, 24],
+           'min_samples_leaf': [1, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30]}
+    sgd1 = {'alpha': alphas['alpha'], 'loss': ['huber'],
+            'epsilon': [0.0001, 0.001, 0.01, 0.1]}
+
+    param_dist_rf = {
+              "max_depth": sp_randint(3, 30),  # [3, None],
+              # "max_features": sp_randint(1, X.shape[1]),
+              # "min_samples_split": sp_randint(1, 11),
+              "min_samples_leaf": sp_randint(1, 30),
+              # "bootstrap": [True, False],
+              # "criterion": ["gini", "entropy"]
               }
 
-    param_dist_gb = {"n_estimators" : [n_estimators],
-              #"max_depth": [6,12,24], 
-              "max_depth": sp_randint(1,30),
-              #"max_features": sp_randint(1, X.shape[1]),
-              #"min_samples_split": sp_randint(1, 11),
-              "min_samples_leaf": [1], #"min_samples_leaf": sp_randint(1,30),
-              "subsample" : [0.5,1.0],
-              #"bootstrap": [True, False],
-              #"criterion": ["gini", "entropy"]
+    param_dist_gb = {
+              "n_estimators": [n_estimators],
+              # "max_depth": [6,12,24],
+              "max_depth": sp_randint(1, 30),
+              # "max_features": sp_randint(1, X.shape[1]),
+              # "min_samples_split": sp_randint(1, 11),
+              "min_samples_leaf": [1],  # "min_samples_leaf": sp_randint(1,30),
+              "subsample": [0.5, 1.0],
+              # "bootstrap": [True, False],
+              # "criterion": ["gini", "entropy"]
               }
-    if clf=='gb' and n_iter == 0: n_iter = 20
+    if clf == 'gb' and n_iter == 0:
+        n_iter = 20
 
-    def f_sel(clf,kernel='rbf',n_estimators=10):
+    def f_sel(clf, kernel='rbf', n_estimators=10):
         "select estimator and params by estimator name"
-        if clf in ('rf','ef'):
+        if clf in ('rf', 'ef'):
             parameters = param_dist_rf if n_iter > 0 else rf1
-        if clf=='svm':
+        if clf == 'svm':
             parameters = svm1
-            est = MaeRegressor(svm.SVR(kernel=kernel,verbose=verbose-1),'svm')
-        elif clf=='gb':
+            est = MaeRegressor(svm.SVR(kernel=kernel, verbose=verbose-1),
+                               'svm')
+        elif clf == 'gb':
             parameters = param_dist_gb
-            est =MaeRegressor(GradientBoostingRegressor(n_estimators=n_estimators,verbose=verbose-1),'gb')
-        elif clf=='rf':
-            est =MaeRegressor(RandomForestRegressor(n_estimators=n_estimators,verbose=verbose-1),'rf')
-        elif clf=='ef':
-            est =MaeRegressor(ExtraTreesRegressor(n_estimators=n_estimators,verbose=verbose-1),'ef')
-        elif clf=='lm':
-            parameters = alphas        
-            est = MaeRegressor(linear_model.Ridge(),'lm')
+            est = MaeRegressor(
+                    GradientBoostingRegressor(
+                        n_estimators=n_estimators, verbose=verbose-1), 'gb')
+        elif clf == 'rf':
+            est = MaeRegressor(
+                    RandomForestRegressor(
+                        n_estimators=n_estimators, verbose=verbose-1), 'rf')
+        elif clf == 'ef':
+            est = MaeRegressor(
+                    ExtraTreesRegressor(
+                        n_estimators=n_estimators, verbose=verbose-1), 'ef')
+        elif clf == 'lm':
+            parameters = alphas
+            est = MaeRegressor(linear_model.Ridge(), 'lm')
         else:
-            parameters = sgd1       
-            est = MaeRegressor(linear_model.SGDRegressor(),'sgd')
-        return parameters,est
+            parameters = sgd1
+            est = MaeRegressor(linear_model.SGDRegressor(), 'sgd')
+        return parameters, est
 
-    parameters, est = f_sel(clf,kernel,n_estimators)
-    
-    cv_grid,X_grid,y_grid = make_cv_grid(X,y,cv,n_samples)
-    
+    parameters, est = f_sel(clf, kernel, n_estimators)
+
+    cv_grid, X_grid, y_grid = make_cv_grid(X, y, cv, n_samples)
+
     if verbose:
-        print("Search estimator parameters..",end=" ")
-    if n_iter>0 and clf in ('rf','ef','gb'):
-        gs = grid_search.RandomizedSearchCV(est, param_distributions=parameters, n_iter=n_iter, 
-            cv=cv_grid, n_jobs=-1, verbose=verbose-1).fit(X_grid,y_grid)
+        print("Search estimator parameters..", end=" ")
+    if n_iter > 0 and clf in ('rf', 'ef', 'gb'):
+        gs = grid_search.RandomizedSearchCV(
+            est, param_distributions=parameters, n_iter=n_iter,
+            cv=cv_grid, n_jobs=-1, verbose=verbose-1).fit(X_grid, y_grid)
     else:
-        gs = grid_search.GridSearchCV(est, parameters, 
-            cv=cv_grid, n_jobs=-1, verbose=verbose-1).fit(X_grid,y_grid)
+        gs = grid_search.GridSearchCV(
+            est, parameters,
+            cv=cv_grid, n_jobs=-1, verbose=verbose-1).fit(X_grid, y_grid)
     if verbose:
         print(gs.best_params_)
-        print("Pre Score:", gs.best_estimator_.score(X,y))
-    #return clone(gs.best_estimator_)
+        print("Pre Score:", gs.best_estimator_.score(X, y))
+    # return clone(gs.best_estimator_)
     return gs
-
