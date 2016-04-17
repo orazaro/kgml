@@ -20,7 +20,6 @@ from sklearn import svm, linear_model
 from sklearn import grid_search, cross_validation
 from sklearn.base import clone
 from sklearn.externals.joblib import Parallel, delayed
-from sklearn.metrics import roc_auc_score
 
 
 logger = logging.getLogger(__name__)
@@ -28,7 +27,9 @@ random_state = 1
 
 # --- estimate and plot model using cross-validation
 
-def cross_val_estimate(estimator, X, y, cv1=None, n_folds=8, n_jobs=1, verbosity=1):
+
+def cross_val_estimate(estimator, X, y, cv1=None, n_folds=8, n_jobs=1,
+                       verbosity=1):
     """ Estimate the estimator using cross-validation.
 
     - Calculate probabilities of the target (dplus) returned by classificator
@@ -176,7 +177,9 @@ def estimate_model(df, model, predictors, target='goal', cv1=None, tord=False,
 
 def test_estimate_model(nfolds=8, n_jobs=1):
     # import matplotlib.pyplot as plt
-    df, predictors = load_train_df()
+    from .classifier import create_df_circles
+    df = create_df_circles()
+    predictors = ['x', 'y']
     from .classifier import SVCL
     y, y_proba, scores = estimate_model(
         df, SVCL(class_weight='auto', probability=True),
@@ -186,84 +189,96 @@ def test_estimate_model(nfolds=8, n_jobs=1):
 
 # --- END OF estimate and plot model using cross-validation
 
-def cv_run(estimator, X, y, scoring='roc_auc', n_folds=16, n_iter=4, n_jobs=None, random_state=None):
+def cv_run(estimator, X, y, scoring='roc_auc', n_folds=16, n_iter=4,
+           n_jobs=None, random_state=None):
     """
         Run cross validation using estimator in two modes:
-            - shuffle and select 20% for test, rest for train 
+            - shuffle and select 20% for test, rest for train
                 and run n_iter iterations
             - use n_folds to estimate all samples
     """
-    #test_size=1./n_folds
-    test_size=0.2
+    # test_size=1./n_folds
+    test_size = 0.2
     to_shuffle = n_iter > 0
-   
+
     # problems with Accelerate in MacOs
     if n_jobs is None:
-        n_jobs = 1 if os.uname()[0]=='Darwin' else -1
+        n_jobs = 1 if os.uname()[0] == 'Darwin' else -1
 
     if to_shuffle:
-        logger.info("Shuffled CV run X:%s y:%s",X.shape,y.shape)
-        logger.info("n_iter: %d test_size:%.1f%% n_jobs=%d",n_iter,test_size*100,n_jobs)
+        logger.info("Shuffled CV run X:%s y:%s", X.shape, y.shape)
+        logger.info("n_iter: %d test_size:%.1f%% n_jobs=%d", n_iter,
+                    test_size*100, n_jobs)
     else:
-        logger.info("CV run X:%s y:%s",X.shape,y.shape)
-        logger.info("n_folds: %d n_jobs=%d",n_folds,n_jobs)
-    #cv1 = cross_validation.KFold(len(y), n_folds=n_cv, random_state=random_state)
-    
+        logger.info("CV run X:%s y:%s", X.shape, y.shape)
+        logger.info("n_folds: %d n_jobs=%d", n_folds, n_jobs)
+    # cv1 = cross_validation.KFold(len(y), n_folds=n_cv,
+    #                              random_state=random_state)
+
     if to_shuffle:
-        cv1 = cross_validation.StratifiedShuffleSplit(y, n_iter=n_iter, test_size=test_size, 
+        cv1 = cross_validation.StratifiedShuffleSplit(
+                y, n_iter=n_iter,
+                test_size=test_size,
                 random_state=random_state)
-        prefix = "%d Shuffled Iter(test=%.1f%%)" % (n_iter,test_size*100.)
+        prefix = "%d Shuffled Iter(test=%.1f%%)" % (n_iter, test_size*100.)
     else:
         cv1 = cross_validation.StratifiedKFold(y, n_folds=n_folds)
         prefix = "%d Fold" % n_folds
-   
+
     if 1:
-        y_pred, scores = cross_val_predict_proba(estimator, X, y, scoring=scoring, cv=cv1, 
+        y_pred, scores = cross_val_predict_proba(
+            estimator, X, y, scoring=scoring, cv=cv1,
             n_jobs=n_jobs, verbose=1, fit_params=None, pre_dispatch='2*n_jobs')
     else:
         y_pred = np.zeros(len(y))
-        scores = cross_validation.cross_val_score(estimator, X, y, cv=cv1, scoring=scoring, 
-            #scoring=make_scorer(roc_auc_score), 
+        scores = cross_validation.cross_val_score(
+            estimator, X, y, cv=cv1, scoring=scoring,
+            # scoring=make_scorer(roc_auc_score),
             n_jobs=n_jobs, verbose=1)
-    
-    logger.info("\nscores:%s",scores)
-    logger.info("\n%s CV Score: %.6f +- %.4f",prefix, np.mean(scores), 2*np.std(scores))
+
+    logger.info("\nscores:%s", scores)
+    logger.info("\n%s CV Score: %.6f +- %.4f", prefix, np.mean(scores),
+                2*np.std(scores))
     return y_pred, scores
 
+
 def update_params_best_score(model, score1, params_fname='saved_params.json'):
-    saved_params,best_scores = read_saved_params(params_fname)
-    best_score = best_scores.get(model.get_name(),None)
+    saved_params, best_scores = read_saved_params(params_fname)
+    best_score = best_scores.get(model.get_name(), None)
     if best_score:
-        best_score1 = np.mean([best_score,score1])
+        best_score1 = np.mean([best_score, score1])
     else:
         best_score1 = score1
-    logger.info("Update %s best score from %s to %.5f", model.get_name(),best_score,best_score1)
+    logger.info("Update %s best score from %s to %.5f", model.get_name(),
+                best_score, best_score1)
     best_scores[model.get_name()] = best_score1
     saved_params['_best_scores'] = best_scores
     with open(params_fname, 'w') as f:
         json.dump(saved_params, f, indent=4, separators=(',', ': '),
-                              ensure_ascii=True, sort_keys=True)
-    
-def read_saved_params(params_fname): 
-    try: 
+                  ensure_ascii=True, sort_keys=True)
+
+
+def read_saved_params(params_fname):
+    try:
         with open(params_fname) as f:
             saved_params = json.load(f)
     except IOError:
         saved_params = {}
-    
+
     if '_best_scores' in saved_params:
         best_scores = saved_params['_best_scores']
     else:
-        best_score = None
         best_scores = {}
-    return saved_params,best_scores
-    
-def find_params(model, X, y, scoring='roc_auc', n_folds=16, n_iter=4, n_jobs=None, random_state=None,
-    rnd_iter = 0,
-    psearch=0, params_fname='saved_params.json'):
+    return saved_params, best_scores
+
+
+def find_params(model, X, y, scoring='roc_auc', n_folds=16, n_iter=4,
+                n_jobs=None, random_state=None,
+                rnd_iter=0,
+                psearch=0, params_fname='saved_params.json'):
     """
         Find params for model using it as estimator in two modes:
-            - shuffle and select 20% for test, rest for train 
+            - shuffle and select 20% for test, rest for train
                 and run n_iter iterations
             - use n_folds to estimate all samples
         if n_iter > 0: use shuffle CV
@@ -271,85 +286,107 @@ def find_params(model, X, y, scoring='roc_auc', n_folds=16, n_iter=4, n_jobs=Non
         if psearch == 0: read from file (donot grid_search)
         elif psearch > 0: do grid_search if not in file
         elif psearch > 1: do grid_search in any case
-        elif psearch > 2: do grid_search using RandomizedSearchCV with n_iter = int(psearch)
+        elif psearch > 2: do grid_search using RandomizedSearchCV
+                            with n_iter = int(psearch)
     """
-    #test_size=1./n_folds
-    test_size=0.2
+    # test_size=1./n_folds
+    test_size = 0.2
     to_shuffle = n_iter > 0
-   
+
     # problems with Accelerate in MacOs
     if n_jobs is None:
-        n_jobs = 1 if os.uname()[0]=='Darwin' else -1
-  
+        n_jobs = 1 if os.uname()[0] == 'Darwin' else -1
+
     params = {}
 
-    saved_params,best_scores = read_saved_params(params_fname)
+    saved_params, best_scores = read_saved_params(params_fname)
     params.update(saved_params.get(model.get_name(), {}))
-    best_score = best_scores.get(model.get_name(),None)
+    best_score = best_scores.get(model.get_name(), None)
 
-    if psearch>1 or (psearch and model.get_name() not in saved_params):
+    if psearch > 1 or (psearch and model.get_name() not in saved_params):
         # initialize model with last best params
-        logger.debug('initialize model with last best params: %s',params)
+        logger.debug('initialize model with last best params: %s', params)
         model.set_params(**params)
         param_grid = model.get_param_grid(randomized=(psearch > 2))
         if len(param_grid) == 0:
-            logger.warning('empty param_grid for model %s, skiping grid_search..', model.get_name())
+            logger.warning(
+                'empty param_grid for model %s, skiping grid_search..',
+                model.get_name())
             return params
         if to_shuffle:
-            logger.info("Shuffled %s run X:%s y:%s", 'RandomizedSearchCV' if psearch > 2 else 'GridSearchCV',
-                X.shape,y.shape)
-            logger.info("n_iter: %d test_size:%.1f%% n_jobs=%d",n_iter,test_size*100,n_jobs)
+            logger.info(
+                "Shuffled %s run X:%s y:%s",
+                'RandomizedSearchCV' if psearch > 2 else 'GridSearchCV',
+                X.shape, y.shape)
+            logger.info(
+                "n_iter: %d test_size:%.1f%% n_jobs=%d",
+                n_iter, test_size*100, n_jobs)
         else:
-            logger.info("% run X:%s y:%s", 'RandomizedSearchCV' if psearch > 2 else 'GridSearchCV',
-                X.shape,y.shape)
-            logger.info("n_folds: %d n_jobs=%d",n_folds,n_jobs)
-        #cv1 = cross_validation.KFold(len(y), n_folds=n_cv, random_state=random_state)
-       
+            logger.info(
+                "% run X:%s y:%s",
+                'RandomizedSearchCV' if psearch > 2 else 'GridSearchCV',
+                X.shape, y.shape)
+            logger.info("n_folds: %d n_jobs=%d", n_folds, n_jobs)
+        # cv1 = cross_validation.KFold(len(y), n_folds=n_cv,
+        # random_state=random_state)
+
         if to_shuffle:
-            cv1 = cross_validation.StratifiedShuffleSplit(y, n_iter=n_iter, test_size=test_size, 
+            cv1 = cross_validation.StratifiedShuffleSplit(
+                    y, n_iter=n_iter, test_size=test_size,
                     random_state=random_state)
-            prefix = "%d Shuffled Iter(test=%.1f%%)" % (n_iter,test_size*100.)
+            prefix = "%d Shuffled Iter(test=%.1f%%)" % (n_iter, test_size*100.)
         else:
             cv1 = cross_validation.StratifiedKFold(y, n_folds=n_folds)
             prefix = "%d Fold" % n_folds
-        
+
+        prefix  # flake off
+
         if psearch > 2:
-            clf = grid_search.RandomizedSearchCV(model, param_distributions=param_grid, n_iter=psearch, 
-                cv=cv1, n_jobs=n_jobs, scoring = scoring)
+            clf = grid_search.RandomizedSearchCV(
+                model, param_distributions=param_grid, n_iter=psearch,
+                cv=cv1, n_jobs=n_jobs, scoring=scoring)
         else:
-            clf = grid_search.GridSearchCV(model, param_grid, 
-                cv=cv1, n_jobs=n_jobs, scoring = scoring)
-        clf.fit(X,y)
+            clf = grid_search.GridSearchCV(
+                model, param_grid,
+                cv=cv1, n_jobs=n_jobs, scoring=scoring)
+        clf.fit(X, y)
         logger.info("Grid Scores:\n%s", pformat(clf.grid_scores_))
-        logger.info("found params (%s > %.5f): %s",
-            model.get_name(),clf.best_score_, clf.best_params_)
+        logger.info(
+            "found params (%s > %.5f): %s",
+            model.get_name(), clf.best_score_, clf.best_params_)
         if best_score:
             if clf.best_score_ > best_score:
-                logger.info("increased best score from %.5f to %.5f",best_score,clf.best_score_)
+                logger.info(
+                    "increased best score from %.5f to %.5f",
+                    best_score, clf.best_score_)
                 best_score = clf.best_score_
                 params.update(clf.best_params_)
             else:
-                logger.warning("best score unchanged: %.5f > %.5f",best_score,clf.best_score_)
+                logger.warning(
+                    "best score unchanged: %.5f > %.5f",
+                    best_score, clf.best_score_)
         else:
             best_score = clf.best_score_
             params.update(clf.best_params_)
-        
+
         # reread saved params
-        saved_params,best_scores = read_saved_params(params_fname)
-        best_score_cur = best_scores.get(model.get_name(),None)
+        saved_params, best_scores = read_saved_params(params_fname)
+        best_score_cur = best_scores.get(model.get_name(), None)
         if best_score_cur is None or best_score > best_score_cur:
             best_scores[model.get_name()] = best_score
             saved_params[model.get_name()] = params
             saved_params['_best_scores'] = best_scores
             with open(params_fname, 'w') as f:
                 json.dump(saved_params, f, indent=4, separators=(',', ': '),
-                                      ensure_ascii=True, sort_keys=True)
+                          ensure_ascii=True, sort_keys=True)
         else:
-            logger.warning('While processing best_score changed: %.5f >= %.5f',best_score_cur,best_score)
+            logger.warning(
+                'While processing best_score changed: %.5f >= %.5f',
+                best_score_cur, best_score)
     else:
         params.update(saved_params.get(model.get_name(), {}))
         if model.get_name() not in saved_params:
-            logger.warning('%s not in saved_params',model.get_name())
+            logger.warning('%s not in saved_params', model.get_name())
         else:
             logger.info("using params %s: %s", model.get_name(), params)
 
