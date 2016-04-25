@@ -10,6 +10,91 @@ from __future__ import division, print_function
 import numpy as np
 import statsmodels.api as sm
 from pandas.tools.plotting import lag_plot, autocorrelation_plot
+from scipy import interpolate
+
+
+def normalize_signal_merge(signal, opt_step=10, roundon=True):
+    """ Normalize signal using merge.
+
+    Normalize signal: convert from irregular time-spacing signal to
+    semi-equidistant. Merge neighboring points to get an optimal step.
+
+    Parameters
+    ----------
+    signal: list or array (n_points, 2)
+        Points of the signal as pairs of (Time, Amplitude)
+    opt_step: float, optional (default=10)
+        optimal step between points
+
+    Returns
+    -------
+    new_signal: list or array (n_points, 2)
+        Points of the signal as pairs of (Time, Amplitude)
+    """
+    def merge_group(group):
+        res = np.mean(group, axis=0)
+        if roundon:
+            res = np.round(res)
+        return res
+    opt_step -= 1
+    new_signal = []
+    group = []
+    for cur in signal:
+        if not group:
+            group.append(cur)
+            continue
+        dx1 = group[-1][0] - group[0][0]
+        if dx1 >= opt_step:
+            new_signal.append(merge_group(group))
+            group = [cur]
+        else:
+            dx2 = cur[0] - group[0][0]
+            if dx2 < opt_step:
+                group.append(cur)
+            elif dx2 - opt_step > opt_step - dx1:
+                new_signal.append(merge_group(group))
+                group = [cur]
+            else:
+                group.append(cur)
+    if group:
+        new_signal.append(merge_group(group))
+    return np.array(new_signal)
+
+
+def normalize_signal_interpolate(signal, opt_step=10, kind='slinear'):
+    """ Normalize signal using interpolate.
+
+    Normalize signal: convert from irregular time-spacing signal to
+    equidistant using interpolate
+
+    Parameters
+    ----------
+    signal: list or array (n_points, 2)
+        Points of the signal as pairs of (Time, Amplitude)
+    opt_step: float, optional (default=10)
+        optimal step between points
+
+    Returns
+    -------
+    new_signal: list or array (n_points, 2)
+        Points of the signal as pairs of (Time, Amplitude)
+    """
+    x, y = zip(*signal)
+    f = interpolate.interp1d(x, y, kind='slinear')
+
+    x_min = np.round(x[0] / opt_step) * opt_step
+    if x_min < x[0]:
+        x_min += opt_step
+    x_max = np.round(x[-1] / opt_step) * opt_step
+    if x_max > x[-1]:
+        x_max -= opt_step
+
+    # print(x_min, x[0], x[-1], x_max)
+
+    x_new = np.arange(x_min, x_max + opt_step, opt_step)
+    y_new = f(x_new)
+
+    return np.c_[x_new, y_new]
 
 
 def running_mean(x, N=5):
