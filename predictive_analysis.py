@@ -6,24 +6,24 @@
     Predictive  analysis
 """
 from __future__ import (division,)
-import random, sys
+import random
+import sys
 import numpy as np
-import pandas as pd
 import warnings
 
-random_state = 1
-
-from sklearn import preprocessing, decomposition
 from sklearn import svm, linear_model, ensemble, naive_bayes, neighbors
-from sklearn import cross_validation, grid_search, metrics
+from sklearn import cross_validation, metrics
 from sklearn.feature_selection import RFECV, RFE
 
 import matplotlib.pyplot as plt
-from plot import plot_decision_line, plot_decision_boundary
+from plot import plot_decision_boundary
+
+random_state = 1
+
 
 def df_standardize(df, target):
     """ Convert DataFrame to standard form for ML: target at the last column
-    
+
     Parameters
     ----------
     df: DataFrame
@@ -39,11 +39,13 @@ def df_standardize(df, target):
     if df.columns[-1] != target:
         new_columns = [s for s in df.columns if s != target]
         if len(new_columns) != len(df.columns) - 1:
-            raise ValueError("target [{}] not in DataFrame column names!".format(target))
+            raise ValueError(
+                "target [{}] not in DataFrame column names!".format(target))
         new_columns.append(target)
         return df[new_columns]
     else:
         return df
+
 
 def df_xyf(df, predictors=None, target=None, ydtype=None):
     """ Extract samples and target numpy arrays and its names from the DataFrame.
@@ -77,13 +79,16 @@ def df_xyf(df, predictors=None, target=None, ydtype=None):
     if ydtype is None:
         y = np.asarray(df[target].values)
     else:
-        y = np.asarray(df[target].values,dtype=ydtype)
-    return  (df.ix[:,predictors].values, 
+        y = np.asarray(df[target].values, dtype=ydtype)
+    return (df.ix[:, predictors].values,
             y,
             predictors)
 
-def feature_selection_ET(df, predictors=None, target=None ,ax=None, isclass=True, 
-        verbosity=0, nf=7, n_estimators=100, class_weight='auto',prank=False):
+
+def feature_selection_ET(
+        df, predictors=None, target=None, ax=None,
+        isclass=True,
+        verbosity=0, nf=7, n_estimators=100, class_weight='auto', prank=False):
     """ Use ExtraTreesClassifier to calculate importances of predictors.
 
     Parameters
@@ -114,22 +119,25 @@ def feature_selection_ET(df, predictors=None, target=None ,ax=None, isclass=True
 
     Returns
     -------
-    names_sorted: list
+    features_sorted: list
         names of the features sorted by their importances
     importances_sorted: list
         importances (sorted) of the features
     """
     X, y, names = df_xyf(df, predictors=predictors, target=target)
     nf_all = X.shape[1]
-    
+
     if verbosity > 1:
         print "names:", ",".join(names)
     if isclass:
-        forest = ensemble.ExtraTreesClassifier(n_estimators=n_estimators,
-                                      random_state=random_state,n_jobs=-1,class_weight=class_weight)
+        forest = ensemble.ExtraTreesClassifier(
+                    n_estimators=n_estimators,
+                    random_state=random_state, n_jobs=-1,
+                    class_weight=class_weight)
     else:
-        forest = ensemble.ExtraTreesRegressor(n_estimators=n_estimators,
-                                      random_state=random_state,n_jobs=-1)
+        forest = ensemble.ExtraTreesRegressor(
+                    n_estimators=n_estimators,
+                    random_state=random_state, n_jobs=-1)
     forest.fit(X, y)
     importances = forest.feature_importances_
     std = np.std([tree.feature_importances_ for tree in forest.estimators_],
@@ -140,59 +148,67 @@ def feature_selection_ET(df, predictors=None, target=None ,ax=None, isclass=True
         # Print the feature ranking
         print("Feature ranking:")
         for i in range(nf_all):
-            print("%2d. %25s (%10f)" % (i+1, names[indices[i]], importances[indices[i]]))
+            print("%2d. %25s (%10f)" % (i+1, names[indices[i]],
+                  importances[indices[i]]))
 
     if verbosity > 0:
         if ax is None:
-            fig,ax1 = plt.subplots(1,1,figsize=(14,6))
+            fig, ax1 = plt.subplots(1, 1, figsize=(14, 6))
         else:
             ax1 = ax
         # Plot the feature importances of the forest
         nf = nf_all if nf > nf_all else nf
         ax1.set_title("Feature importances")
         ax1.bar(range(nf), importances[indices][:nf],
-               color="r", yerr=std[indices][:nf], align="center")
+                color="r", yerr=std[indices][:nf], align="center")
         anames = np.array(names)
         ax1.set_xlim([-1, nf])
-        plt.xticks(range(nf), anames[indices][:nf],rotation='vertical')
-        if ax is None: plt.show()
-    
-    names_sorted = [names[indices[i]] for i in range(len(predictors))]
-    importances_sorted = [importances[indices[i]] for i in range(len(predictors))]
-    return names_sorted,importances_sorted
+        plt.xticks(range(nf), anames[indices][:nf], rotation='vertical')
+        if ax is None:
+            plt.show()
 
-def feature_selection_RFE(df, est=None, predictors=None, target=None ,
+    features_sorted = [names[indices[i]] for i in range(len(predictors))]
+    importances_sorted = [importances[indices[i]] for
+                          i in range(len(predictors))]
+    return features_sorted, importances_sorted
+
+
+def feature_selection_RFE(
+        df, est=None, predictors=None, target=None,
         ax=None, isclass=True, verbosity=0, nf=7, class_weight='auto',
         prank=False, scoring=None):
     """
     """
     X, y, names = df_xyf(df, predictors=predictors, target=target)
-    nf_all = X.shape[1]
-    
+
     if verbosity > 1:
         print "names:", ",".join(names)
-    
+
     # Create the RFE object and compute a cross-validated score.
     if est is not None:
         estimator = est
         cv = cross_validation.StratifiedKFold(y, 4)
     elif isclass:
-        #estimator = svm.SVC(kernel="linear",C=1.0)
-        #estimator = get_clf('svm')    
-        #estimator = get_clf('lg2',C=1.0,class_weight='auto')
+        # estimator = svm.SVC(kernel="linear",C=1.0)
+        # estimator = get_clf('svm')
+        # estimator = get_clf('lg2',C=1.0,class_weight='auto')
         estimator = \
-            linear_model.LogisticRegression(penalty='l2', C=.01, class_weight='auto')
+            linear_model.LogisticRegression(penalty='l2', C=.01,
+                                            class_weight='auto')
         cv = cross_validation.StratifiedKFold(y, 4)
     else:
         if False:
             from sklearn.ensemble import RandomForestRegressor
-            if not hasattr(RandomForestRegressor,'coef_'):
-                RandomForestRegressor.coef_ = property(lambda self:self.feature_importances_)
-            estimator = RandomForestRegressor(n_estimators=100, max_depth=2, min_samples_leaf=2)
+            if not hasattr(RandomForestRegressor, 'coef_'):
+                RandomForestRegressor.coef_ = property(
+                        lambda self: self.feature_importances_)
+            estimator = RandomForestRegressor(n_estimators=100,
+                                              max_depth=2,
+                                              min_samples_leaf=2)
         else:
             estimator = linear_model.RidgeCV()
         cv = 3
-    
+
     if scoring is None:
         scoring = 'roc_auc' if isclass else 'mean_squared_error'
 
@@ -203,14 +219,15 @@ def feature_selection_RFE(df, est=None, predictors=None, target=None ,
     else:
         from kgml.rfecv import RFECVp
         f_estimator = get_clf('svm')
-        rfecv = RFECVp(estimator=estimator,f_estimator=f_estimator, step=1, cv=cv, scoring=scoring)
-        
+        rfecv = RFECVp(estimator=estimator, f_estimator=f_estimator,
+                       step=1, cv=cv, scoring=scoring)
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         rfecv.fit(X, y)
 
     if ax is None:
-        fig,ax1 = plt.subplots(1,1,figsize=(14,6))
+        fig, ax1 = plt.subplots(1, 1, figsize=(14, 6))
     else:
         ax1 = ax
     # Plot number of features VS. cross-validation scores
@@ -219,28 +236,29 @@ def feature_selection_RFE(df, est=None, predictors=None, target=None ,
     ax1.set_ylabel("Cross validation score ({})".format(scoring))
     nf = len(rfecv.grid_scores_)
     ax1.plot(range(1, nf + 1), rfecv.grid_scores_)
-    ax1.set_xticks(np.arange(0,nf+1,int(nf/50)+1))
+    ax1.set_xticks(np.arange(0, nf+1, int(nf/50)+1))
     plt.grid()
-    if ax is None: plt.show()
+    if ax is None:
+        plt.show()
 
     print("Optimal number of features : %d" % rfecv.n_features_)
     print np.asarray(rfecv.ranking_)
     names = np.asarray(names)
-    best = names[np.asarray(rfecv.ranking_)==1]
+    best = names[np.asarray(rfecv.ranking_) == 1]
 
     rfe = RFE(estimator, n_features_to_select=1)
-    rfe.fit(X,y)
+    rfe.fit(X, y)
     ranks = sorted(zip(map(lambda x: round(x, 4), rfe.ranking_), names))
 
     # reorder best using ranks
     best_set = set(best)
-    best = [name for (i,name) in ranks if name in best_set]
+    best = [name for (i, name) in ranks if name in best_set]
     print "The best features:", ', '.join(best)
     assert len(best) == len(best_set)
 
     return best, ranks
 
-#--- old stuff --------#
+# --- old stuff --------#
 
 def get_clf(sclf,C=1.0,class_weight=None):
     if sclf == 'svm':

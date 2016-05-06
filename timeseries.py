@@ -11,6 +11,13 @@ import numpy as np
 import statsmodels.api as sm
 from pandas.tools.plotting import lag_plot, autocorrelation_plot
 from scipy import interpolate
+import calendar
+
+
+def datetime_timestamp(d):
+    """ Convert datetime d into POSIX timestamp as float.
+    """
+    return calendar.timegm(d.timetuple())
 
 
 def normalize_signal_merge(signal, opt_step=10, roundon=True):
