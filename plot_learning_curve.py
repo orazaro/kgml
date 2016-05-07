@@ -111,7 +111,8 @@ is good but the validation score is poor.
 
 def plot_validation_curve(
         estimator, X, y, param_name, param_range, title="Validation Curve",
-        ylim=None, cv=None, n_jobs=1, scoring=None, ax=None):
+        ylim=None, semilog=False,
+        cv=None, n_jobs=1, scoring=None, ax=None):
     # param_range = np.logspace(-6, -1, 5)
     train_scores, test_scores = validation_curve(
         estimator, X, y, param_name=param_name, param_range=param_range,
@@ -126,12 +127,20 @@ def plot_validation_curve(
     plt.ylabel("Score")
     if ylim is not None:
         plt.ylim(ylim)
-    plt.semilogx(param_range, train_scores_mean, label="Training score",
+    if semilog:
+        plt.semilogx(param_range, train_scores_mean, label="Training score",
+                 color="r")
+    else:
+        plt.plot(param_range, train_scores_mean, label="Training score",
                  color="r")
     plt.fill_between(param_range, train_scores_mean - train_scores_std,
                      train_scores_mean + train_scores_std, alpha=0.2,
                      color="r")
-    plt.semilogx(param_range, test_scores_mean, label="Cross-validation score",
+    if semilog:
+        plt.semilogx(param_range, test_scores_mean, label="Cross-validation score",
+                 color="g")
+    else:
+        plt.plot(param_range, test_scores_mean, label="Cross-validation score",
                  color="g")
     plt.fill_between(param_range, test_scores_mean - test_scores_std,
                      test_scores_mean + test_scores_std, alpha=0.2, color="g")
