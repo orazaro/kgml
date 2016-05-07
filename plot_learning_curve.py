@@ -122,30 +122,38 @@ def plot_validation_curve(
     test_scores_mean = np.mean(test_scores, axis=1)
     test_scores_std = np.std(test_scores, axis=1)
 
-    plt.title(title)
-    plt.xlabel(param_name)
-    plt.ylabel("Score")
-    if ylim is not None:
-        plt.ylim(ylim)
-    if semilog:
-        plt.semilogx(param_range, train_scores_mean, label="Training score",
-                 color="r")
+    if ax is None:
+        fig, ax1 = plt.subplots()
     else:
-        plt.plot(param_range, train_scores_mean, label="Training score",
+        ax1 = ax
+    ax1.set_title(title)
+    ax1.set_xlabel(param_name)
+    ax1.set_ylabel("Score")
+    ax1.grid()
+    if ylim is not None:
+        ax1.set_ylim(ylim)
+    if semilog:
+        ax1.semilogx(param_range, train_scores_mean, 'o-',
+                     label="Training score",
+                     color="r")
+    else:
+        ax1.plot(param_range, train_scores_mean, 'o-', label="Training score",
                  color="r")
-    plt.fill_between(param_range, train_scores_mean - train_scores_std,
+    ax1.fill_between(param_range, train_scores_mean - train_scores_std,
                      train_scores_mean + train_scores_std, alpha=0.2,
                      color="r")
     if semilog:
-        plt.semilogx(param_range, test_scores_mean, label="Cross-validation score",
-                 color="g")
+        ax1.semilogx(param_range, test_scores_mean, 'o-',
+                     label="Cross-validation score",
+                     color="g")
     else:
-        plt.plot(param_range, test_scores_mean, label="Cross-validation score",
+        ax1.plot(param_range, test_scores_mean, 'o-',
+                 label="Cross-validation score",
                  color="g")
-    plt.fill_between(param_range, test_scores_mean - test_scores_std,
+    ax1.fill_between(param_range, test_scores_mean - test_scores_std,
                      test_scores_mean + test_scores_std, alpha=0.2, color="g")
-    plt.legend(loc="best")
-    return plt
+    ax1.legend(loc="best")
+    return ax1
 
 
 def test_plot_validation_curve():
