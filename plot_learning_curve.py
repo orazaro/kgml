@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Author:   scikit-learn developers
+# Author:   Oleg Razgulyaev
+# License:  BSD 3 clause
+# http://scikit-learn.org/stable/auto_examples/model_selection/plot_learning_curve.html#example-model-selection-plot-learning-curve-py
 """
 ========================
 Plotting Learning Curves
@@ -13,9 +19,8 @@ with RBF kernel. We can see clearly that the training score is still around
 the maximum and the validation score could be increased with more training
 samples.
 
-http://scikit-learn.org/stable/auto_examples/model_selection/plot_learning_curve.html#example-model-selection-plot-learning-curve-py
 """
-#print(__doc__)
+# print(__doc__)
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -28,7 +33,7 @@ from sklearn.learning_curve import learning_curve
 
 def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
                         n_jobs=1, train_sizes=np.linspace(.1, 1.0, 5),
-                        scoring=None):
+                        scoring=None, ax=None):
     """
     Generate a simple plot of the test and traning learning curve.
 
@@ -59,12 +64,15 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
     n_jobs : integer, optional
         Number of jobs to run in parallel (default 1).
     """
-    plt.figure()
-    plt.title(title)
+    if ax is None:
+        fig, ax1 = plt.subplots()
+    else:
+        ax1 = ax
+    ax1.set_title(title)
     if ylim is not None:
-        plt.ylim(*ylim)
-    plt.xlabel("Training examples")
-    plt.ylabel("Score")
+        ax1.yset_lim(*ylim)
+    ax1.set_xlabel("Training examples")
+    ax1.set_ylabel("Score")
     train_sizes, train_scores, test_scores = learning_curve(
         estimator, X, y, cv=cv, n_jobs=n_jobs, train_sizes=train_sizes,
         scoring=scoring)
@@ -72,34 +80,35 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
     train_scores_std = np.std(train_scores, axis=1)
     test_scores_mean = np.mean(test_scores, axis=1)
     test_scores_std = np.std(test_scores, axis=1)
-    plt.grid()
+    ax1.grid()
 
-    plt.fill_between(train_sizes, train_scores_mean - train_scores_std,
+    ax1.fill_between(train_sizes, train_scores_mean - train_scores_std,
                      train_scores_mean + train_scores_std, alpha=0.1,
                      color="r")
-    plt.fill_between(train_sizes, test_scores_mean - test_scores_std,
+    ax1.fill_between(train_sizes, test_scores_mean - test_scores_std,
                      test_scores_mean + test_scores_std, alpha=0.1, color="g")
-    plt.plot(train_sizes, train_scores_mean, 'o-', color="r",
+    ax1.plot(train_sizes, train_scores_mean, 'o-', color="r",
              label="Training score")
-    plt.plot(train_sizes, test_scores_mean, 'o-', color="g",
+    ax1.plot(train_sizes, test_scores_mean, 'o-', color="g",
              label="Cross-validation score")
 
-    plt.legend(loc="best")
-    return plt
+    ax1.legend(loc="best")
+    return ax1
 
 if __name__ == '__main__':
     digits = load_digits()
     X, y = digits.data, digits.target
 
-
     title = "Learning Curves (Naive Bayes)"
     # Cross validation with 100 iterations to get smoother mean test and train
-    # score curves, each time with 20% data randomly selected as a validation set.
+    # score curves, each time with 20% data randomly selected as a validation
+    # set.
     cv = cross_validation.ShuffleSplit(digits.data.shape[0], n_iter=100,
                                        test_size=0.2, random_state=0)
 
     estimator = GaussianNB()
-    plot_learning_curve(estimator, title, X, y, ylim=(0.7, 1.01), cv=cv, n_jobs=4)
+    plot_learning_curve(estimator, title, X, y, ylim=(0.7, 1.01), cv=cv,
+                        n_jobs=4)
 
     title = "Learning Curves (SVM, RBF kernel, $\gamma=0.001$)"
     # SVC is more expensive so we do a lower number of CV iterations:
