@@ -4,6 +4,13 @@
 # Author:   Oleg Razgulyaev
 # License:  BSD 3 clause
 # http://scikit-learn.org/stable/auto_examples/model_selection/plot_learning_curve.html#example-model-selection-plot-learning-curve-py
+# http://scikit-learn.org/stable/auto_examples/model_selection/plot_validation_curve.html#example-model-selection-plot-validation-curve-py
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn import cross_validation
+from sklearn.learning_curve import learning_curve
+from sklearn.learning_curve import validation_curve
+
 """
 ========================
 Plotting Learning Curves
@@ -20,15 +27,6 @@ the maximum and the validation score could be increased with more training
 samples.
 
 """
-# print(__doc__)
-
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn import cross_validation
-from sklearn.naive_bayes import GaussianNB
-from sklearn.svm import SVC
-from sklearn.datasets import load_digits
-from sklearn.learning_curve import learning_curve
 
 
 def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
@@ -71,7 +69,8 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
     ax1.set_title(title)
     if ylim is not None:
         ax1.yset_lim(*ylim)
-    ax1.set_xlabel("Training examples")
+    sunits = '%' if isinstance(train_sizes[0], np.float64) else 'samples'
+    ax1.set_xlabel("Training examples ({})".format(sunits))
     ax1.set_ylabel("Score")
     train_sizes, train_scores, test_scores = learning_curve(
         estimator, X, y, cv=cv, n_jobs=n_jobs, train_sizes=train_sizes,
@@ -95,7 +94,71 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
     ax1.legend(loc="best")
     return ax1
 
-if __name__ == '__main__':
+"""
+==========================
+Plotting Validation Curves
+==========================
+
+In this plot you can see the training scores and validation scores of an SVM
+for different values of the kernel parameter gamma. For very low values of
+gamma, you can see that both the training score and the validation score are
+low. This is called underfitting. Medium values of gamma will result in high
+values for both scores, i.e. the classifier is performing fairly well. If gamma
+is too high, the classifier will overfit, which means that the training score
+is good but the validation score is poor.
+"""
+
+
+def plot_validation_curve(
+        estimator, X, y, param_name, param_range, title="Validation Curve",
+        ylim=None, cv=None, n_jobs=1, scoring=None, ax=None):
+    # param_range = np.logspace(-6, -1, 5)
+    train_scores, test_scores = validation_curve(
+        estimator, X, y, param_name=param_name, param_range=param_range,
+        cv=cv, scoring=scoring, n_jobs=n_jobs)
+    train_scores_mean = np.mean(train_scores, axis=1)
+    train_scores_std = np.std(train_scores, axis=1)
+    test_scores_mean = np.mean(test_scores, axis=1)
+    test_scores_std = np.std(test_scores, axis=1)
+
+    plt.title(title)
+    plt.xlabel(param_name)
+    plt.ylabel("Score")
+    if ylim is not None:
+        plt.ylim(ylim)
+    plt.semilogx(param_range, train_scores_mean, label="Training score",
+                 color="r")
+    plt.fill_between(param_range, train_scores_mean - train_scores_std,
+                     train_scores_mean + train_scores_std, alpha=0.2,
+                     color="r")
+    plt.semilogx(param_range, test_scores_mean, label="Cross-validation score",
+                 color="g")
+    plt.fill_between(param_range, test_scores_mean - test_scores_std,
+                     test_scores_mean + test_scores_std, alpha=0.2, color="g")
+    plt.legend(loc="best")
+    return plt
+
+
+def test_plot_validation_curve():
+    from sklearn.datasets import load_digits
+    from sklearn.svm import SVC
+    digits = load_digits()
+    X, y = digits.data, digits.target
+    estimator = SVC()
+    param_range = np.logspace(-6, -1, 5)
+    plot_validation_curve(
+            estimator, X, y, param_name="gamma",
+            param_range=param_range,
+            title="Validation Curve for SVC", ylim=None, cv=None, n_jobs=-1,
+            scoring=None, ax=None)
+    plt.show()
+
+
+def test_plot_learning_curve():
+    from sklearn.naive_bayes import GaussianNB
+    from sklearn.svm import SVC
+    from sklearn.datasets import load_digits
+
     digits = load_digits()
     X, y = digits.data, digits.target
 
@@ -118,3 +181,6 @@ if __name__ == '__main__':
     plot_learning_curve(estimator, title, X, y, (0.7, 1.01), cv=cv, n_jobs=4)
 
     plt.show()
+
+if __name__ == '__main__':
+    test_plot_validation_curve()
