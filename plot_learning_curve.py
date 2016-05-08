@@ -5,28 +5,25 @@
 # License:  BSD 3 clause
 # http://scikit-learn.org/stable/auto_examples/model_selection/plot_learning_curve.html#example-model-selection-plot-learning-curve-py
 # http://scikit-learn.org/stable/auto_examples/model_selection/plot_validation_curve.html#example-model-selection-plot-validation-curve-py
+"""
+===============
+Learning Curves
+===============
+A learning curve shows the validation and training score of an estimator for
+varying numbers of training samples. It is a tool to find out how much we
+benefit from adding more training data and whether the estimator suffers more
+from a variance error or a bias error. If both the validation score and the
+training score converge to a value that is too low with increasing size of the
+training set, we will not benefit much from more training data. If the
+training score is much greater than the validation score for the maximum
+number of training samples, adding more training samples will most likely
+increase generalization.
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import cross_validation
 from sklearn.learning_curve import learning_curve
 from sklearn.learning_curve import validation_curve
-
-"""
-========================
-Plotting Learning Curves
-========================
-
-On the left side the learning curve of a naive Bayes classifier is shown for
-the digits dataset. Note that the training score and the cross-validation score
-are both not very good at the end. However, the shape of the curve can be found
-in more complex datasets very often: the training score is very high at the
-beginning and decreases and the cross-validation score is very low at the
-beginning and increases. On the right side we see the learning curve of an SVM
-with RBF kernel. We can see clearly that the training score is still around
-the maximum and the validation score could be increased with more training
-samples.
-
-"""
 
 
 def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
@@ -94,20 +91,6 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
     ax1.legend(loc="best")
     return ax1
 
-"""
-==========================
-Plotting Validation Curves
-==========================
-
-In this plot you can see the training scores and validation scores of an SVM
-for different values of the kernel parameter gamma. For very low values of
-gamma, you can see that both the training score and the validation score are
-low. This is called underfitting. Medium values of gamma will result in high
-values for both scores, i.e. the classifier is performing fairly well. If gamma
-is too high, the classifier will overfit, which means that the training score
-is good but the validation score is poor.
-"""
-
 
 def plot_validation_curve(
         estimator, X, y, param_name, param_range, title="Validation Curve",
@@ -155,6 +138,19 @@ def plot_validation_curve(
     ax1.legend(loc="best")
     return ax1
 
+"""
+==========================
+Plotting Validation Curves
+==========================
+In this plot you can see the training scores and validation scores of an SVM
+for different values of the kernel parameter gamma. For very low values of
+gamma, you can see that both the training score and the validation score are
+low. This is called underfitting. Medium values of gamma will result in high
+values for both scores, i.e. the classifier is performing fairly well. If gamma
+is too high, the classifier will overfit, which means that the training score
+is good but the validation score is poor.
+"""
+
 
 def test_plot_validation_curve():
     from sklearn.datasets import load_digits
@@ -169,6 +165,22 @@ def test_plot_validation_curve():
             title="Validation Curve for SVC", ylim=None, cv=None, n_jobs=-1,
             scoring=None, ax=None)
     plt.show()
+
+
+"""
+========================
+Plotting Learning Curves
+========================
+On the left side the learning curve of a naive Bayes classifier is shown for
+the digits dataset. Note that the training score and the cross-validation score
+are both not very good at the end. However, the shape of the curve can be found
+in more complex datasets very often: the training score is very high at the
+beginning and decreases and the cross-validation score is very low at the
+beginning and increases. On the right side we see the learning curve of an SVM
+with RBF kernel. We can see clearly that the training score is still around
+the maximum and the validation score could be increased with more training
+samples.
+"""
 
 
 def test_plot_learning_curve():
