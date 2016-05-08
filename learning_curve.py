@@ -66,8 +66,11 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
     ax1.set_title(title)
     if ylim is not None:
         ax1.yset_lim(*ylim)
-    sunits = '%' if isinstance(train_sizes[0], np.float64) else 'samples'
-    ax1.set_xlabel("Training examples ({})".format(sunits))
+    if False:
+        sunits = '%' if isinstance(train_sizes[0], np.float64) else 'samples'
+        ax1.set_xlabel("Training examples ({})".format(sunits))
+    else:
+        ax1.set_xlabel("Training examples")
     ax1.set_ylabel("Score")
     train_sizes, train_scores, test_scores = learning_curve(
         estimator, X, y, cv=cv, n_jobs=n_jobs, train_sizes=train_sizes,
