@@ -90,8 +90,11 @@ def forward_cv_inner_loop_classif(model, df, selected, candidate, target,
 
 
 def forward_cv_inner_loop(model, df, selected, candidate, target, scoring,
-                          cv1=None, n_folds=8):
-    selected_candidate = selected + [candidate]
+                          cv1=None, n_folds=8, backward=False):
+    if backward:
+        selected_candidate = [s for s in selected if s != candidate]
+    else:
+        selected_candidate = selected + [candidate]
     X, y, features = df_xyf(df, predictors=selected_candidate, target=target)
     if cv1 is None:
         cv1 = n_folds
@@ -150,26 +153,30 @@ def forward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
     return selected
 
 
-def test_forward_cv():
+def make_test_regression(n_features=30, n_informative=5, n_samples=5000):
     import pandas as pd
-    from sklearn.preprocessing import StandardScaler
-    from sklearn import linear_model
-    from sklearn.pipeline import make_pipeline
-
-    n_features = 30
-    n_informative = 5
-    n_samples=5000
     X, y = make_regression(n_samples=n_samples, n_features=n_features,
                            n_informative=n_informative, noise=0.5,
                            shuffle=False, random_state=None)
 
-    idx_sel = f_regression_select(X, y, verbose=0)
-    print("f_regression_select:", len(idx_sel), idx_sel)
+    if False:
+        idx_sel = f_regression_select(X, y, verbose=0)
+        print("f_regression_select:", len(idx_sel), idx_sel)
 
     predictors = ["p{}".format(i) for i in range(X.shape[1])]
     target = 'y'
     df = pd.DataFrame(np.c_[X, y], columns=predictors+[target])
     # print(df.head())
+    return df, predictors, target
+
+
+def test_forward_cv():
+    from sklearn.preprocessing import StandardScaler
+    from sklearn import linear_model
+    from sklearn.pipeline import make_pipeline
+
+    df, predictors, target = make_test_regression(
+            n_features=30, n_informative=5, n_samples=5000)
     model = make_pipeline(
                 StandardScaler(),
                 linear_model.RidgeCV(),)
@@ -178,6 +185,65 @@ def test_forward_cv():
         scoring='mean_squared_error',
         n_folds=8, n_jobs=-1, start=[], selmax=None, verbosity=1)
     print("forward_cv:", len(selected), selected)
+
+
+def backward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
+                n_folds=8, n_jobs=-1, selmin=1, verbosity=0):
+    """ Backward selection using model.
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    selected: list
+        selected predictors
+
+    Example
+    -------
+    References
+    ----------
+    """
+    selected = set(predictors)
+    current_score, best_new_score = None, None
+    while selected and current_score == best_new_score:
+        pre_dispatch = '2*n_jobs'
+        parallel = Parallel(n_jobs=n_jobs, verbose=0,
+                            pre_dispatch=pre_dispatch)
+        scores_with_candidates = parallel(delayed(forward_cv_inner_loop)(
+            clone(model), df, selected, candidate, target, scoring,
+            cv1=cv1, n_folds=n_folds, backward=True)
+            for candidate in selected)
+        scores_with_candidates.sort()
+        # print(scores_with_candidates)
+        best_new_score, best_candidate = scores_with_candidates.pop()
+        if current_score is None or current_score < best_new_score:
+            selected.remove(best_candidate)
+            current_score = best_new_score
+        else:
+            break
+        if verbosity > 0:
+            print("{:.4f}".format(current_score), ' '.join(sorted(selected)))
+        if selmin is not None and len(selected) <= selmin:
+            break
+    return sorted(list(selected))
+
+
+def test_backward_cv():
+    from sklearn.preprocessing import StandardScaler
+    from sklearn import linear_model
+    from sklearn.pipeline import make_pipeline
+
+    df, predictors, target = make_test_regression(
+            n_features=30, n_informative=5, n_samples=5000)
+    model = make_pipeline(
+                StandardScaler(),
+                linear_model.RidgeCV(),)
+    selected = backward_cv(
+        df, predictors, target, model,
+        scoring='mean_squared_error',
+        n_folds=8, n_jobs=-1, verbosity=1)
+    print("backward_cv:", len(selected), selected)
 
 
 def forward_selected(data, response, selmax=16, verbosity=0):
@@ -391,6 +457,7 @@ def test_f_regression_select():
 def zest():
     # test_f_regression_select()
     test_forward_cv()
+    test_backward_cv()
     print("Test OK", file=sys.stderr)
 
 if __name__ == '__main__':
