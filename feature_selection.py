@@ -75,8 +75,8 @@ def add_quadratic_features(df, predictors, rm_noninform=False):
     return df_out
 
 
-def forward_cv_inner_loop(model, df, selected, candidate, target, scoring,
-                          cv1=None, n_folds=8):
+def forward_cv_inner_loop_classif(model, df, selected, candidate, target,
+                                  scoring, cv1=None, n_folds=8):
     selected_candidate = selected + [candidate]
     X, y, features = df_xyf(df, predictors=selected_candidate, target=target)
     if cv1 is None:
@@ -89,7 +89,24 @@ def forward_cv_inner_loop(model, df, selected, candidate, target, scoring,
     return (scores_mean, candidate)
 
 
-def forward_cv(df, predictors, target, model, scoring='roc_auc',
+def forward_cv_inner_loop(model, df, selected, candidate, target, scoring,
+                          cv1=None, n_folds=8):
+    selected_candidate = selected + [candidate]
+    X, y, features = df_xyf(df, predictors=selected_candidate, target=target)
+    if cv1 is None:
+        cv1 = n_folds
+
+    scores = cross_validation.cross_val_score(
+                    model, X, y, scoring=scoring, cv=cv1, n_jobs=1,
+                    verbose=0, fit_params=None,
+                    pre_dispatch='2*n_jobs')
+
+    scores_mean, me = estimate_scores(scores, scoring, sampling=False,
+                                      verbose=0)
+    return (scores_mean, candidate)
+
+
+def forward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
                n_folds=8, n_jobs=-1, start=[], selmax=None, verbosity=0):
     """ Forward selection using model.
 
@@ -106,22 +123,21 @@ def forward_cv(df, predictors, target, model, scoring='roc_auc',
     References
     ----------
     """
-
-    X, y, features = df_xyf(df, predictors=predictors, target=target)
-    remaining = set([e for e in features if e not in start])
+    remaining = set([e for e in predictors if e not in start])
     selected = list(start)
-    current_score, best_new_score = 0.0, 0.0
+    current_score, best_new_score = None, None
     while remaining and current_score == best_new_score:
         pre_dispatch = '2*n_jobs'
         parallel = Parallel(n_jobs=n_jobs, verbose=0,
                             pre_dispatch=pre_dispatch)
         scores_with_candidates = parallel(delayed(forward_cv_inner_loop)(
             clone(model), df, selected, candidate, target, scoring,
-            cv1=None, n_folds=8)
+            cv1=cv1, n_folds=n_folds)
             for candidate in remaining)
         scores_with_candidates.sort()
+        # print(scores_with_candidates)
         best_new_score, best_candidate = scores_with_candidates.pop()
-        if current_score < best_new_score:
+        if current_score is None or current_score < best_new_score:
             remaining.remove(best_candidate)
             selected.append(best_candidate)
             current_score = best_new_score
@@ -132,6 +148,36 @@ def forward_cv(df, predictors, target, model, scoring='roc_auc',
         if selmax is not None and len(selected) >= selmax:
             break
     return selected
+
+
+def test_forward_cv():
+    import pandas as pd
+    from sklearn.preprocessing import StandardScaler
+    from sklearn import linear_model
+    from sklearn.pipeline import make_pipeline
+
+    n_features = 30
+    n_informative = 5
+    n_samples=5000
+    X, y = make_regression(n_samples=n_samples, n_features=n_features,
+                           n_informative=n_informative, noise=0.5,
+                           shuffle=False, random_state=None)
+
+    idx_sel = f_regression_select(X, y, verbose=0)
+    print("f_regression_select:", len(idx_sel), idx_sel)
+
+    predictors = ["p{}".format(i) for i in range(X.shape[1])]
+    target = 'y'
+    df = pd.DataFrame(np.c_[X, y], columns=predictors+[target])
+    # print(df.head())
+    model = make_pipeline(
+                StandardScaler(),
+                linear_model.RidgeCV(),)
+    selected = forward_cv(
+        df, predictors, target, model,
+        scoring='mean_squared_error',
+        n_folds=8, n_jobs=-1, start=[], selmax=None, verbosity=1)
+    print("forward_cv:", len(selected), selected)
 
 
 def forward_selected(data, response, selmax=16, verbosity=0):
@@ -297,11 +343,12 @@ def plot_lc_features(model, df_train, df_val, predictors, target, df_test=None,
 
 
 def make_skewed_dataframe(n_samples=5000, n_features=20):
+    import pandas as pd
     from sklearn.datasets.samples_generator import (make_classification, )
     X, y = make_classification(
         n_samples=n_samples, n_features=n_features, n_classes=2,
         n_clusters_per_class=2, n_informative=8, n_redundant=2,
-        random_state=random_state)
+        random_state=0)
     # create unbalamced classes
     plus = np.where(y > 0)[0]
     minus = np.where(y <= 0)[0]
@@ -331,13 +378,20 @@ def test_plot_lc_features(plton=False):
 def test_f_regression_select():
     print("==> a lot of features")
     X, y = make_regression(n_samples=20000, n_features=200, n_informative=150,
-                             shuffle=False, random_state=0)
+                           shuffle=False, random_state=0)
     idx_sel = f_regression_select(X, y, verbose=2)
     print("==> few ones")
-    X, y = make_regression(n_samples=200, n_features=20, n_informative=5, noise=0.5,
-                             shuffle=False, random_state=0)
+    X, y = make_regression(n_samples=200, n_features=20, n_informative=5,
+                           noise=0.5, shuffle=False, random_state=0)
     idx_sel = f_regression_select(X, y, verbose=1)
+    print(idx_sel)
     print("tests ok")
+
+
+def zest():
+    # test_f_regression_select()
+    test_forward_cv()
+    print("Test OK", file=sys.stderr)
 
 if __name__ == '__main__':
     random.seed(1)
@@ -346,8 +400,8 @@ if __name__ == '__main__':
     parser.add_argument('cmd', nargs='?', default='test')
     args = parser.parse_args()
     print(args, file=sys.stderr)
-  
+
     if args.cmd == 'test':
-        test_f_regression_select()
+        zest()
     else:
         raise ValueError("bad cmd")

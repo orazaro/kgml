@@ -32,10 +32,10 @@ from sklearn.datasets.samples_generator import (make_classification, )
 from sklearn import (metrics, cross_validation)
 
 # kgml
-from .imbalanced import round_down
-from .modsel import bootstrap_632
-from .paramsel import param_grids
-from .modsel import (precision_sensitivity_specificity, best_threshold)
+from imbalanced import round_down
+from modsel import bootstrap_632
+from paramsel import param_grids
+from modsel import (precision_sensitivity_specificity, best_threshold)
 
 logger = logging.getLogger(__name__)
 
