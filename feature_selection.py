@@ -9,17 +9,19 @@ from __future__ import division, print_function
 
 import sys
 import random
-import os
 import logging
 
 import numpy as np
 
 from sklearn.feature_selection import f_regression
-from sklearn.datasets.samples_generator import (make_classification,
-                                                make_regression)
-from sklearn.feature_selection import SelectPercentile, f_classif, chi2
+from sklearn.datasets.samples_generator import make_regression
 from sklearn.base import clone
 from sklearn.externals.joblib import Parallel, delayed
+from sklearn import cross_validation
+
+from predictive_analysis import df_xyf
+from model_selection import cross_val_predict_proba
+from modsel import estimate_scores
 
 logger = logging.getLogger(__name__)
 
@@ -29,11 +31,12 @@ def remove_noninformative_columns(df):
         - with variance < 1E-15
     """
     variance = np.var(df, axis=0)
-    return df.iloc[:, list(variance>1E-15)]
+    return df.iloc[:, list(variance > 1E-15)]
+
 
 def add_quadratic_features(df, predictors, rm_noninform=False):
     """ Add quadratic features based on the selected predictors
-    
+
     Parameters
     ----------
     df: DataFrame
@@ -51,45 +54,43 @@ def add_quadratic_features(df, predictors, rm_noninform=False):
     Xout = df.values
     columns = list(df.columns)
     X = df[predictors].values
-    
+
     # add squares
     X1 = X * X
-    Xout = np.c_[Xout,X1]
-    columns.extend(["{}*{}".format(e,e) for e in predictors])
-    #print columns
-    
+    Xout = np.c_[Xout, X1]
+    columns.extend(["{}*{}".format(e, e) for e in predictors])
+    # print columns
+
     # add combinations
     X2 = []
-    for (i,j) in combinations(range(len(predictors)),2):
-        X2.append(X[:,i]*X[:,j])
-        columns.append("{}*{}".format(predictors[i],predictors[j]))
+    for (i, j) in combinations(range(len(predictors)), 2):
+        X2.append(X[:, i] * X[:, j])
+        columns.append("{}*{}".format(predictors[i], predictors[j]))
     X2 = np.vstack(X2).T
-    Xout = np.c_[Xout,X2]
-    #print columns
-    df_out = pd.DataFrame(Xout,columns=columns)
+    Xout = np.c_[Xout, X2]
+    # print columns
+    df_out = pd.DataFrame(Xout, columns=columns)
     if rm_noninform:
         df_out = remove_noninformative_columns(df_out)
-    return df_out 
+    return df_out
 
-from predictive_analysis import df_xyf
-from model_selection import cross_val_predict_proba
-from modsel import estimate_scores
-from sklearn import (metrics, cross_validation)
 
-def forward_cv_inner_loop(model,df,selected,candidate,target,scoring,
-        cv1=None,n_folds=8):
+def forward_cv_inner_loop(model, df, selected, candidate, target, scoring,
+                          cv1=None, n_folds=8):
     selected_candidate = selected + [candidate]
-    X,y,features = df_xyf(df, predictors=selected_candidate, target=target)
+    X, y, features = df_xyf(df, predictors=selected_candidate, target=target)
     if cv1 is None:
-        cv1 = cross_validation.StratifiedKFold(y,n_folds)
-    y_proba, scores = cross_val_predict_proba(model, X, y, scoring=scoring, 
+        cv1 = cross_validation.StratifiedKFold(y, n_folds)
+    y_proba, scores = cross_val_predict_proba(
+        model, X, y, scoring=scoring,
         cv=cv1, n_jobs=1, verbose=0, fit_params=None, pre_dispatch='2*n_jobs')
-    scores_mean, me = estimate_scores(scores, scoring, sampling=False, 
-        verbose=0)
+    scores_mean, me = estimate_scores(scores, scoring, sampling=False,
+                                      verbose=0)
     return (scores_mean, candidate)
 
-def forward_cv(df, predictors, target, model, scoring = 'roc_auc', 
-        n_folds=8, n_jobs=-1, start=[], selmax=None, verbosity=0):
+
+def forward_cv(df, predictors, target, model, scoring='roc_auc',
+               n_folds=8, n_jobs=-1, start=[], selmax=None, verbosity=0):
     """ Forward selection using model.
 
     Parameters
@@ -99,24 +100,24 @@ def forward_cv(df, predictors, target, model, scoring = 'roc_auc',
     -------
     selected: list
         selected predictors
-    
+
     Example
     -------
     References
     ----------
     """
-    
-    X,y,features = df_xyf(df,predictors=predictors,target=target)
+
+    X, y, features = df_xyf(df, predictors=predictors, target=target)
     remaining = set([e for e in features if e not in start])
     selected = list(start)
     current_score, best_new_score = 0.0, 0.0
     while remaining and current_score == best_new_score:
-        pre_dispatch='2*n_jobs'
+        pre_dispatch = '2*n_jobs'
         parallel = Parallel(n_jobs=n_jobs, verbose=0,
-                    pre_dispatch=pre_dispatch)
+                            pre_dispatch=pre_dispatch)
         scores_with_candidates = parallel(delayed(forward_cv_inner_loop)(
-            clone(model),df,selected,candidate,target,scoring,
-            cv1=None,n_folds=8)
+            clone(model), df, selected, candidate, target, scoring,
+            cv1=None, n_folds=8)
             for candidate in remaining)
         scores_with_candidates.sort()
         best_new_score, best_candidate = scores_with_candidates.pop()
@@ -128,17 +129,19 @@ def forward_cv(df, predictors, target, model, scoring = 'roc_auc',
             break
         if verbosity > 0:
             print("{:.4f}".format(current_score), ' '.join(selected))
-        if selmax is not None and len(selected) >= selmax: break
+        if selmax is not None and len(selected) >= selmax:
+            break
     return selected
+
 
 def forward_selected(data, response, selmax=16, verbosity=0):
     """Linear model designed by forward selection.
 
     Parameters
     ----------
-    data : pandas DataFrame 
+    data : pandas DataFrame
         with all possible predictors and response
-    response: str 
+    response: str
         name of response column in data
 
     Returns
@@ -161,7 +164,7 @@ def forward_selected(data, response, selmax=16, verbosity=0):
 
     >> print model.rsquared_adj
     >> # 0.835190760538
-    
+
     References:
     -----------
     http://planspace.org/20150423-forward_selection_with_statsmodels/
@@ -187,46 +190,53 @@ def forward_selected(data, response, selmax=16, verbosity=0):
             current_score = best_new_score
         if verbosity > 0:
             print(current_score, selected)
-        if len(selected) >= selmax: break
+        if len(selected) >= selmax:
+            break
     formula = "{} ~ {} + 1".format(response,
                                    ' + '.join(selected))
     model = smf.ols(formula, data).fit()
     return model, selected
 
 
-def f_regression_select(X, y, maxf = 300, pvals = True, names = None, verbose = 0, old_idx_sel=None):
+def f_regression_select(X, y, maxf=300, pvals=True, names=None, verbose=0,
+                        old_idx_sel=None):
     "Select features using f_regression"
-    if names == None:
-        names = ["f_%d"%(i+1) for i in range(X.shape[1])]
+    if names is None:
+        names = ["f_%d" % (i+1) for i in range(X.shape[1])]
     if not old_idx_sel:
         old_idx_sel = range(X.shape[1])
-    f=f_regression(X,y,center=False)
+    f = f_regression(X, y, center=False)
     # (F-value, p-value, col, name)
-    a = [(f[0][i], f[1][i], old_idx_sel[i], names[i]) 
-            for i in range(X.shape[1])]
+    a = [(f[0][i], f[1][i], old_idx_sel[i], names[i])
+         for i in range(X.shape[1])]
     if pvals:
-        a = [e for e in a if e[1]<0.05]
+        a = [e for e in a if e[1] < 0.05]
     a = sorted(a, reverse=True)
-    idx_sel = [ e[2] for e in a[:maxf] ]
+    idx_sel = [e[2] for e in a[:maxf]]
     if verbose > 0:
         b = a[:maxf]
+
         def out():
-            if min(maxf,len(b)) > 100:
-                print("F_select(%d):"%len(b),b[:90],"...",b[-10:], file=sys.stderr)
+            if min(maxf, len(b)) > 100:
+                print("F_select(%d):" % len(b), b[:90], "...", b[-10:],
+                      file=sys.stderr)
             else:
-                print("F_select(%d):"%len(b),b[:maxf], file=sys.stderr)
+                print("F_select(%d):" % len(b), b[:maxf], file=sys.stderr)
+
         def out2():
             print("F_select(%d):" % len(b), file=sys.stderr)
-            def pr(m1,m2):
-                for i in range(m1,m2):
+
+            def pr(m1, m2):
+                for i in range(m1, m2):
                     row = b[i]
-                    print("%10s %10.2f %15g %10d" % (row[3],row[0],row[1],row[2]), file=sys.stderr)
-            n = min(len(b),maxf)
+                    print("%10s %10.2f %15g %10d" % (row[3],
+                          row[0], row[1], row[2]), file=sys.stderr)
+            n = min(len(b), maxf)
             m = 90 if n > 100 else n
-            pr(0,m)
+            pr(0, m)
             if n > 100:
                 print("...", file=sys.stderr)
-                pr(len(b)-10,len(b))
+                pr(len(b)-10, len(b))
         if verbose > 1:
             out2()
         else:
@@ -284,6 +294,7 @@ def plot_lc_features(model, df_train, df_val, predictors, target, df_test=None,
         plt.show()
 
 # --- tests ----------------------------#
+
 
 def make_skewed_dataframe(n_samples=5000, n_features=20):
     from sklearn.datasets.samples_generator import (make_classification, )
