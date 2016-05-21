@@ -94,7 +94,9 @@ def forward_cv_inner_loop_classif(model, df, selected, candidate, target,
 
 def forward_cv_inner_loop(model, df, selected, candidate, target, scoring,
                           cv1=None, n_folds=8, backward=False):
-    if backward:
+    if candidate is None:
+        selected_candidate = selected
+    elif backward:
         selected_candidate = [s for s in selected if s != candidate]
     else:
         selected_candidate = selected + [candidate]
@@ -144,7 +146,12 @@ def forward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
     """
     remaining = set([e for e in predictors if e not in start])
     selected = list(start)
-    current_score, best_new_score = None, None
+    current_score = None
+    if len(start) > 0:
+        current_score, _ = forward_cv_inner_loop(
+                clone(model), df, start, None, target, scoring,
+                cv1=cv1, n_folds=n_folds)
+    best_new_score = current_score
     while remaining and current_score == best_new_score:
         pre_dispatch = '2*n_jobs'
         parallel = Parallel(n_jobs=n_jobs, verbose=0,
@@ -224,9 +231,12 @@ def backward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
     References
     ----------
     """
-    selected = set(predictors)
-    current_score, best_new_score = None, None
-    while selected and current_score == best_new_score:
+    selected = predictors
+    current_score, _ = forward_cv_inner_loop(
+            clone(model), df, selected, None, target, scoring,
+            cv1=cv1, n_folds=n_folds, backward=True)
+    best_new_score = current_score
+    while len(selected) > 0 and current_score == best_new_score:
         pre_dispatch = '2*n_jobs'
         parallel = Parallel(n_jobs=n_jobs, verbose=0,
                             pre_dispatch=pre_dispatch)
@@ -240,15 +250,16 @@ def backward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
         if current_score is None or cmp_scores(current_score,
                                                best_new_score,
                                                min_ratio):
-            selected.remove(best_candidate)
+            selected = [s for s in selected if s != best_candidate]
             current_score = best_new_score
         else:
+            # print("back:", current_score, best_new_score)
             break
         if verbosity > 0:
-            print("{:.4f}".format(current_score), ' '.join(sorted(selected)))
+            print("{:.4f}".format(current_score), ' '.join(selected))
         if selmin is not None and len(selected) <= selmin:
             break
-    return sorted(list(selected))
+    return selected
 
 
 def test_backward_cv():
@@ -270,7 +281,7 @@ def test_backward_cv():
 
 def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
                n_folds=8, n_jobs=-1, start=[], selmax=None, selmin=1,
-               min_ratio=1e-5, max_steps=10, verbosity=0):
+               min_ratio=1e-2, max_steps=10, verbosity=0):
     """ Backward selection using model.
 
     Parameters
@@ -310,8 +321,8 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
         to_break = test_to_break(selected, selected_curr, to_break)
         selected_curr = selected
         if verbosity > 0:
-            print('forward:', ' '.join(sorted(selected_curr)))
-        if to_break > 2:
+            print('forward:', ' '.join(selected_curr))
+        if to_break > 1:
             break
         selected = backward_cv(
                         df, selected_curr, target, model, scoring=scoring,
@@ -320,10 +331,29 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
         to_break = test_to_break(selected, selected_curr, to_break)
         selected_curr = selected
         if verbosity > 0:
-            print('backward:', ' '.join(sorted(selected_curr)))
+            print('backward:', ' '.join(selected_curr))
+        if to_break > 0:
+            break
 
     return selected_curr
 
+
+def test_add_del_cv():
+    from sklearn.preprocessing import StandardScaler
+    from sklearn import linear_model
+    from sklearn.pipeline import make_pipeline
+
+    df, predictors, target = make_test_regression(
+            n_features=30, n_informative=5, n_samples=5000)
+    model = make_pipeline(
+                StandardScaler(),
+                linear_model.RidgeCV(),)
+    selected = add_del_cv(
+        df, predictors, target, model,
+        scoring='mean_squared_error', cv1=8,
+        n_folds=8, n_jobs=-1, min_ratio=1e-2,
+        verbosity=2)
+    print("add_del_cv:", len(selected), selected)
 
 # --------------------- Forward selection using statsmodels ---------- #
 
@@ -542,6 +572,7 @@ def zest():
     # test_f_regression_select()
     test_forward_cv()
     test_backward_cv()
+    test_add_del_cv()
     print("Test OK", file=sys.stderr)
 
 if __name__ == '__main__':
