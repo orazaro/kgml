@@ -127,7 +127,7 @@ def cmp_scores(current_score, new_score, min_ratio=0.01):
 
 
 def forward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
-               n_folds=8, n_jobs=-1, start=[], selmax=None, min_ratio=0.01,
+               n_folds=8, n_jobs=-1, start=[], selmax=None, min_ratio=1e-7,
                verbosity=0):
     """ Forward selection using model.
 
@@ -214,7 +214,7 @@ def test_forward_cv():
 
 
 def backward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
-                n_folds=8, n_jobs=-1, selmin=1, min_ratio=1e-5,
+                n_folds=8, n_jobs=-1, selmin=1, min_ratio=1e-7,
                 verbosity=0):
     """ Backward selection using model.
 
@@ -281,8 +281,8 @@ def test_backward_cv():
 
 def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
                n_folds=8, n_jobs=-1, start=[], selmax=None, selmin=1,
-               min_ratio=1e-2, max_steps=10, verbosity=0):
-    """ Backward selection using model.
+               min_ratio=1e-7, max_steps=10, verbosity=0):
+    """ Forward-Backward (ADD-DEL) selection using model.
 
     Parameters
     ----------
@@ -351,7 +351,7 @@ def test_add_del_cv():
     selected = add_del_cv(
         df, predictors, target, model,
         scoring='mean_squared_error', cv1=8,
-        n_folds=8, n_jobs=-1, min_ratio=1e-2,
+        n_folds=8, n_jobs=-1, min_ratio=1e-7,
         verbosity=2)
     print("add_del_cv:", len(selected), selected)
 
