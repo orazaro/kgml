@@ -74,6 +74,8 @@ def add_quadratic_features(df, predictors, rm_noninform=False):
         df_out = remove_noninformative_columns(df_out)
     return df_out
 
+# ------------------ Greedy Feature Selection ----------------------------- #
+
 
 def forward_cv_inner_loop_classif(model, df, selected, candidate, target,
                                   scoring, cv1=None, n_folds=8):
@@ -109,8 +111,21 @@ def forward_cv_inner_loop(model, df, selected, candidate, target, scoring,
     return (scores_mean, candidate)
 
 
+def cmp_scores(current_score, new_score, min_ratio=0.01):
+    if current_score >= new_score:
+        return False
+
+    rel_diff_ok = abs(current_score) < min_ratio or \
+        abs(abs(new_score) - abs(current_score)) / \
+        abs(current_score) > min_ratio
+    # print(current_score, new_score, min_ratio, rel_diff_ok)
+
+    return rel_diff_ok
+
+
 def forward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
-               n_folds=8, n_jobs=-1, start=[], selmax=None, verbosity=0):
+               n_folds=8, n_jobs=-1, start=[], selmax=None, min_ratio=0.01,
+               verbosity=0):
     """ Forward selection using model.
 
     Parameters
@@ -140,7 +155,9 @@ def forward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
         scores_with_candidates.sort()
         # print(scores_with_candidates)
         best_new_score, best_candidate = scores_with_candidates.pop()
-        if current_score is None or current_score < best_new_score:
+        if current_score is None or cmp_scores(current_score,
+                                               best_new_score,
+                                               min_ratio):
             remaining.remove(best_candidate)
             selected.append(best_candidate)
             current_score = best_new_score
@@ -183,12 +200,14 @@ def test_forward_cv():
     selected = forward_cv(
         df, predictors, target, model,
         scoring='mean_squared_error',
-        n_folds=8, n_jobs=-1, start=[], selmax=None, verbosity=1)
+        n_folds=8, n_jobs=-1, start=[], selmax=None,  min_ratio=0.01,
+        verbosity=1)
     print("forward_cv:", len(selected), selected)
 
 
 def backward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
-                n_folds=8, n_jobs=-1, selmin=1, verbosity=0):
+                n_folds=8, n_jobs=-1, selmin=1, min_ratio=1e-5,
+                verbosity=0):
     """ Backward selection using model.
 
     Parameters
@@ -217,7 +236,9 @@ def backward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
         scores_with_candidates.sort()
         # print(scores_with_candidates)
         best_new_score, best_candidate = scores_with_candidates.pop()
-        if current_score is None or current_score < best_new_score:
+        if current_score is None or cmp_scores(current_score,
+                                               best_new_score,
+                                               min_ratio):
             selected.remove(best_candidate)
             current_score = best_new_score
         else:
@@ -244,6 +265,60 @@ def test_backward_cv():
         scoring='mean_squared_error',
         n_folds=8, n_jobs=-1, verbosity=1)
     print("backward_cv:", len(selected), selected)
+
+
+def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
+               n_folds=8, n_jobs=-1, start=[], selmax=None, selmin=1,
+               min_ratio=1e-5, max_steps=10, verbosity=0):
+    """ Backward selection using model.
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    selected: list
+        selected predictors
+
+    Example
+    -------
+    References
+    ----------
+    """
+    def test_to_break(selected, selected_curr, to_break):
+        if set(selected) == set(selected_curr):
+            to_break += 1
+        else:
+            to_break = 0
+        return to_break
+
+    selected_curr = predictors
+    to_break = 0
+
+    for i_step in xrange(max_steps):
+        selected = forward_cv(
+                        df, selected_curr, target, model, scoring=scoring,
+                        cv1=cv1, n_folds=n_folds, n_jobs=n_jobs, selmax=selmax,
+                        min_ratio=min_ratio, verbosity=verbosity-1)
+        to_break = test_to_break(selected, selected_curr, to_break)
+        selected_curr = selected
+        if verbosity > 0:
+            print('forward:', ' '.join(sorted(selected_curr)))
+        if to_break > 2:
+            break
+        selected = backward_cv(
+                        df, selected_curr, target, model, scoring=scoring,
+                        cv1=cv1, n_folds=n_folds, n_jobs=n_jobs, selmin=selmin,
+                        min_ratio=min_ratio, verbosity=verbosity-1)
+        to_break = test_to_break(selected, selected_curr, to_break)
+        selected_curr = selected
+        if verbosity > 0:
+            print('backward:', ' '.join(sorted(selected_curr)))
+
+    return selected_curr
+
+
+# --------------------- Forward selection using statsmodels ---------- #
 
 
 def forward_selected(data, response, selmax=16, verbosity=0):
@@ -308,6 +383,8 @@ def forward_selected(data, response, selmax=16, verbosity=0):
                                    ' + '.join(selected))
     model = smf.ols(formula, data).fit()
     return model, selected
+
+# --------------------- Other methods -------------------------------- #
 
 
 def f_regression_select(X, y, maxf=300, pvals=True, names=None, verbose=0,
