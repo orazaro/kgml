@@ -18,6 +18,7 @@ from sklearn.datasets.samples_generator import make_regression
 from sklearn.base import clone
 from sklearn.externals.joblib import Parallel, delayed
 from sklearn import cross_validation
+from sklearn.base import is_classifier
 
 from predictive_analysis import df_xyf
 from model_selection import cross_val_predict_proba
@@ -292,13 +293,19 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
             to_break = 0
         return to_break
 
-    selected_curr = predictors
+    X, y, _ = df_xyf(df, predictors=predictors, target=target)
+    cv1 = cross_validation.check_cv(
+            cv1, X=X, y=y,
+            classifier=is_classifier(model))
+
+    selected_curr = start
     to_break = 0
 
     for i_step in xrange(max_steps):
         selected = forward_cv(
-                        df, selected_curr, target, model, scoring=scoring,
-                        cv1=cv1, n_folds=n_folds, n_jobs=n_jobs, selmax=selmax,
+                        df, predictors, target, model, scoring=scoring,
+                        cv1=cv1, n_folds=n_folds, n_jobs=n_jobs,
+                        start=selected_curr, selmax=selmax,
                         min_ratio=min_ratio, verbosity=verbosity-1)
         to_break = test_to_break(selected, selected_curr, to_break)
         selected_curr = selected
