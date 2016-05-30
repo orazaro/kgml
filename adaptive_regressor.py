@@ -78,6 +78,77 @@ class SES(BaseEstimator, RegressorMixin):
         return ts.iloc[-horiz:]
 
 
+class ExpSmoothing(BaseEstimator, RegressorMixin):
+    """ Exponential smoothing with the trend and seasonal components.
+    """
+    def __init__(self, alpha='auto'):
+        self.alpha = alpha
+
+    @staticmethod
+    def calculate(y, alpha):
+        n = len(y)
+        y_p = np.zeros(n)
+        y_p[0] = y[0]
+        for i in range(1, n):
+            if np.isnan(y_p[i-1]):
+                y_p[i] = y[i-1]
+            else:
+                y_p[i] = alpha * y[i-1] + \
+                         (1.0 - alpha) * y_p[i-1]
+        y_p = np.asarray(y_p)
+        rmse = np.sqrt(np.nanmean((y - y_p)**2))
+        return y_p, rmse
+
+    def fit_params(self, ts):
+        func = self.error_func(ts)
+        r = optimize.differential_evolution(func, [(0.0, 1.0)])
+        assert r.success
+        return r.x[0]
+
+    def fit(self, ts):
+        if isinstance(self.alpha, basestring):
+            if self.alpha == 'auto':
+                self.alpha = self.fit_params(ts)
+            else:
+                raise ValueError("bad alpha: {}".format(self.alpha))
+        self.ts = ts
+        self.y = self.ts.values
+        self.y_p, self.rmse = self.calculate(self.ts.values, self.alpha)
+        self.ts_fit = pd.Series(self.y_p, index=self.ts.index)
+
+    def predict(self, horiz=7):
+        ts = None
+        y_next = self.alpha * self.y[-1] + (1.0 - self.alpha) * self.y_p[-1]
+        for h in range(1, horiz+1):
+            if ts is None:
+                goal_datetime = self.ts.index[-1] + 1
+                if hasattr(self.ts.index, 'freq'):
+                    rng = pd.date_range(goal_datetime, periods=1,
+                                        freq=self.ts.index.freq)
+                else:
+                    rng = np.array([goal_datetime])
+                ts = pd.Series([y_next], index=rng)
+            else:
+                goal_datetime = ts.index[-1] + 1
+            ts[goal_datetime] = y_next
+        return ts
+
+    def error_func(self, ts):
+        return lambda alpha: self.calculate(ts.values, alpha)[1]
+
+    def plot_error_func(self, ts, ax1=None):
+        func = self.error_func(ts)
+        vfunc = np.vectorize(func)
+        xvec = np.linspace(0, 1, 50)
+        yvec = vfunc(xvec)
+        x_pred = self.fit_params(ts)
+        ax = plt.subplots()[1] if ax1 is None else ax1
+        ax.plot(xvec, yvec, label='alpha')
+        ax.scatter(x_pred, vfunc(x_pred), c='r',)
+        ax.legend(loc='best')
+        ax.set_title('Error function')
+
+
 def make_timeseries(n=50, h=7, a=2, b=0.03, r=0.5, nan_len=10, rs=None):
     if rs is not None:
         np.random.seed(rs)
@@ -119,11 +190,12 @@ def simulate_forecasts(est, ts=None, **params):
     monthsFmt = mdates.DateFormatter('%b')
     yearsFmt = mdates.DateFormatter('\n%Y')
 
-    ax.xaxis.set_minor_locator(months)
-    ax.xaxis.set_minor_formatter(monthsFmt)
-    # plt.setp(ax.xaxis.get_minorticklabels(), rotation=90)
-    ax.xaxis.set_major_locator(years)
-    ax.xaxis.set_major_formatter(yearsFmt)
+    if hasattr(ts.index, 'freq'):
+        ax.xaxis.set_minor_locator(months)
+        ax.xaxis.set_minor_formatter(monthsFmt)
+        # plt.setp(ax.xaxis.get_minorticklabels(), rotation=90)
+        ax.xaxis.set_major_locator(years)
+        ax.xaxis.set_major_formatter(yearsFmt)
 
     plt.show()
 
@@ -136,5 +208,12 @@ def test_SES():
     simulate_forecasts(SES(), rs=1)
 
 
+def test_ExpSmoothing():
+    if __name__ != '__main__':
+        plt.ion()
+    simulate_forecasts(ExpSmoothing(), rs=1)
+
+
 if __name__ == '__main__':
-    test_SES()
+    # test_SES()
+    test_ExpSmoothing()
