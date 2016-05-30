@@ -19,85 +19,34 @@ logger = logging.getLogger(__name__)
 class SES(BaseEstimator, RegressorMixin):
     """ Simple exponential smoothing.
     """
-    def __init__(self, alpha='auto'):
+    def __init__(self, alpha='auto', horiz=1):
         self.alpha = alpha
+        self.horiz = horiz
 
-    @staticmethod
-    def calculate(y, alpha):
+    def calculate(self, y, alpha):
         n = len(y)
-        y_p = np.zeros(n)
-        y_p[0] = y[0]
+        level = np.zeros(n)
+        level[0] = y[0]
+        se = []
         for i in range(1, n):
-            if np.isnan(y_p[i-1]):
-                y_p[i] = y[i-1]
+            # update
+            if np.isnan(level[i-1]):
+                level[i] = y[i]
             else:
-                y_p[i] = alpha * y[i-1] + \
-                         (1.0 - alpha) * y_p[i-1]
-        y_p = np.asarray(y_p)
-        rmse = np.sqrt(np.nanmean((y - y_p)**2))
-        return y_p, rmse
-
-    def fit_params(self, ts):
-        func = self.error_func(ts)
-        r = optimize.differential_evolution(func, [(0.0, 1.0)])
-        assert r.success
-        return r.x[0]
-
-    def fit(self, ts):
-        if isinstance(self.alpha, basestring):
-            if self.alpha == 'auto':
-                self.alpha = self.fit_params(ts)
-            else:
-                raise ValueError("bad alpha: {}".format(self.alpha))
-        self.ts = ts
-        self.y = self.ts.values
-        self.y_p, self.rmse = self.calculate(self.ts.values, self.alpha)
-        self.ts_fit = pd.Series(self.y_p, index=self.ts.index)
-
-    def error_func(self, ts):
-        return lambda alpha: self.calculate(ts.values, alpha)[1]
-
-    def plot_error_func(self, ts, ax1=None):
-        func = self.error_func(ts)
-        vfunc = np.vectorize(func)
-        xvec = np.linspace(0, 1, 50)
-        yvec = vfunc(xvec)
-        x_pred = self.fit_params(ts)
-        ax = plt.subplots()[1] if ax1 is None else ax1
-        ax.plot(xvec, yvec, label='alpha')
-        ax.scatter(x_pred, vfunc(x_pred), c='r',)
-        ax.legend(loc='best')
-        ax.set_title('Error function')
-
-    def predict(self, horiz=7):
-        ts = self.ts.copy()
-        y_next = self.alpha * self.y[-1] + (1.0 - self.alpha) * self.y_p[-1]
-        for h in range(1, horiz+1):
-            goal_datetime = ts.index[-1] + 1
-            ts[goal_datetime] = y_next
-        return ts.iloc[-horiz:]
-
-
-class ExpSmoothing(BaseEstimator, RegressorMixin):
-    """ Exponential smoothing with the trend and seasonal components.
-    """
-    def __init__(self, alpha='auto'):
-        self.alpha = alpha
-
-    @staticmethod
-    def calculate(y, alpha):
-        n = len(y)
-        y_p = np.zeros(n)
-        y_p[0] = y[0]
-        for i in range(1, n):
-            if np.isnan(y_p[i-1]):
-                y_p[i] = y[i-1]
-            else:
-                y_p[i] = alpha * y[i-1] + \
-                         (1.0 - alpha) * y_p[i-1]
-        y_p = np.asarray(y_p)
-        rmse = np.sqrt(np.nanmean((y - y_p)**2))
-        return y_p, rmse
+                level[i] = alpha * y[i] + \
+                         (1.0 - alpha) * level[i-1]
+            # predict and calc error
+            if i >= self.horiz and not np.isnan(level[i]):
+                for h in range(self.horiz):
+                    j = i + 1 + h
+                    if j >= n:
+                        break
+                    if not np.isnan(y[j]):
+                        y_p = level[i]
+                        se.append((y[j] - y_p)**2)
+        level = np.asarray(level)
+        rmse = np.sqrt(np.nanmean(se))
+        return level, rmse
 
     def fit_params(self, ts):
         func = self.error_func(ts)
@@ -118,7 +67,7 @@ class ExpSmoothing(BaseEstimator, RegressorMixin):
 
     def predict(self, horiz=7):
         ts = None
-        y_next = self.alpha * self.y[-1] + (1.0 - self.alpha) * self.y_p[-1]
+        y_next = self.y_p[-1]
         for h in range(1, horiz+1):
             if ts is None:
                 goal_datetime = self.ts.index[-1] + 1
@@ -149,7 +98,106 @@ class ExpSmoothing(BaseEstimator, RegressorMixin):
         ax.set_title('Error function')
 
 
-def make_timeseries(n=50, h=7, a=2, b=0.03, r=0.5, nan_len=10, rs=None):
+class ExpSmoothing(BaseEstimator, RegressorMixin):
+    """ Exponential smoothing with the trend and seasonal components.
+    """
+    def __init__(self, alpha='auto', beta='auto', gamma='auto', ms=7, horiz=7):
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
+        self.ms = ms
+        self.horiz = horiz
+
+    def calculate(self, y, alpha, beta, gamma, ms):
+        n = len(y)
+        level = np.zeros(n)
+        trend = np.zeros(n)
+        seas = np.zeros(n + ms)
+        level[0] = np.nanmean(y[:ms])
+        trend[0] = np.nanmean([(y[i+ms] - y[i]) / ms for i in range(ms)])
+        for i in range(ms):
+            seas[i] = y[i] - level[0]
+        se = []
+        for i in range(1, n):
+            # update level
+            x1 = y[i] - seas[i]
+            x2 = level[i-1] + trend[i-1]
+            if np.isnan(x2):
+                level[i] = x1
+            else:
+                level[i] = alpha * x1 + (1.0 - alpha) * x2
+            # update trend
+            x1 = level[i] - level[i-1]
+            if np.isnan(trend[i-1]):
+                trend[i] = x1
+            else:
+                trend[i] = beta * x1 + (1.0 - beta) * trend[i-1]
+            # update seas
+            x1 = y[i] - level[i-1] - trend[i-1]
+            if np.isnan(seas[i-1]):
+                seas[i+ms] = x1
+            else:
+                seas[i+ms] = gamma * x1 + (1.0 - gamma) * seas[i-1]
+            # predict and calc error
+            if i >= self.horiz and not np.isnan(level[i]):
+                for h in range(self.horiz):
+                    j = i + 1 + h
+                    if j >= n:
+                        break
+                    if not np.isnan(y[j]):
+                        y_p = level[i] + h * trend[i] + seas[i+h]
+                        se.append((y[j] - y_p)**2)
+        rmse = np.sqrt(np.nanmean(se))
+        return level, trend, seas, rmse
+
+    def fit_params(self, ts):
+        func = self.error_func(ts)
+        bounds = [(0.0, 1.0), (0.0, 1.0), (0.0, 1.0)]
+        r = optimize.differential_evolution(func, bounds)
+        assert r.success
+        return r.x[0], r.x[1], r.x[2]
+
+    def fit(self, ts):
+        if isinstance(self.alpha, basestring):
+            if self.alpha == 'auto':
+                self.alpha, self.beta, self.gamma = self.fit_params(ts)
+                # print(self.alpha, self.beta, self.gamma)
+                # print(self.calculate(ts.values, self.alpha, self.beta,
+                #                     self.gamma, self.ms)[-1])
+            else:
+                raise ValueError("bad alpha: {}".format(self.alpha))
+        self.ts = ts
+        self.y = self.ts.values
+        self.level, self.trend, self.seas, self.rmse = \
+            self.calculate(self.ts.values, self.alpha, self.beta,
+                           self.gamma, self.ms)
+        self.ts_fit = pd.Series(self.level, index=self.ts.index)
+
+    def predict(self, horiz=7):
+        ts = None
+        for h in range(1, horiz+1):
+            y_next = self.level[-1] + h * self.trend[-1] + \
+                     self.seas[(-horiz+h)]
+            if ts is None:
+                goal_datetime = self.ts.index[-1] + 1
+                if hasattr(self.ts.index, 'freq'):
+                    rng = pd.date_range(goal_datetime, periods=1,
+                                        freq=self.ts.index.freq)
+                else:
+                    rng = np.array([goal_datetime])
+                ts = pd.Series([y_next], index=rng)
+            else:
+                goal_datetime = ts.index[-1] + 1
+            ts[goal_datetime] = y_next
+        # print(ts)
+        return ts
+
+    def error_func(self, ts):
+        return lambda x: self.calculate(
+            ts.values, x[0], x[1], x[2], self.ms)[-1]
+
+
+def make_timeseries(n=50, h=7, a=2, b=0.03, r=0.5, nan_len=0, rs=None):
     if rs is not None:
         np.random.seed(rs)
     x = np.linspace(0, (np.pi)*n, n*h)
