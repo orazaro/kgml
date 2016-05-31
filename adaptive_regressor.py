@@ -9,6 +9,7 @@ from __future__ import (division, print_function)
 import numpy as np
 import pandas as pd
 import logging
+import numbers
 from sklearn.base import BaseEstimator, RegressorMixin
 from scipy import optimize
 import matplotlib.pyplot as plt
@@ -19,14 +20,16 @@ logger = logging.getLogger(__name__)
 class ExpSmoothing(BaseEstimator, RegressorMixin):
     """ Exponential smoothing with the trend and seasonal components.
     """
-    def __init__(self, alpha='auto', beta='auto', gamma='auto', ms=7, horiz=7):
+    def __init__(self, alpha='auto', beta='auto', gamma='auto', phi='auto',
+                 ms=7, horiz=7):
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
+        self.phi = phi
         self.ms = ms
         self.horiz = horiz
 
-    def calculate(self, y, alpha, beta, gamma, ms):
+    def calculate(self, y, alpha, beta, gamma, phi, ms):
         n = len(y)
         level = np.zeros(n)
         trend = np.zeros(n)
@@ -34,49 +37,63 @@ class ExpSmoothing(BaseEstimator, RegressorMixin):
         level[0] = np.nanmean(y[:ms])
         trend[0] = np.nanmean([(y[i+ms] - y[i]) / ms for i in range(ms)])
         for i in range(ms):
-            seas[-i] = y[ms-i] - level[0]
+            if np.isnan(y[ms-i]):
+                seas[-i] = 0.0
+            else:
+                seas[-i] = y[ms-i] - level[0]
         se = []
         for i in range(1, n):
             # update level
-            x1 = y[i] - seas[i-ms]
-            x2 = level[i-1] + trend[i-1]
-            level[i] = alpha * x1 + (1.0 - alpha) * x2
+            x2 = level[i-1] + phi * trend[i-1]
+            if np.isnan(y[i]):
+                level[i] = x2
+            else:
+                x1 = y[i] - seas[i-ms]
+                level[i] = alpha * x1 + (1.0 - alpha) * x2
             # update trend
             x1 = level[i] - level[i-1]
-            trend[i] = beta * x1 + (1.0 - beta) * trend[i-1]
+            trend[i] = beta * x1 + (1.0 - beta) * phi * trend[i-1]
             # update seas
-            x1 = y[i] - level[i-1] - trend[i-1]
-            seas[i] = gamma * x1 + (1.0 - gamma) * seas[i-ms]
+            if np.isnan(y[i]):
+                seas[i] = seas[i-ms]
+            else:
+                x1 = y[i] - level[i-1] - phi * trend[i-1]
+                seas[i] = gamma * x1 + (1.0 - gamma) * seas[i-ms]
             # predict and calc error
-            if i < ms:
-                continue
-            for h in range(1, ms+1):
-                hm = (h - 1) % ms + 1
-                j = i + h
-                if j < n and not np.isnan(y[j]):
-                    y_p = level[i] + h * trend[i] + seas[i-ms+hm]
-                    se.append((y[j] - y_p)**2)
+            if i > ms:
+                phi_h = 0.0
+                for h in range(1, self.horiz+1):
+                    hm = (h - 1) % ms + 1
+                    phi_h += phi**h
+                    j = i + h
+                    if j < n and not np.isnan(y[j]):
+                        y_p = level[i] + phi_h * trend[i] + seas[i-ms+hm]
+                        se.append((y[j] - y_p)**2)
         rmse = np.sqrt(np.nanmean(se))
         # print("rmse:", rmse)
         return level, trend, seas, rmse
 
     def fit_params(self, ts):
-        func = self.error_func(ts)
-        bounds = [(0.0, 1.0), (0.0, 1.0), (0.0, 1.0)]
-        if False:
-            x0 = [1.0, 0, 0]
-            r = optimize.minimize(func, x0)
-            if not r.success:
-                r = optimize.differential_evolution(func, bounds)
+        if isinstance(self.phi, numbers.Number):
+            n_bounds = 3
         else:
-            r = optimize.differential_evolution(func, bounds)
+            n_bounds = 4
+        func = self.error_func(ts)
+
+        bounds = [(0.0, 1.0), (0.0, 1.0), (0.0, 1.0), (0.0, 1.0)]
+        r = optimize.differential_evolution(func, bounds[:n_bounds])
         assert r.success
-        return r.x[0], r.x[1], r.x[2]
+
+        if isinstance(self.phi, numbers.Number):
+            return list(r.x) + [self.phi]
+        else:
+            return list(r.x)
 
     def fit(self, ts):
-        if isinstance(self.alpha, basestring):
+        if not isinstance(self.alpha, numbers.Number):
             if self.alpha == 'auto':
-                self.alpha, self.beta, self.gamma = self.fit_params(ts)
+                self.alpha, self.beta, self.gamma, self.phi = \
+                    self.fit_params(ts)
                 # print(self.alpha, self.beta, self.gamma)
                 # print(self.calculate(ts.values, self.alpha, self.beta,
                 #                     self.gamma, self.ms)[-1])
@@ -86,7 +103,7 @@ class ExpSmoothing(BaseEstimator, RegressorMixin):
         self.y = self.ts.values
         self.level, self.trend, self.seas, self.rmse = \
             self.calculate(self.ts.values, self.alpha, self.beta,
-                           self.gamma, self.ms)
+                           self.gamma, self.phi, self.ms)
         y_pred = np.zeros(len(self.y))
         y_pred[0] = self.y[0]
         for i in range(1, len(self.y)):
@@ -96,10 +113,12 @@ class ExpSmoothing(BaseEstimator, RegressorMixin):
 
     def predict(self, horiz=7):
         ts = None
+        phi_h = 0.0
         for h in range(1, horiz+1):
             t = len(self.level) - 1
             hm = (h - 1) % self.ms + 1
-            y_next = self.level[t-1] + h * self.trend[t-1] + \
+            phi_h += self.phi**h
+            y_next = self.level[t-1] + phi_h * self.trend[t-1] + \
                 self.seas[t - self.ms + hm]
             if ts is None:
                 goal_datetime = self.ts.index[-1] + 1
@@ -116,8 +135,12 @@ class ExpSmoothing(BaseEstimator, RegressorMixin):
         return ts
 
     def error_func(self, ts):
-        return lambda x: self.calculate(
-            ts.values, x[0], x[1], x[2], self.ms)[-1]
+        if isinstance(self.phi, numbers.Number):
+            return lambda x: self.calculate(
+                ts.values, x[0], x[1], x[2], self.phi, self.ms)[-1]
+        else:
+            return lambda x: self.calculate(
+                ts.values, x[0], x[1], x[2], x[3], self.ms)[-1]
 
 
 def make_timeseries(n=30, h=7, a=2, b=10, r=0.5, nan_len=10, rs=None):
