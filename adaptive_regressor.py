@@ -16,88 +16,6 @@ import matplotlib.pyplot as plt
 logger = logging.getLogger(__name__)
 
 
-class SES(BaseEstimator, RegressorMixin):
-    """ Simple exponential smoothing.
-    """
-    def __init__(self, alpha='auto', horiz=1):
-        self.alpha = alpha
-        self.horiz = horiz
-
-    def calculate(self, y, alpha):
-        n = len(y)
-        level = np.zeros(n)
-        level[0] = y[0]
-        se = []
-        for i in range(1, n):
-            # update
-            if np.isnan(level[i-1]):
-                level[i] = y[i]
-            else:
-                level[i] = alpha * y[i] + \
-                         (1.0 - alpha) * level[i-1]
-            # predict and calc error
-            if i >= self.horiz and not np.isnan(level[i]):
-                for h in range(self.horiz):
-                    j = i + 1 + h
-                    if j >= n:
-                        break
-                    if not np.isnan(y[j]):
-                        y_p = level[i]
-                        se.append((y[j] - y_p)**2)
-        level = np.asarray(level)
-        rmse = np.sqrt(np.nanmean(se))
-        return level, rmse
-
-    def fit_params(self, ts):
-        func = self.error_func(ts)
-        r = optimize.differential_evolution(func, [(0.0, 1.0)])
-        assert r.success
-        return r.x[0]
-
-    def fit(self, ts):
-        if isinstance(self.alpha, basestring):
-            if self.alpha == 'auto':
-                self.alpha = self.fit_params(ts)
-            else:
-                raise ValueError("bad alpha: {}".format(self.alpha))
-        self.ts = ts
-        self.y = self.ts.values
-        self.y_p, self.rmse = self.calculate(self.ts.values, self.alpha)
-        self.ts_fit = pd.Series(self.y_p, index=self.ts.index)
-
-    def predict(self, horiz=7):
-        ts = None
-        y_next = self.y_p[-1]
-        for h in range(1, horiz+1):
-            if ts is None:
-                goal_datetime = self.ts.index[-1] + 1
-                if hasattr(self.ts.index, 'freq'):
-                    rng = pd.date_range(goal_datetime, periods=1,
-                                        freq=self.ts.index.freq)
-                else:
-                    rng = np.array([goal_datetime])
-                ts = pd.Series([y_next], index=rng)
-            else:
-                goal_datetime = ts.index[-1] + 1
-            ts[goal_datetime] = y_next
-        return ts
-
-    def error_func(self, ts):
-        return lambda alpha: self.calculate(ts.values, alpha)[1]
-
-    def plot_error_func(self, ts, ax1=None):
-        func = self.error_func(ts)
-        vfunc = np.vectorize(func)
-        xvec = np.linspace(0, 1, 50)
-        yvec = vfunc(xvec)
-        x_pred = self.fit_params(ts)
-        ax = plt.subplots()[1] if ax1 is None else ax1
-        ax.plot(xvec, yvec, label='alpha')
-        ax.scatter(x_pred, vfunc(x_pred), c='r',)
-        ax.legend(loc='best')
-        ax.set_title('Error function')
-
-
 class ExpSmoothing(BaseEstimator, RegressorMixin):
     """ Exponential smoothing with the trend and seasonal components.
     """
@@ -255,18 +173,11 @@ def simulate_forecasts(est, ts=None, **params):
     return ts
 
 
-def test_SES():
-    if __name__ != '__main__':
-        plt.ion()
-    simulate_forecasts(SES(), rs=1)
-
-
 def test_ExpSmoothing():
     if __name__ != '__main__':
         plt.ion()
-    simulate_forecasts(ExpSmoothing(), rs=1)
+    simulate_forecasts(ExpSmoothing(), nan_len=0, rs=1)
 
 
 if __name__ == '__main__':
-    # test_SES()
     test_ExpSmoothing()
