@@ -142,6 +142,18 @@ class ExpSmoothing(BaseEstimator, RegressorMixin):
             return lambda x: self.calculate(
                 ts.values, x[0], x[1], x[2], x[3], self.ms)[-1]
 
+    def plot_decomposition(self, ts=None, figsize=(12, 8)):
+        if ts is not None:
+            self.fit(ts)
+        seas = [self.seas[i] for i in range(len(self.ts))]
+        data = np.c_[self.ts, self.level, self.trend, seas]
+        assert data.shape[1] == 4
+        columns = ['original', 'level', 'slope', 'season']
+        df = pd.DataFrame(data, columns=columns)
+        title = "Decomposition: a={:.2f} b={:.2f} g={:.2f} p={:.2f}".format(
+                self.alpha, self.beta, self.gamma, self.phi)
+        df.plot(subplots=True, figsize=figsize, title=title)
+
 
 def make_timeseries(n=30, h=7, a=2, b=10, r=0.5, nan_len=10, rs=None):
     if rs is not None:
@@ -156,15 +168,12 @@ def make_timeseries(n=30, h=7, a=2, b=10, r=0.5, nan_len=10, rs=None):
     return pd.Series(y, index=rng)
 
 
-def simulate_forecasts(est, ts=None, **params):
+def simulate_forecasts(est, ts=None, figsize=(12, 5), **params):
     if ts is None:
         ts = make_timeseries(**params)
-    if hasattr(est, 'plot_error_func'):
-        fig, axarr = plt.subplots(1, 2, figsize=(14, 5))
-        est.plot_error_func(ts, axarr[0])
-        ax = axarr[1]
-    else:
-        fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+    if hasattr(est, 'plot_decomposition'):
+        est.plot_decomposition(ts, figsize=(12, 8))
+    fig, ax = plt.subplots(1, 1, figsize=figsize)
 
     n_train = ts.shape[0] * 4 // 5
     n_test = len(ts) - n_train
@@ -199,7 +208,7 @@ def simulate_forecasts(est, ts=None, **params):
 def test_ExpSmoothing():
     if __name__ != '__main__':
         plt.ion()
-    simulate_forecasts(ExpSmoothing(), nan_len=0, rs=1)
+    simulate_forecasts(ExpSmoothing(phi=1), nan_len=10, rs=1)
 
 
 if __name__ == '__main__':
