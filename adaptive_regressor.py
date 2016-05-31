@@ -112,48 +112,46 @@ class ExpSmoothing(BaseEstimator, RegressorMixin):
         n = len(y)
         level = np.zeros(n)
         trend = np.zeros(n)
-        seas = np.zeros(n + ms)
+        seas = dict()
         level[0] = np.nanmean(y[:ms])
         trend[0] = np.nanmean([(y[i+ms] - y[i]) / ms for i in range(ms)])
         for i in range(ms):
-            seas[i] = y[i] - level[0]
+            seas[-i] = y[ms-i] - level[0]
         se = []
         for i in range(1, n):
             # update level
-            x1 = y[i] - seas[i]
+            x1 = y[i] - seas[i-ms]
             x2 = level[i-1] + trend[i-1]
-            if np.isnan(x2):
-                level[i] = x1
-            else:
-                level[i] = alpha * x1 + (1.0 - alpha) * x2
+            level[i] = alpha * x1 + (1.0 - alpha) * x2
             # update trend
             x1 = level[i] - level[i-1]
-            if np.isnan(trend[i-1]):
-                trend[i] = x1
-            else:
-                trend[i] = beta * x1 + (1.0 - beta) * trend[i-1]
+            trend[i] = beta * x1 + (1.0 - beta) * trend[i-1]
             # update seas
             x1 = y[i] - level[i-1] - trend[i-1]
-            if np.isnan(seas[i-1]):
-                seas[i+ms] = x1
-            else:
-                seas[i+ms] = gamma * x1 + (1.0 - gamma) * seas[i-1]
+            seas[i] = gamma * x1 + (1.0 - gamma) * seas[i-ms]
             # predict and calc error
-            if i >= self.horiz and not np.isnan(level[i]):
-                for h in range(self.horiz):
-                    j = i + 1 + h
-                    if j >= n:
-                        break
-                    if not np.isnan(y[j]):
-                        y_p = level[i] + h * trend[i] + seas[i+h]
-                        se.append((y[j] - y_p)**2)
+            if i < ms:
+                continue
+            for h in range(1, ms+1):
+                hm = (h - 1) % ms + 1
+                j = i + h
+                if j < n and not np.isnan(y[j]):
+                    y_p = level[i] + h * trend[i] + seas[i-ms+hm]
+                    se.append((y[j] - y_p)**2)
         rmse = np.sqrt(np.nanmean(se))
+        print("rmse:", rmse)
         return level, trend, seas, rmse
 
     def fit_params(self, ts):
         func = self.error_func(ts)
         bounds = [(0.0, 1.0), (0.0, 1.0), (0.0, 1.0)]
-        r = optimize.differential_evolution(func, bounds)
+        if False:
+            x0 = [1.0, 0, 0]
+            r = optimize.minimize(func, x0)
+            if not r.success:
+                r = optimize.differential_evolution(func, bounds)
+        else:
+            r = optimize.differential_evolution(func, bounds)
         assert r.success
         return r.x[0], r.x[1], r.x[2]
 
@@ -171,13 +169,20 @@ class ExpSmoothing(BaseEstimator, RegressorMixin):
         self.level, self.trend, self.seas, self.rmse = \
             self.calculate(self.ts.values, self.alpha, self.beta,
                            self.gamma, self.ms)
-        self.ts_fit = pd.Series(self.level, index=self.ts.index)
+        y_pred = np.zeros(len(self.y))
+        y_pred[0] = self.y[0]
+        for i in range(1, len(self.y)):
+                y_pred[i] = self.level[i-1] + self.trend[i-1] + \
+                    self.seas[i-1+1]
+        self.ts_fit = pd.Series(y_pred, index=self.ts.index)
 
     def predict(self, horiz=7):
         ts = None
         for h in range(1, horiz+1):
-            y_next = self.level[-1] + h * self.trend[-1] + \
-                     self.seas[(-horiz+h)]
+            t = len(self.level) - 1
+            hm = (h - 1) % self.ms + 1
+            y_next = self.level[t-1] + h * self.trend[t-1] + \
+                self.seas[t - self.ms + hm]
             if ts is None:
                 goal_datetime = self.ts.index[-1] + 1
                 if hasattr(self.ts.index, 'freq'):
@@ -197,7 +202,7 @@ class ExpSmoothing(BaseEstimator, RegressorMixin):
             ts.values, x[0], x[1], x[2], self.ms)[-1]
 
 
-def make_timeseries(n=50, h=7, a=2, b=0.03, r=0.5, nan_len=0, rs=None):
+def make_timeseries(n=50, h=7, a=2, b=10, r=0.5, nan_len=10, rs=None):
     if rs is not None:
         np.random.seed(rs)
     x = np.linspace(0, (np.pi)*n, n*h)
