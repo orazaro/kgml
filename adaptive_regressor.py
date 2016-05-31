@@ -139,7 +139,7 @@ class ExpSmoothing(BaseEstimator, RegressorMixin):
                     y_p = level[i] + h * trend[i] + seas[i-ms+hm]
                     se.append((y[j] - y_p)**2)
         rmse = np.sqrt(np.nanmean(se))
-        print("rmse:", rmse)
+        # print("rmse:", rmse)
         return level, trend, seas, rmse
 
     def fit_params(self, ts):
@@ -202,11 +202,11 @@ class ExpSmoothing(BaseEstimator, RegressorMixin):
             ts.values, x[0], x[1], x[2], self.ms)[-1]
 
 
-def make_timeseries(n=50, h=7, a=2, b=10, r=0.5, nan_len=10, rs=None):
+def make_timeseries(n=30, h=7, a=2, b=10, r=0.5, nan_len=10, rs=None):
     if rs is not None:
         np.random.seed(rs)
-    x = np.linspace(0, (np.pi)*n, n*h)
-    y = np.sin(x) + a * np.cos(x/h/3) + b + r * np.random.randn(len(x))
+    x = np.linspace(0, (2*np.pi)*n, n*h)
+    y = np.sin(x) + a * np.cos(x/h/5) + b + r * np.random.randn(len(x))
     if nan_len > 0:
         nan_start = len(y) // 3
         y[nan_start:nan_start+nan_len] = np.nan
