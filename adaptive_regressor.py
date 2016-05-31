@@ -149,8 +149,10 @@ class ExpSmoothing(BaseEstimator, RegressorMixin):
         data = np.c_[self.ts, self.level, self.trend, seas]
         assert data.shape[1] == 4
         columns = ['original', 'level', 'slope', 'season']
-        df = pd.DataFrame(data, columns=columns)
-        title = "Decomposition: a={:.2f} b={:.2f} g={:.2f} p={:.2f}".format(
+        df = pd.DataFrame(data, columns=columns, index=self.ts.index)
+        title_fmt = "Decomposition: alpha={:.2f} beta={:.2f} gamma={:.2f}"\
+                    " phi={:.2f}"
+        title = title_fmt.format(
                 self.alpha, self.beta, self.gamma, self.phi)
         df.plot(subplots=True, figsize=figsize, title=title)
 
@@ -168,14 +170,11 @@ def make_timeseries(n=30, h=7, a=2, b=10, r=0.5, nan_len=10, rs=None):
     return pd.Series(y, index=rng)
 
 
-def simulate_forecasts(est, ts=None, figsize=(12, 5), **params):
-    if ts is None:
-        ts = make_timeseries(**params)
-    if hasattr(est, 'plot_decomposition'):
-        est.plot_decomposition(ts, figsize=(12, 8))
+def plot_forecasts(est, ts, test_size=0.2, figsize=(12, 5),
+                   title='Forecast', **params):
     fig, ax = plt.subplots(1, 1, figsize=figsize)
 
-    n_train = ts.shape[0] * 4 // 5
+    n_train = int(ts.shape[0] * (1 - test_size))
     n_test = len(ts) - n_train
     ts_train = ts.iloc[:n_train]
     est.fit(ts_train)
@@ -185,7 +184,7 @@ def simulate_forecasts(est, ts=None, figsize=(12, 5), **params):
         ax.plot(est.ts_fit, label='train', color='g')
     ax.plot(ts_pred, label='pred', color='r')
     ax.legend(loc='lower right')
-    ax.set_title('Forecast')
+    ax.set_title(title)
 
     import matplotlib.dates as mdates
     years = mdates.YearLocator()
@@ -202,6 +201,14 @@ def simulate_forecasts(est, ts=None, figsize=(12, 5), **params):
 
     plt.show()
 
+
+def simulate_forecasts(est, test_size=0.2, figsize=(12, 5),
+                       title='Simulate and forecast',
+                       **params):
+    """ Simulate timeseries and plot forecasts. """
+    ts = make_timeseries(**params)
+    plot_forecasts(est, ts, test_size=test_size, figsize=figsize, title=title,
+                   **params)
     return ts
 
 
