@@ -10,6 +10,7 @@ from __future__ import division, print_function
 import sys
 import random
 import logging
+import warnings
 
 import numpy as np
 
@@ -24,6 +25,8 @@ from predictive_analysis import df_xyf
 from model_selection import cross_val_predict_proba
 from modsel import estimate_scores
 
+
+warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
 
 
