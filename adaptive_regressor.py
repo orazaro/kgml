@@ -218,5 +218,14 @@ def test_ExpSmoothing():
     simulate_forecasts(ExpSmoothing(phi=1), nan_len=10, rs=1)
 
 
+def test_ExpSmoothing2():
+    ts = make_timeseries(n=50, rs=1)
+    est = ExpSmoothing()
+    est.fit(ts)
+    ts_pred = est.predict()
+    print(ts_pred)
+
+
 if __name__ == '__main__':
-    test_ExpSmoothing()
+    # test_ExpSmoothing()
+    test_ExpSmoothing2()
