@@ -27,8 +27,8 @@ setup(
     author_email="oleg@razgulyaev.com",
     description="Machine learning addons to sklearn etc.",
     license="BSD 3 clause",
-    keywords="machine learning sklearn",
-    url="http://oleg.razgulyaev.com/",   # project home page, if any
+    keywords=["machine learning", "time series", "sklearn"],
+    url="https://github.com/orazaro/kgml",   # project home page, if any
 
     # could also include long_description, download_url, classifiers, etc.
 )
