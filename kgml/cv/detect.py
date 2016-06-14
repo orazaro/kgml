@@ -48,7 +48,7 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         X = X.reshape((-1, 3))[:, 0]
         y = Y.reshape((-1, 3))[:, 0]
         
-        self.bins = 11
+        self.bins = 31
         
         X_pool = X[y.astype(bool)]
         hist_1, bin_edges_1 = np.histogram(X_pool, range=(0, 1),
