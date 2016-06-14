@@ -48,7 +48,7 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         X = X.reshape((-1, 3))[:, 0]
         y = Y.reshape((-1, 3))[:, 0]
         
-        self.bins = 10
+        self.bins = 11
         
         X_pool = X[y.astype(bool)]
         hist_1, bin_edges_1 = np.histogram(X_pool, range=(0, 1),
@@ -62,7 +62,7 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         hist_0 /= self.bins
         assert tuple(bin_edges_1) == tuple(bin_edges_0)
         print(len(bin_edges_1), len(hist_1))
-        print(zip(bin_edges_1, hist_0, hist_1))
+        # print(zip(bin_edges_1, hist_0, hist_1))
 
         if False:
             fig, ax = plt.subplots()
@@ -85,6 +85,7 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
                 elif hist_1[i] / hist_0[i] > 2.0:
                     sels[i] = 1
         self.sels = sels
+        print(zip(bin_edges_1, hist_0, hist_1, sels))
 
         return self
         
@@ -96,8 +97,14 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         img = X
         hue = rgb_to_hsv(img)[:, :, 0]
         img = img.copy()
-        img[hue < hue_min] = 0
-        img[hue > hue_max] = 0
+
+        #img[hue < hue_min] = 0
+        #img[hue > hue_max] = 0
+        edges = self.bin_edges
+        for i, sel in enumerate(self.sels):
+            if sel == 0:
+                s = np.logical_and(hue > edges[i], hue < edges[i+1])
+                img[s] = 0
 
         # select usin saturation
         img = rgb_to_hsv(img)[:, :, 1]
@@ -189,5 +196,5 @@ def test_HueSaturationTransformer2():
 
 if __name__ == '__main__':
     # test_transform_hs()
-    test_HueSaturationTransformer()
-    # test_HueSaturationTransformer2()
+    # test_HueSaturationTransformer()
+    test_HueSaturationTransformer2()
