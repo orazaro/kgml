@@ -90,16 +90,12 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         return self
         
     def transform_hs(self, X):
-        hue_min=0.45 
-        hue_max=0.60
         satur_min=0.4
         # select using hue
         img = X
         hue = rgb_to_hsv(img)[:, :, 0]
         img = img.copy()
 
-        #img[hue < hue_min] = 0
-        #img[hue > hue_max] = 0
         edges = self.bin_edges
         for i, sel in enumerate(self.sels):
             if sel == 0:
@@ -196,5 +192,5 @@ def test_HueSaturationTransformer2():
 
 if __name__ == '__main__':
     # test_transform_hs()
-    # test_HueSaturationTransformer()
+    test_HueSaturationTransformer()
     test_HueSaturationTransformer2()
