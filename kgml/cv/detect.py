@@ -12,3 +12,9 @@ from sklearn.base import BaseEstimator, TransformerMixin
 class HueSaturationTransformer(BaseEstimator, TransformerMixin):
     def __init__(self):
         pass
+
+    def fit(X, y, shape):
+        pass
+
+    def transform(X):
+        pass
