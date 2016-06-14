@@ -9,6 +9,6 @@ from __future__ import division, print_function
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
-class HueSatTransformer(BaseEstimator, TransformerMixin):
+class HueSaturationTransformer(BaseEstimator, TransformerMixin):
     def __init__(self):
         pass
