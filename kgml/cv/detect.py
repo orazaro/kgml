@@ -35,8 +35,9 @@ def transform_hs(img, hue_min=0.45, hue_max=0.60, satur_min=0.4):
 
 
 class HueSaturationTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self):
-        pass
+    def __init__(self, bins=31, satur_min=0.4):
+        self.bins = bins
+        self.satur_min = satur_min
 
     def fit(self, X, Y=None):
         self.Y = Y
@@ -47,8 +48,6 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         X = rgb_to_hsv(X)
         X = X.reshape((-1, 3))[:, 0]
         y = Y.reshape((-1, 3))[:, 0]
-        
-        self.bins = 31
         
         X_pool = X[y.astype(bool)]
         hist_1, bin_edges_1 = np.histogram(X_pool, range=(0, 1),
@@ -90,7 +89,6 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         return self
         
     def transform_hs(self, X):
-        satur_min=0.4
         # select using hue
         img = X
         hue = rgb_to_hsv(img)[:, :, 0]
@@ -104,7 +102,7 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
 
         # select usin saturation
         img = rgb_to_hsv(img)[:, :, 1]
-        binary_img = img > satur_min
+        binary_img = img > self.satur_min
 
         # Remove small white regions
         open_img = ndimage.binary_opening(binary_img)
@@ -192,5 +190,5 @@ def test_HueSaturationTransformer2():
 
 if __name__ == '__main__':
     # test_transform_hs()
-    test_HueSaturationTransformer()
+    # test_HueSaturationTransformer()
     test_HueSaturationTransformer2()
