@@ -59,7 +59,7 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
                                            density=True)
         hist_0 /= self.bins
         assert tuple(bin_edges_1) == tuple(bin_edges_0)
-        print(len(bin_edges_1), len(hist_1))
+        # print(len(bin_edges_1), len(hist_1))
         # print(zip(bin_edges_1, hist_0, hist_1))
 
         self.bin_edges = bin_edges_1
@@ -75,7 +75,7 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
                 elif hist_1[i] / hist_0[i] > 2.0:
                     sels[i] = 1
         self.sels = sels
-        print(zip(bin_edges_1, hist_0, hist_1, sels))
+        # print(zip(bin_edges_1, hist_0, hist_1, sels))
 
         return self
 
