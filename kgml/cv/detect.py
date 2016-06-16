@@ -85,7 +85,8 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
             idx = np.arange(len(self.hist_1))
             width = 0.33
             ax.bar(idx+width, self.hist_1, width, color='blue', label='pool')
-            ax.bar(idx+2*width, self.hist_0, width, color='red', label='nopool')
+            ax.bar(idx+2*width, self.hist_0, width, color='red',
+                   label='nopool')
             ax.bar(idx, self.sels, width, color='cyan', label='sel')
         else:
             bin_centers = 0.5*(self.bin_edges[:-1] + self.bin_edges[1:])
@@ -178,8 +179,8 @@ def zest_HueSaturationTransformer(c=0.35):
     hst.fit(img_train, Y)
     img_pred = hst.transform(img_test)
 
-    hst.plot_histograms()
-    return
+    # hst.plot_histograms()
+    # return
 
     fig, axarr = plt.subplots(4, 1)
     ax = axarr[0]
