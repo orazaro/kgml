@@ -44,36 +44,27 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         if Y is None:
             return
         assert X.shape == Y.shape
-        img_shape = X.shape
         X = rgb_to_hsv(X)
         X = X.reshape((-1, 3))[:, 0]
         y = Y.reshape((-1, 3))[:, 0]
-        
+
         X_pool = X[y.astype(bool)]
         hist_1, bin_edges_1 = np.histogram(X_pool, range=(0, 1),
-                                         bins=self.bins,
-                                         density=True)
+                                           bins=self.bins,
+                                           density=True)
         hist_1 /= self.bins
         X_nopool = X[np.logical_not(y.astype(bool))]
         hist_0, bin_edges_0 = np.histogram(X_nopool, range=(0, 1),
-                                         bins=self.bins,
-                                         density=True)
+                                           bins=self.bins,
+                                           density=True)
         hist_0 /= self.bins
         assert tuple(bin_edges_1) == tuple(bin_edges_0)
         print(len(bin_edges_1), len(hist_1))
         # print(zip(bin_edges_1, hist_0, hist_1))
 
-        if False:
-            fig, ax = plt.subplots()
-            bin_centers = 0.5*(bin_edges_1[:-1] + bin_edges_1[1:])
-            ax.plot(bin_centers, hist_1, lw=2, color='blue', label='pool')
-            ax.plot(bin_centers, hist_0, lw=2, color='red', label='nopool')
-            ax.set_xlim((0, 1))
-            ax.set_ylim((0, 1))
-            plt.legend()
-            plt.show()
-
         self.bin_edges = bin_edges_1
+        self.hist_1 = hist_1
+        self.hist_0 = hist_0
         n_hist = len(hist_1)
         assert len(hist_0) == n_hist
         sels = np.zeros(n_hist, dtype=int)
@@ -87,7 +78,25 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         print(zip(bin_edges_1, hist_0, hist_1, sels))
 
         return self
-        
+
+    def plot_histograms(self, bars=True):
+        fig, ax = plt.subplots()
+        if bars:
+            idx = np.arange(len(self.hist_1))
+            width = 0.35
+            ax.bar(idx, self.hist_1, width, color='blue', label='pool')
+            ax.bar(idx+width, self.hist_0, width, color='red', label='nopool')
+        else:
+            bin_centers = 0.5*(self.bin_edges[:-1] + self.bin_edges[1:])
+            ax.plot(bin_centers, self.hist_1, lw=2, color='blue',
+                    label='pool')
+            ax.plot(bin_centers, self.hist_0, lw=2, color='red',
+                    label='nopool')
+            ax.set_xlim((0, 1))
+        ax.set_ylim((0, 1))
+        plt.legend()
+        plt.show()
+
     def transform_hs(self, X):
         # select using hue
         img = X
@@ -168,7 +177,8 @@ def zest_HueSaturationTransformer(c=0.35):
     hst.fit(img_train, Y)
     img_pred = hst.transform(img_test)
 
-    #return
+    hst.plot_histograms()
+    return
 
     fig, axarr = plt.subplots(4, 1)
     ax = axarr[0]
