@@ -83,9 +83,10 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         fig, ax = plt.subplots()
         if bars:
             idx = np.arange(len(self.hist_1))
-            width = 0.35
-            ax.bar(idx, self.hist_1, width, color='blue', label='pool')
-            ax.bar(idx+width, self.hist_0, width, color='red', label='nopool')
+            width = 0.33
+            ax.bar(idx+width, self.hist_1, width, color='blue', label='pool')
+            ax.bar(idx+2*width, self.hist_0, width, color='red', label='nopool')
+            ax.bar(idx, self.sels, width, color='cyan', label='sel')
         else:
             bin_centers = 0.5*(self.bin_edges[:-1] + self.bin_edges[1:])
             ax.plot(bin_centers, self.hist_1, lw=2, color='blue',
