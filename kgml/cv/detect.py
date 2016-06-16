@@ -69,8 +69,8 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         assert len(hist_0) == n_hist
         sels = np.zeros(n_hist, dtype=int)
         for i in range(n_hist):
-            if hist_1[i] > 0.1:
-                if hist_0[i] <= 0.01:
+            if hist_1[i] > 0.01:
+                if hist_0[i] <= 0.001:
                     sels[i] = 1
                 elif hist_1[i] / hist_0[i] > 2.0:
                     sels[i] = 1
