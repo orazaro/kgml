@@ -99,7 +99,7 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
             ax.plot(bin_centers, self.hist_0, lw=2, color='red',
                     label='nopool')
             ax.set_xlim((0, 1))
-        ax.set_ylim((0, np.max(self.hist_1, self.hist_0) ))
+        ax.set_ylim((0, max(self.hist_1.max(), self.hist_0.max())))
         plt.legend()
         plt.show()
 
