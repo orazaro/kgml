@@ -83,8 +83,8 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
 
         return self
 
-    def plot_histograms(self, bars=True):
-        fig, ax = plt.subplots(figsize(10,5))
+    def plot_histograms(self, figsize=(10,5), bars=True):
+        fig, ax = plt.subplots(figsize=figsize)
         if bars:
             idx = np.arange(len(self.hist_1))
             width = 0.33
