@@ -12,6 +12,7 @@ import cv2
 
 
 def img_norm(img, is_hsv=False, back=False):
+    """Normalize from int8 to [0,1] and back.""" 
     img_shape = img.shape
     img = img.reshape((-1, 3))
     divs = np.array([255., 255., 255.])
@@ -29,6 +30,7 @@ def img_norm(img, is_hsv=False, back=False):
 
 
 def rgb_to_hsv(img):
+    """RGB to HSV using opencv."""
     if len(img.shape) == 3:
         img2 = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
     else:
@@ -39,6 +41,7 @@ def rgb_to_hsv(img):
 
 
 def hsv_to_rgb(img):
+    """HSV to RGB using opencv."""
     img = img_norm(img, is_hsv=True, back=True)
     if len(img.shape) == 3:
         img2 = cv2.cvtColor(img, cv2.COLOR_HSV2RGB)
