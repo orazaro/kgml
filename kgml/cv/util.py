@@ -36,7 +36,7 @@ def rgb_to_hsv(img):
     else:
         img_shape = img.shape
         img3 = img[np.newaxis, :, :]
-        img2 = cv2.cvtColor(img3, cv2.COLOR_RGB2HSV).reshape(img_shape)
+        img2 = cv2.cvtColor(img3, cv2.COLOR_RGB2HSV)[0, :, :]
     return img_norm(img2, is_hsv=True)
 
 
