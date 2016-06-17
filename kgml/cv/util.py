@@ -13,42 +13,41 @@ import cv2
 
 def img_norm(img, is_hsv=False, back=False):
     """Normalize from int8 to [0,1] and back.""" 
-    img_shape = img.shape
-    img = img.reshape((-1, 3))
     divs = np.array([255., 255., 255.])
     if is_hsv:
         divs[0] = 179.
     if back:
         for i in range(3):
-                img[:, i] = img[:, i] * divs[i]
-        return img.astype(np.uint8).reshape(img_shape)
+            img[:, :, i] = img[:, :, i] * divs[i]
+        return img.astype(np.uint8)
     else:
         img = img.astype(np.float32)
         for i in range(3):
-                img[:, i] = img[:, i] / divs[i]
-        return img.reshape(img_shape)
+            img[:, :, i] = img[:, :, i] / divs[i]
+        return img
 
 
 def rgb_to_hsv(img):
     """RGB to HSV using opencv."""
     if len(img.shape) == 3:
         img2 = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+        img2 = img_norm(img2, is_hsv=True)
     else:
-        img_shape = img.shape
         img3 = img[np.newaxis, :, :]
-        img2 = cv2.cvtColor(img3, cv2.COLOR_RGB2HSV)[0, :, :]
-    return img_norm(img2, is_hsv=True)
+        img2 = cv2.cvtColor(img3, cv2.COLOR_RGB2HSV)
+        img2 = img_norm(img2, is_hsv=True)[0, :, :]
+    return img2
 
 
 def hsv_to_rgb(img):
     """HSV to RGB using opencv."""
-    img = img_norm(img, is_hsv=True, back=True)
     if len(img.shape) == 3:
+        img = img_norm(img, is_hsv=True, back=True)
         img2 = cv2.cvtColor(img, cv2.COLOR_HSV2RGB)
     else:
-        img_shape = img.shape
         img3 = img[np.newaxis, :, :]
-        img2 = cv2.cvtColor(img3, cv2.COLOR_HSV2RGB).reshape(img_shape)
+        img3 = img_norm(img3, is_hsv=True, back=True)
+        img2 = cv2.cvtColor(img3, cv2.COLOR_HSV2RGB)[0, :, :]
     return img2
 
 
