@@ -11,6 +11,16 @@ import matplotlib.pyplot as plt
 import cv2
 
 
+def img_norm(img, is_hsv=False):
+    divs = (255., 255., 255.)
+    if is_hsv:
+        divs[0] = 179.
+    img = img.astype(np.float32)
+    for i in range(3):
+        img[:, :, i] = img[:, :, i] / divs[i]
+    return img
+
+
 def rgb_to_hsv(img, back=False):
     from_to = cv2.COLOR_HSV2RGB if back else cv2.COLOR_RGB2HSV
     if len(img.shape) == 3:
@@ -20,11 +30,7 @@ def rgb_to_hsv(img, back=False):
         img3 = img[np.newaxis, :, :]
         img2 = cv2.cvtColor(img3, from_to).reshape(img_shape)
     
-    divs = (179., 255., 255.)
-    img2 = img2.astype(np.float32)
-    for i in range(3):
-        img2[:, :, i] = img2[:, :, i] / divs[i]
-    return img2
+    return img_norm(img2, is_hsv=True)
 
 
 def hsv_to_rgb(img):
@@ -33,11 +39,12 @@ def hsv_to_rgb(img):
 
 def test_rgb_to_hsv():
     img = np.zeros((1, 2, 3), dtype=np.float32)
-    img[:, :] = [10, 30, 150]
+    img[:, :] = np.array([10, 30, 150], dtype=np.float32)
     img = img / 255.
     print(img)
     img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-    print(img_hsv[0, 0, 0])
+    print(img_hsv)
+    print(rgb_to_hsv(img))
     
     # plt.imshow(img)
     # plt.show()
