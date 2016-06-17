@@ -12,7 +12,7 @@ import cv2
 
 
 def img_norm(img, is_hsv=False):
-    divs = (255., 255., 255.)
+    divs = np.array([255., 255., 255.])
     if is_hsv:
         divs[0] = 179.
     img = img.astype(np.float32)
