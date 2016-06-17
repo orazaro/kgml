@@ -15,10 +15,10 @@ import cv2
 # from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 
 def rgb_to_hsv(img):
-    if len(img.shape()) == 3:
+    if len(img.shape) == 3:
         return cv2.cvtColor(img,cv2.COLOR_RGB2HSV)
     else:
-        img_shape = img.shape()
+        img_shape = img.shape
         img3 = img[np.newaxis, :, :]
         return cv2.cvtColor(img3,cv2.COLOR_RGB2HSV).reshape(img_shape)
 
