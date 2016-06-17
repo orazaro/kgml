@@ -83,7 +83,7 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
 
         return self
 
-    def plot_histograms(self, figsize=(10,5), bars=True):
+    def plot_histograms(self, figsize=(10, 5), bars=True):
         fig, ax = plt.subplots(figsize=figsize)
         if bars:
             idx = np.arange(len(self.hist_1))
@@ -183,8 +183,8 @@ def zest_HueSaturationTransformer(c=0.35):
     hst.fit(img_train, Y)
     img_pred = hst.transform(img_test)
 
-    # hst.plot_histograms()
-    # return
+    hst.plot_histograms()
+    return
 
     fig, axarr = plt.subplots(4, 1)
     ax = axarr[0]
