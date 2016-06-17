@@ -10,10 +10,15 @@ import numpy as np
 import cv2
 
 
-def rgb_to_hsv(img):
+def rgb_to_hsv(img, back=False):
+    from_to = cv2.COLOR_HSV2RGB if back else cv2.COLOR_RGB2HSV
     if len(img.shape) == 3:
-        return cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+        return cv2.cvtColor(img, from_to)
     else:
         img_shape = img.shape
         img3 = img[np.newaxis, :, :]
-        return cv2.cvtColor(img3, cv2.COLOR_RGB2HSV).reshape(img_shape)
+        return cv2.cvtColor(img3, from_to).reshape(img_shape)
+
+
+def hsv_to_rgb(img):
+    return rgb_to_hsv(img, back=True)
