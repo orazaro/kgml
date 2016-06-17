@@ -48,7 +48,7 @@ def hsv_to_rgb(img):
 
 
 def test_rgb_to_hsv():
-    shape = (5, 5, 3)
+    shape = (3, 2, 3)
     img = np.full(shape, 0.5)
     img[:, :1, 0] = 0.10
     img[:, 1:, 0] = 0.90
@@ -58,9 +58,10 @@ def test_rgb_to_hsv():
     print("hsv:\n", img_hsv)
     img2 = hsv_to_rgb(img_hsv)
     print("rgb2:\n", img2)
-    
-    plt.imshow(img)
-    plt.show()
+
+    if False:
+        plt.imshow(img)
+        plt.show()
 
 if __name__ == '__main__':
     test_rgb_to_hsv()
