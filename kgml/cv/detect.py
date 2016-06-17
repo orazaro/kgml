@@ -9,9 +9,18 @@ from __future__ import division, print_function
 from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 from scipy import ndimage
 import matplotlib.patches as patches
+import cv2
+# from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
+
+def rgb_to_hsv(img):
+    if len(img.shape()) == 3:
+        return cv2.cvtColor(img,cv2.COLOR_RGB2HSV)
+    else:
+        img_shape = img.shape()
+        img3 = img[np.newaxis, :, :]
+        return cv2.cvtColor(img3,cv2.COLOR_RGB2HSV).reshape(img_shape)
 
 
 def transform_hs(img, hue_min=0.45, hue_max=0.60, satur_min=0.4):
