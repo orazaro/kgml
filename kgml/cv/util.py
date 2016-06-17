@@ -21,6 +21,7 @@ def rgb_to_hsv(img, back=False):
         img2 = cv2.cvtColor(img3, from_to).reshape(img_shape)
     
     divs = (179., 255., 255.)
+    img2 = img2.astype(np.float32)
     for i in range(3):
         img2[:, :, i] = img2[:, :, i] / divs[i]
     return img2
