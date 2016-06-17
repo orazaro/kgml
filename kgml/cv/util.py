@@ -12,18 +12,20 @@ import cv2
 
 
 def img_norm(img, is_hsv=False, back=False):
+    img_shape = img.shape
+    img = img.reshape((-1, 3))
     divs = np.array([255., 255., 255.])
     if is_hsv:
         divs[0] = 179.
     if back:
         for i in range(3):
-                img[:, :, i] = img[:, :, i] * divs[i]
-        return img.astype(np.uint8)
+                img[:, i] = img[:, i] * divs[i]
+        return img.astype(np.uint8).reshape(img_shape)
     else:
         img = img.astype(np.float32)
         for i in range(3):
-                img[:, :, i] = img[:, :, i] / divs[i]
-        return img
+                img[:, i] = img[:, i] / divs[i]
+        return img.reshape(img_shape)
 
 
 def rgb_to_hsv(img):
@@ -59,8 +61,11 @@ def test_rgb_to_hsv():
     img2 = hsv_to_rgb(img_hsv)
     print("rgb2:\n", img2)
 
-    if False:
-        plt.imshow(img)
+    if True:
+        fig, axarr = plt.subplots(1, 3)
+        axarr[0].imshow(img)
+        axarr[1].imshow(img_hsv)
+        axarr[2].imshow(img2)
         plt.show()
 
 if __name__ == '__main__':
