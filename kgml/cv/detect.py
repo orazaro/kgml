@@ -35,9 +35,13 @@ def transform_hs(img, hue_min=0.45, hue_max=0.60, satur_min=0.4):
 
 
 class HueSaturationTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, bins=31, satur_min=0.4):
+    def __init__(self, bins=31, min1=0.01, min0=0.0, min_ratio=2,
+                 min_satur=0.4):
         self.bins = bins
-        self.satur_min = satur_min
+        self.min1 = min1
+        self.min0 = min0
+        self.min_ratio = min_ratio
+        self.min_satur = min_satur
 
     def fit(self, X, Y=None):
         self.Y = Y
@@ -69,10 +73,10 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         assert len(hist_0) == n_hist
         sels = np.zeros(n_hist, dtype=int)
         for i in range(n_hist):
-            if hist_1[i] > 0.01:
-                if hist_0[i] <= 0.001:
+            if hist_1[i] > self.min1:
+                if hist_0[i] <= self.min0:
                     sels[i] = 1
-                elif hist_1[i] / hist_0[i] > 2.0:
+                elif hist_1[i] / hist_0[i] > self.min_ratio:
                     sels[i] = 1
         self.sels = sels
         # print(zip(bin_edges_1, hist_0, hist_1, sels))
@@ -95,7 +99,7 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
             ax.plot(bin_centers, self.hist_0, lw=2, color='red',
                     label='nopool')
             ax.set_xlim((0, 1))
-        ax.set_ylim((0, 1))
+        ax.set_ylim((0, np.max(self.hist_1, self.hist_0) ))
         plt.legend()
         plt.show()
 
@@ -113,7 +117,7 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
 
         # select usin saturation
         img = rgb_to_hsv(img)[:, :, 1]
-        binary_img = img > self.satur_min
+        binary_img = img > self.min_satur
 
         # Remove small white regions
         open_img = ndimage.binary_opening(binary_img)
