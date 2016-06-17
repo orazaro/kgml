@@ -12,7 +12,7 @@ import cv2
 
 
 def img_norm(img, is_hsv=False, back=False):
-    """Normalize from int8 to [0,1] and back.""" 
+    """Normalize 2d image from int8 to [0,1] and back."""
     divs = np.array([255., 255., 255.])
     if is_hsv:
         divs[0] = 179.
