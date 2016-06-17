@@ -48,9 +48,11 @@ def hsv_to_rgb(img):
 
 
 def test_rgb_to_hsv():
-    img = np.zeros((2, 2, 3), dtype=np.float32)
-    img[:, :] = np.array([10, 30, 150], dtype=np.float32)
-    img = img / 255.
+    shape = (2, 2, 3)
+    img = np.full(shape, 0.5)
+    img[:, :1, 0] = 0.10
+    img[:, 1:, 0] = 0.90
+    img = hsv_to_rgb(img)
     print("rgb:\n", img)
     img_hsv = rgb_to_hsv(img)
     print("hsv:\n", img_hsv)

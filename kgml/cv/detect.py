@@ -183,8 +183,8 @@ def zest_HueSaturationTransformer(c=0.35):
     hst.fit(img_train, Y)
     img_pred = hst.transform(img_test)
 
-    hst.plot_histograms()
-    return
+    # hst.plot_histograms()
+    # return
 
     fig, axarr = plt.subplots(4, 1)
     ax = axarr[0]
