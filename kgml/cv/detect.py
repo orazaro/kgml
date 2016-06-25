@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import ndimage
 import matplotlib.patches as patches
+import cPickle as pickle
 from util import rgb_to_hsv, hsv_to_rgb
 
 
@@ -43,10 +44,24 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         self.min_ratio = min_ratio
         self.min_satur = min_satur
 
+    def dump(self, filepath):
+        data = (self.bins, self.min1, self.min0,
+                self.min_ratio, self.min_satur,
+                self.bin_edges, self.sels,
+                self.hist_1, self.hist_0)
+        with open(filepath, 'wb') as fp:
+            pickle.dump(data, fp)
+
+    def load(self, filepath):
+        with open(filepath, 'rb') as fp:
+            data = pickle.load(fp)
+        (self.bins, self.min1, self.min0,
+         self.min_ratio, self.min_satur,
+         self.bin_edges, self.sels,
+         self.hist_1, self.hist_0) = data
+
     def fit(self, X, Y=None):
-        self.Y = Y
-        if Y is None:
-            return
+        assert Y is not None
         assert X.shape == Y.shape
         X = rgb_to_hsv(X)
         X = X.reshape((-1, 3))[:, 0]
@@ -127,10 +142,7 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         return close_img
 
     def transform(self, X):
-        if self.Y is None:
-            return transform_hs(X)
-        else:
-            return self.transform_hs(X)
+        return self.transform_hs(X)
 
 
 def create_test_image(x1=10, y1=20, d=10, c=0.55):
