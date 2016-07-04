@@ -44,21 +44,27 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         self.min_ratio = min_ratio
         self.min_satur = min_satur
 
-    def dump(self, filepath):
+    def get(self):
         data = (self.bins, self.min1, self.min0,
                 self.min_ratio, self.min_satur,
                 self.bin_edges, self.sels,
                 self.hist_1, self.hist_0)
-        with open(filepath, 'wb') as fp:
-            pickle.dump(data, fp)
+        return data
 
-    def load(self, filepath):
-        with open(filepath, 'rb') as fp:
-            data = pickle.load(fp)
+    def set(self, data):
         (self.bins, self.min1, self.min0,
          self.min_ratio, self.min_satur,
          self.bin_edges, self.sels,
          self.hist_1, self.hist_0) = data
+
+    def dump(self, filepath):
+        with open(filepath, 'wb') as fp:
+            pickle.dump(self.get(), fp)
+
+    def load(self, filepath):
+        with open(filepath, 'rb') as fp:
+            data = pickle.load(fp)
+        self.set(data)
 
     def fit(self, X, Y=None):
         assert Y is not None
