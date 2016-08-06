@@ -227,5 +227,5 @@ def test_ExpSmoothing2():
 
 
 if __name__ == '__main__':
-    # test_ExpSmoothing()
-    test_ExpSmoothing2()
+    test_ExpSmoothing()
+    # test_ExpSmoothing2()
