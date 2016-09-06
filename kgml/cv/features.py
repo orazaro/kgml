@@ -145,7 +145,7 @@ def hog_feature(im):
         cond2 = temp_ori > 0
         temp_mag = np.where(cond2, grad_mag, 0)
         orientation_histogram[:, :, i] = uniform_filter(
-            temp_mag, size=(cx, cy))[cx / 2::cx, cy / 2::cy].T
+            temp_mag, size=(cx, cy))[cx // 2::cx, cy // 2::cy].T
 
     return orientation_histogram.ravel()
 
