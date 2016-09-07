@@ -9,13 +9,14 @@ from __future__ import division, print_function
 from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 from scipy import ndimage
 import matplotlib.patches as patches
 import cPickle as pickle
-from util import rgb_to_hsv, hsv_to_rgb
+from util import rgb_to_hsv, hsv_to_rgb, img_norm
+from features import rgb2gray
 
-
-def transform_hs(img, hue_min=0.45, hue_max=0.60, satur_min=0.4):
+def transform_hs(img, hue_min=0.45, hue_max=0.60, satur_min=0.4, gray_min=None):
     """ Transform image using hue and saturation features """
     # select using hue
     hue = rgb_to_hsv(img)[:, :, 0]
@@ -23,10 +24,17 @@ def transform_hs(img, hue_min=0.45, hue_max=0.60, satur_min=0.4):
     img[hue < hue_min] = 0
     img[hue > hue_max] = 0
 
-    # select usin saturation
-    img = rgb_to_hsv(img)[:, :, 1]
-    binary_img = img > satur_min
-
+    if gray_min is None:
+        # select using saturation
+        img = rgb_to_hsv(img)[:, :, 1]
+        binary_img = img > satur_min
+    else:
+        sat = rgb_to_hsv(img)[:,:,1]
+        img[sat < satur_min] = 0
+        img = img_norm(img)
+        img = rgb2gray(img)
+        binary_img = img > gray_min
+    
     # Remove small white regions
     open_img = ndimage.binary_opening(binary_img)
     # Remove small black hole
@@ -172,6 +180,57 @@ def test_transform_hs():
     plt.show()
 
 
+def test_transform_hs_file():
+    """Create image and transform it."""
+    fpath = 'tests/4915_heatherglen_dr__houston__tx.jpg'
+    img = mpimg.imread(fpath)
+    fig, axarr = plt.subplots(1, 2)
+    axarr[0].imshow(img)
+    img2 = transform_hs(img)
+    axarr[1].imshow(img2, cmap='gray')
+    plt.show()
+
+
+def test_transform_hs_rgb():
+    """Create image and transform it."""
+    fpath = \
+        'tests/39012_cl_consuelo_berges_19_3_b_cueto_santander_cantabria.jpg'
+    img = mpimg.imread(fpath)
+    fig, axarr = plt.subplots(1, 3)
+    axarr[0].imshow(img)
+    img2 = transform_hs(img)
+    axarr[1].imshow(img2, cmap='gray')
+    img3 = transform_hs(img, gray_min=0.5)
+    axarr[2].imshow(img3, cmap='gray')
+    plt.show()
+
+
+def test_transform_hs_rgb2():
+    """Create image and transform it."""
+    fpath = \
+        'tests/39012_bo_corbanera_56_baj_monte_santander_cantabria.jpg'
+    img = mpimg.imread(fpath)
+    fig, axarr = plt.subplots(1, 3)
+    axarr[0].imshow(img)
+    img2 = transform_hs(img)
+    axarr[1].imshow(img2, cmap='gray')
+    img3 = transform_hs(img, gray_min=0.5)
+    axarr[2].imshow(img3, cmap='gray')
+    plt.show()
+
+
+def test_transform_hs_file2():
+    """Create image and transform it."""
+    fpath = \
+        'tests/39012_cl_consuelo_berges_19_3_b_cueto_santander_cantabria.jpg'
+    img = mpimg.imread(fpath)
+    fig, axarr = plt.subplots(1, 2)
+    axarr[0].imshow(img)
+    img2 = transform_hs(img, satur_min=0.4)
+    axarr[1].imshow(img2, cmap='gray')
+    plt.show()
+
+
 def show_patch(ax, p, color='black'):
     """ Show patch using annotation. """
     ax.add_patch(
@@ -224,5 +283,8 @@ def test_HueSaturationTransformer2():
 
 if __name__ == '__main__':
     # test_transform_hs()
+    # test_transform_hs_file()
+    # test_transform_hs_file2()
+    test_transform_hs_rgb()
     # test_HueSaturationTransformer()
-    test_HueSaturationTransformer2()
+    # test_HueSaturationTransformer2()
