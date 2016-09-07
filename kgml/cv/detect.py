@@ -16,7 +16,9 @@ import cPickle as pickle
 from util import rgb_to_hsv, hsv_to_rgb, img_norm
 from features import rgb2gray
 
-def transform_hs(img, hue_min=0.45, hue_max=0.60, satur_min=0.4, gray_min=None):
+
+def transform_hs(img, hue_min=0.45, hue_max=0.60, satur_min=0.4,
+                 gray_min=None):
     """ Transform image using hue and saturation features """
     # select using hue
     hue = rgb_to_hsv(img)[:, :, 0]
@@ -24,17 +26,16 @@ def transform_hs(img, hue_min=0.45, hue_max=0.60, satur_min=0.4, gray_min=None):
     img[hue < hue_min] = 0
     img[hue > hue_max] = 0
 
+    sat = rgb_to_hsv(img)[:, :, 1]
     if gray_min is None:
         # select using saturation
-        img = rgb_to_hsv(img)[:, :, 1]
-        binary_img = img > satur_min
+        binary_img = sat > satur_min
     else:
-        sat = rgb_to_hsv(img)[:,:,1]
         img[sat < satur_min] = 0
         img = img_norm(img)
         img = rgb2gray(img)
         binary_img = img > gray_min
-    
+
     # Remove small white regions
     open_img = ndimage.binary_opening(binary_img)
     # Remove small black hole
@@ -44,26 +45,30 @@ def transform_hs(img, hue_min=0.45, hue_max=0.60, satur_min=0.4, gray_min=None):
 
 
 class HueSaturationTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, bins=31, min1=0.01, min0=0.0, min_ratio=2,
-                 min_satur=0.4):
+    def __init__(self, bins=31, min1=0.01, min0=0.0, min_ratio=2.,
+                 min_satur=0.4, min_gray=None):
         self.bins = bins
         self.min1 = min1
         self.min0 = min0
         self.min_ratio = min_ratio
         self.min_satur = min_satur
+        self.min_gray = min_gray
+
+    def to_save_attr(self):
+        return ('bins', 'min1', 'min0',
+                'min_ratio', 'min_satur', 'min_gray',
+                'bin_edges', 'sels',
+                'hist_1', 'hist_0')
 
     def get(self):
-        data = (self.bins, self.min1, self.min0,
-                self.min_ratio, self.min_satur,
-                self.bin_edges, self.sels,
-                self.hist_1, self.hist_0)
+        data = {}
+        for sattr in self.to_save_attr():
+            data[sattr] = getattr(self, sattr)
         return data
 
     def set(self, data):
-        (self.bins, self.min1, self.min0,
-         self.min_ratio, self.min_satur,
-         self.bin_edges, self.sels,
-         self.hist_1, self.hist_0) = data
+        for k in data:
+            setattr(self, k, data[k])
 
     def dump(self, filepath):
         with open(filepath, 'wb') as fp:
@@ -144,9 +149,15 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
                 s = np.logical_and(hue > edges[i], hue < edges[i+1])
                 img[s] = 0
 
-        # select usin saturation
-        img = rgb_to_hsv(img)[:, :, 1]
-        binary_img = img > self.min_satur
+        sat = rgb_to_hsv(img)[:, :, 1]
+        if self.min_gray is None:
+            # select using saturation
+            binary_img = sat > self.min_satur
+        else:
+            img[sat < self.min_satur] = 0
+            img = img_norm(img)
+            img = rgb2gray(img)
+            binary_img = img > self.min_gray
 
         # Remove small white regions
         open_img = ndimage.binary_opening(binary_img)
@@ -191,30 +202,23 @@ def test_transform_hs_file():
     plt.show()
 
 
-def test_transform_hs_rgb():
+def zest_transform_hs_rgb(fn_1=True):
     """Create image and transform it."""
-    fpath = \
-        'tests/39012_cl_consuelo_berges_19_3_b_cueto_santander_cantabria.jpg'
+    if fn_1:
+        fpath = (
+            "tests/"
+            "39012_cl_consuelo_berges_19_3_b_cueto_santander_cantabria.jpg"
+            )
+    else:
+        fpath = (
+            'tests/39012_bo_corbanera_56_baj_monte_santander_cantabria.jpg'
+            )
     img = mpimg.imread(fpath)
     fig, axarr = plt.subplots(1, 3)
     axarr[0].imshow(img)
-    img2 = transform_hs(img)
+    img2 = transform_hs(img, satur_min=0.4)
     axarr[1].imshow(img2, cmap='gray')
-    img3 = transform_hs(img, gray_min=0.5)
-    axarr[2].imshow(img3, cmap='gray')
-    plt.show()
-
-
-def test_transform_hs_rgb2():
-    """Create image and transform it."""
-    fpath = \
-        'tests/39012_bo_corbanera_56_baj_monte_santander_cantabria.jpg'
-    img = mpimg.imread(fpath)
-    fig, axarr = plt.subplots(1, 3)
-    axarr[0].imshow(img)
-    img2 = transform_hs(img)
-    axarr[1].imshow(img2, cmap='gray')
-    img3 = transform_hs(img, gray_min=0.5)
+    img3 = transform_hs(img, gray_min=0.3)
     axarr[2].imshow(img3, cmap='gray')
     plt.show()
 
@@ -244,7 +248,7 @@ def show_patch(ax, p, color='black'):
         )
 
 
-def zest_HueSaturationTransformer(c=0.35):
+def zest_HueSaturationTransformer(c=0.35, min_gray=None):
     """Create image and transform it."""
     p1 = (10, 10, 10)
     p_train = (8, 8, 14)
@@ -256,9 +260,12 @@ def zest_HueSaturationTransformer(c=0.35):
     x1, x2 = p_train[0], p_train[0] + p_train[2]
     y1, y2 = p_train[1], p_train[1] + p_train[2]
     Y[y1:y2+1, x1:x2+1] = 1
-    hst = HueSaturationTransformer()
+    hst = HueSaturationTransformer(min_gray=min_gray)
     hst.fit(img_train, Y)
+    hst.set(hst.get())
     img_pred = hst.transform(img_test)
+
+    print("save_attr: {} {}".format(len(hst.to_save_attr()), len(hst.get())))
 
     # hst.plot_histograms()
     # return
@@ -279,12 +286,13 @@ def test_HueSaturationTransformer():
 
 
 def test_HueSaturationTransformer2():
-    zest_HueSaturationTransformer(c=0.35)
+    zest_HueSaturationTransformer(c=0.35, min_gray=0.1)
 
 if __name__ == '__main__':
     # test_transform_hs()
     # test_transform_hs_file()
     # test_transform_hs_file2()
-    test_transform_hs_rgb()
+    zest_transform_hs_rgb(fn_1=True)
+    zest_transform_hs_rgb(fn_1=False)
     # test_HueSaturationTransformer()
     # test_HueSaturationTransformer2()
