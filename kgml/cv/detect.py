@@ -63,7 +63,8 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
     def get(self):
         data = {}
         for sattr in self.to_save_attr():
-            data[sattr] = getattr(self, sattr)
+            if hasattr(self, sattr):
+                data[sattr] = getattr(self, sattr)
         return data
 
     def set(self, data):
@@ -292,7 +293,7 @@ if __name__ == '__main__':
     # test_transform_hs()
     # test_transform_hs_file()
     # test_transform_hs_file2()
-    zest_transform_hs_rgb(fn_1=True)
-    zest_transform_hs_rgb(fn_1=False)
-    # test_HueSaturationTransformer()
-    # test_HueSaturationTransformer2()
+    # zest_transform_hs_rgb(fn_1=True)
+    # zest_transform_hs_rgb(fn_1=False)
+    test_HueSaturationTransformer()
+    test_HueSaturationTransformer2()
