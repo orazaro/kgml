@@ -258,6 +258,8 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         """ Transform image X using transform_hs() """
         return self.transform_hs(X)
 
+# ----------------------- Tests --------------------------------#
+
 
 def create_test_image(x1=10, y1=20, d=10, c=0.55):
     """Create test image with blue rect inside."""
