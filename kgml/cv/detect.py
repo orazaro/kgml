@@ -56,6 +56,8 @@ def transform_hs(img, hue_min=0.45, hue_max=0.60, satur_min=0.4,
         img[sat < satur_min] = 0
         img = img_norm(img)
         img = rgb2gray(img)
+        if gray_min <= 0:
+            return img
         binary_img = img > gray_min
 
     # Remove small white regions
@@ -312,7 +314,7 @@ def zest_transform_hs_rgb(fn_1=True):
     axarr[0].imshow(img)
     img2 = transform_hs(img, satur_min=0.4)
     axarr[1].imshow(img2, cmap='gray')
-    img3 = transform_hs(img, gray_min=0.3)
+    img3 = transform_hs(img, gray_min=0)
     axarr[2].imshow(img3, cmap='gray')
     plt.show()
 
@@ -376,7 +378,7 @@ def zest_HueSaturationTransformer(c=0.35, min_gray=None):
 
 
 def test_HueSaturationTransformer():
-    zest_HueSaturationTransformer(c=0.55)
+    zest_HueSaturationTransformer(c=0.55, min_gray=0)
 
 
 def test_HueSaturationTransformer2():
@@ -386,7 +388,7 @@ if __name__ == '__main__':
     # test_transform_hs()
     # test_transform_hs_file()
     # test_transform_hs_file2()
-    # zest_transform_hs_rgb(fn_1=True)
+    zest_transform_hs_rgb(fn_1=True)
     # zest_transform_hs_rgb(fn_1=False)
-    test_HueSaturationTransformer()
-    test_HueSaturationTransformer2()
+    # test_HueSaturationTransformer()
+    # test_HueSaturationTransformer2()
