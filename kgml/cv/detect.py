@@ -178,12 +178,21 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         n_hist = len(hist_1)
         assert len(hist_0) == n_hist
         sels = np.zeros(n_hist, dtype=int)
+
         for i in range(n_hist):
             if hist_1[i] > self.min1:
                 if hist_0[i] <= self.min0:
                     sels[i] = 1
                 elif hist_1[i] / hist_0[i] > self.min_ratio:
                     sels[i] = 1
+
+        # check case if no one bin is selected
+        if np.sum(sels) == 0:
+            hist_ratio = hist_1 / hist_0
+            hist_ratio[hist_0 < 0.001] = 0.0
+            i_max = np.argmax(hist_ratio)
+            sels[i_max] = 1
+
         self.sels = sels
         # print(zip(bin_edges_1, hist_0, hist_1, sels))
 
