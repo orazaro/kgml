@@ -80,12 +80,15 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
     min_ratio: float, optional (default=2.0)
         minimal 'plus' / 'minus' ration to use bin in the cut
     min_satur: float, optional (default=0.4)
-        min value of hue to cut image by saturation values
+        min value of hue to cut (or binarize) image by saturation values
         (after rgb-hue transform and hue cut)
     min_gray: float, optional (default=None)
-        min value to cut 1D image by amplitude
+        min value to binarize 1D image by amplitude
         (after rgb-hue transform, hue cut and 3D->1D gray transform)
         if is None, than don't use the last stage
+        elif min_gray=0, than don't binarize the transformed image and
+            return 1D gray one
+        else cut image with min_satur and then binarize it with min_gray
     """
     def __init__(self, bins=31, min1=0.01, min0=0.0, min_ratio=2.0,
                  min_satur=0.4, min_gray=None):
@@ -243,7 +246,7 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
             img[sat < self.min_satur] = 0
             img = img_norm(img)
             img = rgb2gray(img)
-            if not binarize:
+            if not binarize or self.min_gray == 0:
                 return img
             binary_img = img > self.min_gray
 
