@@ -19,7 +19,29 @@ from features import rgb2gray
 
 def transform_hs(img, hue_min=0.45, hue_max=0.60, satur_min=0.4,
                  gray_min=None):
-    """ Transform image using hue and saturation features """
+    """ Transform image using hue and saturation features.
+
+    Parameters
+    ----------
+    img: np.array shape (W, H, 3)
+        RGB image as a numpy array
+    hue_min: float, optional (default=0.45)
+        min value of hue to cut image by hue values
+    hue_max: float, optional (default=0.60)
+        max value of hue to cut image by hue values
+    satur_min: float, optional (default=0.4)
+        min value of hue to cut image by saturation values
+        (after rgb-hue transform and hue cut)
+    gray_min: float, optional (default=None)
+        min value to cut 1D image by amplitude
+        (after rgb-hue transform, hue cut and 3D->1D gray transform)
+        if is None, than don't use the last stage
+
+    Returns
+    -------
+    img: np.array shape (W, H, 1)
+        final binary image
+    """
     # select using hue
     hue = rgb_to_hsv(img)[:, :, 0]
     img = img.copy()
@@ -45,7 +67,27 @@ def transform_hs(img, hue_min=0.45, hue_max=0.60, satur_min=0.4,
 
 
 class HueSaturationTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, bins=31, min1=0.01, min0=0.0, min_ratio=2.,
+    """ Transform image using hue and saturation features.
+
+    Parameters
+    ----------
+    bins: int, optional (default=31)
+        number of bins in the hue histogram (after rgb-hst transform)
+    min1: float, optional (default=0.01)
+        minimal 'plus' density to use bin in the cut
+    min0: float, optional (default=0.0)
+        maximal 'minus' density to use bin in the cut automatically
+    min_ratio: float, optional (default=2.0)
+        minimal 'plus' / 'minus' ration to use bin in the cut
+    min_satur: float, optional (default=0.4)
+        min value of hue to cut image by saturation values
+        (after rgb-hue transform and hue cut)
+    min_gray: float, optional (default=None)
+        min value to cut 1D image by amplitude
+        (after rgb-hue transform, hue cut and 3D->1D gray transform)
+        if is None, than don't use the last stage
+    """
+    def __init__(self, bins=31, min1=0.01, min0=0.0, min_ratio=2.0,
                  min_satur=0.4, min_gray=None):
         self.bins = bins
         self.min1 = min1
@@ -54,33 +96,57 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         self.min_satur = min_satur
         self.min_gray = min_gray
 
-    def to_save_attr(self):
+    @property
+    def attributes(self):
+        """
+        Returns
+        -------
+        list
+            list of the object attributes to save on object dump
+        """
         return ('bins', 'min1', 'min0',
                 'min_ratio', 'min_satur', 'min_gray',
                 'bin_edges', 'sels',
                 'hist_1', 'hist_0')
 
     def get(self):
+        """ Get object attribute as a dict to dump object. """
         data = {}
-        for sattr in self.to_save_attr():
+        for sattr in self.attributes:
             if hasattr(self, sattr):
                 data[sattr] = getattr(self, sattr)
         return data
 
     def set(self, data):
+        """ Set the object attributes from the dict 'data'. """
         for k in data:
             setattr(self, k, data[k])
 
     def dump(self, filepath):
+        """ Dump the object to the file. """
         with open(filepath, 'wb') as fp:
             pickle.dump(self.get(), fp)
 
     def load(self, filepath):
+        """ Load the object from the file. """
         with open(filepath, 'rb') as fp:
             data = pickle.load(fp)
         self.set(data)
 
     def fit(self, X, Y=None):
+        """ Fit transformer using images and marks.
+
+        Parameters
+        ----------
+        X: np.array of shape (W*N, H, 3)
+            N RGB images concateneted into one
+        Y: np.array of shape (W*N, H, 3)
+            Pixel marks of all images from X (0 or 1 values)
+
+        Returns
+        -------
+        self: the object
+        """
         assert Y is not None
         assert X.shape == Y.shape
         X = rgb_to_hsv(X)
@@ -119,6 +185,8 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         return self
 
     def plot_histograms(self, figsize=(10, 5), bars=True):
+        """ Plot histograms of 'plus' pixels and 'minus' pixels
+        """
         fig, ax = plt.subplots(figsize=figsize)
         if bars:
             idx = np.arange(len(self.hist_1))
@@ -138,7 +206,22 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         plt.legend()
         plt.show()
 
-    def transform_hs(self, X):
+    def transform_hs(self, X, binarize=True):
+        """ Transform RGB image using hue and saturation.
+
+        Parameters
+        ----------
+        X: np.array of float, shape (W, H, 3)
+            RGB image to be transformed
+        binarize: bool, optional (default=True)
+            to binarize the output image or not
+
+        Returns
+        -------
+        img: np.array of float, shape (W, H)
+            Binary 1D image after transformation if binarize is True
+            Gray 1D image after transformation if binarize is False
+        """
         # select using hue
         img = X
         hue = rgb_to_hsv(img)[:, :, 0]
@@ -152,12 +235,16 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
 
         sat = rgb_to_hsv(img)[:, :, 1]
         if self.min_gray is None:
+            if not binarize:
+                return sat
             # select using saturation
             binary_img = sat > self.min_satur
         else:
             img[sat < self.min_satur] = 0
             img = img_norm(img)
             img = rgb2gray(img)
+            if not binarize:
+                return img
             binary_img = img > self.min_gray
 
         # Remove small white regions
@@ -168,6 +255,7 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         return close_img
 
     def transform(self, X):
+        """ Transform image X using transform_hs() """
         return self.transform_hs(X)
 
 
@@ -266,7 +354,7 @@ def zest_HueSaturationTransformer(c=0.35, min_gray=None):
     hst.set(hst.get())
     img_pred = hst.transform(img_test)
 
-    print("save_attr: {} {}".format(len(hst.to_save_attr()), len(hst.get())))
+    print("save_attr: {} {}".format(len(hst.attributes), len(hst.get())))
 
     # hst.plot_histograms()
     # return
