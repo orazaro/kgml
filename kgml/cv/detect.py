@@ -298,7 +298,7 @@ def test_transform_hs():
 
 def test_transform_hs_file():
     """Create image and transform it."""
-    fpath = 'tests/4915_heatherglen_dr__houston__tx.jpg'
+    fpath = 'data/4915_heatherglen_dr__houston__tx.jpg'
     img = mpimg.imread(fpath)
     fig, axarr = plt.subplots(1, 2)
     axarr[0].imshow(img)
@@ -311,12 +311,12 @@ def zest_transform_hs_rgb(fn_1=True):
     """Create image and transform it."""
     if fn_1:
         fpath = (
-            "tests/"
+            "data/"
             "39012_cl_consuelo_berges_19_3_b_cueto_santander_cantabria.jpg"
             )
     else:
         fpath = (
-            'tests/39012_bo_corbanera_56_baj_monte_santander_cantabria.jpg'
+            'data/39012_bo_corbanera_56_baj_monte_santander_cantabria.jpg'
             )
     img = mpimg.imread(fpath)
     fig, axarr = plt.subplots(1, 3)
@@ -331,7 +331,7 @@ def zest_transform_hs_rgb(fn_1=True):
 def test_transform_hs_file2():
     """Create image and transform it."""
     fpath = \
-        'tests/39012_cl_consuelo_berges_19_3_b_cueto_santander_cantabria.jpg'
+        'data/39012_cl_consuelo_berges_19_3_b_cueto_santander_cantabria.jpg'
     img = mpimg.imread(fpath)
     fig, axarr = plt.subplots(1, 2)
     axarr[0].imshow(img)
