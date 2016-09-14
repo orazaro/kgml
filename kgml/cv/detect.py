@@ -6,7 +6,7 @@
     Object Detector
 """
 from __future__ import division, print_function
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator, TransformerMixin, ClassifierMixin
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
@@ -15,6 +15,8 @@ import matplotlib.patches as patches
 import cPickle as pickle
 from util import rgb_to_hsv, hsv_to_rgb, img_norm
 from features import rgb2gray
+import cv2
+from skimage.transform import pyramid_gaussian
 
 
 def transform_hs(img, hue_min=0.45, hue_max=0.60, satur_min=0.4,
@@ -273,6 +275,9 @@ class HueSaturationTransformer(BaseEstimator, TransformerMixin):
         return self.transform_hs(X)
 
 
+# ---------------- Object Detector -----------------------------#
+
+
 def non_max_suppression(boxes, scores=None, overlapThresh=0.5):
     """ NonMaxSuppression (Malisiewicz et al.)
     """
@@ -335,6 +340,47 @@ def non_max_suppression(boxes, scores=None, overlapThresh=0.5):
     # integer data type
     return boxes[pick].astype("int")
 
+
+def pyramid(image, downscale=1.5, max_layer=100, minSize=(32, 32),
+            gaussian = False,
+            interpolation=cv2.INTER_AREA):
+    """ Generate pyramid of the images.
+
+    Links
+    -----
+    http://goo.gl/BLvoGb
+    """
+    if gaussian:
+        for img in pyramid_gaussian(image, max_layer=100, 
+                                      downscale=downscale):
+            if img.shape[0] < minSize[1] or img.shape[1] < minSize[0]:
+                break
+            yield img
+    else:
+        # yield the original image
+        yield image
+
+        # keep looping over the pyramid
+        for _ in xrange(max_layer):
+            # compute the new dimensions of the image and resize it
+            w = int(image.shape[1] / downscale)
+            h = int(image.shape[0] / downscale)
+            image = cv2.resize(image, (w, h), interpolation=interpolation)
+
+            # if the resized image does not meet the supplied minimum
+            # size, then stop constructing the pyramid
+            if image.shape[0] < minSize[1] or image.shape[1] < minSize[0]:
+                break
+
+            # yield the next image in the pyramid
+            yield image
+
+
+class Detector(BaseEstimator, ClassifierMixin):
+    """ A detector of objects in the images.
+    """
+    def __init__(self):
+        pass
 
 # ----------------------- Tests --------------------------------#
 
