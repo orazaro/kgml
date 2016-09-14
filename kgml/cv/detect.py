@@ -376,6 +376,123 @@ def pyramid(image, downscale=1.5, max_layer=100, minSize=(32, 32),
             yield image
 
 
+def sliding_window(image, win_width=64, win_height=None, step_width=32,
+                   step_height=None, adjust=True):
+    """ Sliding window.
+
+    Links
+    -----
+    goo.gl/RxIDE0
+    """
+    if win_height is None:
+        win_height = win_width
+    if step_height is None:
+        step_height = step_width
+    # slide a window across the image
+    for y in xrange(0, image.shape[0], step_height):
+        y_break = False
+        for x in xrange(0, image.shape[1], step_width):
+            x_break = False
+            # yield the current window
+            y_end = y + win_height
+            x_end = x + win_width
+            if adjust:
+                if y_end == image.shape[0]:
+                    y_break = True
+                elif y_end > image.shape[0]:
+                    y_end = image.shape[0]
+                    y = y_end - win_height
+                    y_break = True
+                if x_end == image.shape[1]:
+                    x_break = True
+                elif x_end > image.shape[1]:
+                    x_end = image.shape[1]
+                    x = x_end - win_width
+                    x_break = True
+                if x < 0 or y < 0:
+                    raise StopIteration('too small image')
+            yield (x, y, image[y: y_end, x: x_end])
+            if x_break:
+                break
+        if y_break:
+            break
+    raise StopIteration('end of image')
+
+
+def sliding_window_multiscale(image, win_width=64, win_height=None,
+                              shift=0.25, downscale=1.5):
+    if win_height is None:
+        win_height = win_width
+    step_width = int(win_width * shift)
+    step_height = int(win_height * shift)
+    windows, boxes = [], []
+    # loop over the image pyramid
+    for resized in pyramid(image, downscale=downscale):
+        scale = image.shape[0] / resized.shape[0]
+        # loop over the sliding window for each layer of the pyramid
+        for (x, y, window) in sliding_window(
+                resized, win_width=win_width, win_height=win_height,
+                step_width=step_width, step_height=step_height):
+            # if the window does not meet our desired window size, ignore it
+            # print(x, y, window.shape)
+            assert window.shape[0] == win_height and \
+                window.shape[1] == win_width
+            box = np.array([x, y, x + win_width, y + win_height], dtype=float)
+            box *= scale
+            windows.append(window)
+            boxes.append(box)
+    return windows, boxes
+
+
+def zest_sliding_window_multiscale2():
+    # load the image
+    fpath = 'data/4915_heatherglen_dr__houston__tx.jpg'
+    image = cv2.imread(fpath)
+    windows, boxes = sliding_window_multiscale(
+        image, win_width=64, win_height=64,
+        shift=0.25, downscale=1.2)
+    print("boxes:", len(boxes))
+    n = 7
+    box = boxes[n]
+    x1, y1, x2, y2 = list(box.astype(int))
+    clone = image.copy()
+    cv2.rectangle(clone, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    fig, axarr = plt.subplots(1, 2)
+    axarr[0].imshow(clone)
+    axarr[1].imshow(windows[n])
+    plt.show()
+    clone = image.copy()
+    for box in boxes:
+        x1, y1, x2, y2 = list(box.astype(int))
+        cv2.rectangle(clone, (x1, y1), (x2, y2), (0, x2-x1, y2-y1), 2)
+    plt.imshow(clone)
+    plt.show()
+
+
+def zest_sliding_window_multiscale():
+    # load the image
+    fpath = 'data/4915_heatherglen_dr__houston__tx.jpg'
+    image = cv2.imread(fpath)
+    (winW, winH) = (128, 64)
+    # loop over the image pyramid
+    for resized in pyramid(image, downscale=1.5):
+        # loop over the sliding window for each layer of the pyramid
+        for (x, y, window) in sliding_window(
+                resized, win_width=winW, win_height=winH,
+                step_width=100, step_height=70):
+            # if the window does not meet our desired window size, ignore it
+            print(x, y, window.shape[0], window.shape[1])
+            assert window.shape[0] == winH and window.shape[1] == winW
+            if window.shape[0] != winH or window.shape[1] != winW:
+                continue
+
+            # since we do not have a classifier, we'll just draw the window
+            clone = resized.copy()
+            cv2.rectangle(clone, (x, y), (x + winW, y + winH), (0, 255, 0), 2)
+            cv2.imshow("Window", clone)
+            cv2.waitKey(200)
+
+
 def zest_pyramid():
     # load the image
     fpath = 'data/4915_heatherglen_dr__houston__tx.jpg'
@@ -549,5 +666,7 @@ if __name__ == '__main__':
     # zest_transform_hs_rgb(fn_1=False)
     # test_HueSaturationTransformer()
     # test_HueSaturationTransformer2()
-    zest_pyramid()
-    zest_pyramid2()
+    # zest_pyramid()
+    # zest_pyramid2()
+    # zest_sliding_window_multiscale()
+    zest_sliding_window_multiscale2()
