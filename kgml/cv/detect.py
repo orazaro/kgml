@@ -420,16 +420,16 @@ def sliding_window(image, win_width=64, win_height=None, step_width=32,
 
 
 def sliding_window_multiscale(image, win_width=64, win_height=None,
-                              shift=0.25, downscale=1.5):
+                              shift=0.25, downscale=1.5, max_layer=100):
     if win_height is None:
         win_height = win_width
     step_width = int(win_width * shift)
     step_height = int(win_height * shift)
     windows, boxes = [], []
     # loop over the image pyramid
-    for resized in pyramid(image, downscale=downscale):
-        scale = (image.shape[0] / resized.shape[0] + 
-                 image.shape[1] / resized.shape[1] ) / 2
+    for resized in pyramid(image, downscale=downscale, max_layer=max_layer):
+        scale = (image.shape[0] / resized.shape[0] +
+                 image.shape[1] / resized.shape[1]) / 2
         # loop over the sliding window for each layer of the pyramid
         for (x, y, window) in sliding_window(
                 resized, win_width=win_width, win_height=win_height,
