@@ -342,7 +342,7 @@ def non_max_suppression(boxes, scores=None, overlapThresh=0.5):
 
 
 def pyramid(image, downscale=1.5, max_layer=100, minSize=(32, 32),
-            gaussian = False,
+            gaussian=False,
             interpolation=cv2.INTER_AREA):
     """ Generate pyramid of the images.
 
@@ -351,8 +351,8 @@ def pyramid(image, downscale=1.5, max_layer=100, minSize=(32, 32),
     http://goo.gl/BLvoGb
     """
     if gaussian:
-        for img in pyramid_gaussian(image, max_layer=100, 
-                                      downscale=downscale):
+        for img in pyramid_gaussian(image, max_layer=100,
+                                    downscale=downscale):
             if img.shape[0] < minSize[1] or img.shape[1] < minSize[0]:
                 break
             yield img
@@ -374,6 +374,39 @@ def pyramid(image, downscale=1.5, max_layer=100, minSize=(32, 32),
 
             # yield the next image in the pyramid
             yield image
+
+
+def zest_pyramid():
+    # load the image
+    fpath = 'data/4915_heatherglen_dr__houston__tx.jpg'
+    image = cv2.imread(fpath)
+
+    # METHOD #1: No smooth, just scaling.
+    # loop over the image pyramid
+    for (i, resized) in enumerate(pyramid(image, downscale=1.1)):
+        # show the resized image
+        cv2.imshow("Layer {}".format(i + 1), resized)
+        cv2.waitKey(0)
+
+    # close all windows
+    cv2.destroyAllWindows()
+
+
+def zest_pyramid2():
+    # load the image
+    fpath = 'data/4915_heatherglen_dr__houston__tx.jpg'
+    image = cv2.imread(fpath)
+
+    # METHOD #2: Smooth
+    # loop over the image pyramid
+    for (i, resized) in enumerate(pyramid(image, downscale=1.5,
+                                          gaussian=True)):
+        # show the resized image
+        cv2.imshow("Layer {}".format(i + 1), resized)
+        cv2.waitKey(0)
+
+    # close all windows
+    cv2.destroyAllWindows()
 
 
 class Detector(BaseEstimator, ClassifierMixin):
@@ -512,7 +545,9 @@ if __name__ == '__main__':
     # test_transform_hs()
     # test_transform_hs_file()
     # test_transform_hs_file2()
-    zest_transform_hs_rgb(fn_1=True)
+    # zest_transform_hs_rgb(fn_1=True)
     # zest_transform_hs_rgb(fn_1=False)
     # test_HueSaturationTransformer()
     # test_HueSaturationTransformer2()
+    zest_pyramid()
+    zest_pyramid2()
