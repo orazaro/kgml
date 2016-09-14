@@ -428,7 +428,8 @@ def sliding_window_multiscale(image, win_width=64, win_height=None,
     windows, boxes = [], []
     # loop over the image pyramid
     for resized in pyramid(image, downscale=downscale):
-        scale = image.shape[0] / resized.shape[0]
+        scale = (image.shape[0] / resized.shape[0] + 
+                 image.shape[1] / resized.shape[1] ) / 2
         # loop over the sliding window for each layer of the pyramid
         for (x, y, window) in sliding_window(
                 resized, win_width=win_width, win_height=win_height,
@@ -452,7 +453,7 @@ def zest_sliding_window_multiscale2():
         image, win_width=64, win_height=64,
         shift=0.25, downscale=1.2)
     print("boxes:", len(boxes))
-    n = 7
+    n = 3977
     box = boxes[n]
     x1, y1, x2, y2 = list(box.astype(int))
     clone = image.copy()
