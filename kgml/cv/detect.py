@@ -357,7 +357,8 @@ def test_transform_hs():
     axarr[0].imshow(img, cmap='gray')
     img2 = transform_hs(img)
     axarr[1].imshow(img2, cmap='gray')
-    plt.show()
+    if __name__ == '__main__':
+        plt.show()
 
 
 def test_transform_hs_file():
@@ -368,7 +369,8 @@ def test_transform_hs_file():
     axarr[0].imshow(img)
     img2 = transform_hs(img)
     axarr[1].imshow(img2, cmap='gray')
-    plt.show()
+    if __name__ == '__main__':
+        plt.show()
 
 
 def zest_transform_hs_rgb(fn_1=True):
@@ -389,7 +391,8 @@ def zest_transform_hs_rgb(fn_1=True):
     axarr[1].imshow(img2, cmap='gray')
     img3 = transform_hs(img, gray_min=0)
     axarr[2].imshow(img3, cmap='gray')
-    plt.show()
+    if __name__ == '__main__':
+        plt.show()
 
 
 def test_transform_hs_file2():
@@ -401,7 +404,8 @@ def test_transform_hs_file2():
     axarr[0].imshow(img)
     img2 = transform_hs(img, satur_min=0.4)
     axarr[1].imshow(img2, cmap='gray')
-    plt.show()
+    if __name__ == '__main__':
+        plt.show()
 
 
 def show_patch(ax, p, color='black'):
@@ -447,7 +451,8 @@ def zest_HueSaturationTransformer(c=0.35, min_gray=None):
     img_hs = transform_hs(img_test)
     axarr[2].imshow(img_hs, cmap='gray')
     axarr[3].imshow(img_pred, cmap='gray')
-    plt.show()
+    if __name__ == '__main__':
+        plt.show()
 
 
 def test_HueSaturationTransformer():

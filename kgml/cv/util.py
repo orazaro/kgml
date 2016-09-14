@@ -68,7 +68,8 @@ def test_rgb_to_hsv():
         axarr[0].imshow(img)
         axarr[1].imshow(img_hsv)
         axarr[2].imshow(img2)
-        plt.show()
+        if __name__ == '__main__':
+            plt.show()
 
 if __name__ == '__main__':
     test_rgb_to_hsv()
