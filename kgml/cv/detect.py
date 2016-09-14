@@ -441,7 +441,7 @@ def sliding_window_multiscale(image, win_width=64, win_height=None,
             box = np.array([x, y, x + win_width, y + win_height], dtype=float)
             box *= scale
             windows.append(window)
-            boxes.append(box)
+            boxes.append(box.astype(int))
     return windows, boxes
 
 
