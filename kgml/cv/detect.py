@@ -553,9 +553,9 @@ class ObjectDetector(BaseEstimator, ClassifierMixin):
 
     def detect(self, image):
         windows, boxes = self.split(image)
-        y_pred_proba = self.clf.predict_proba(windows)
+        y_pred_proba = self.clf.predict_proba(windows)[:,1]
         i_found = np.where(y_pred_proba > self.threshold)[0]
-        boxes = np.asaray(boxes)[i_found]
+        boxes = np.asarray(boxes)[i_found]
         scores = y_pred_proba[i_found]
         return boxes, scores
 
