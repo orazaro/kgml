@@ -338,7 +338,10 @@ def non_max_suppression(boxes, scores=None, overlapThresh=0.5):
 
     # return only the bounding boxes that were picked using the
     # integer data type
-    return boxes[pick].astype("int")
+    if scores is None:
+        return boxes[pick].astype("int")
+    else:
+        return boxes[pick].astype("int"), scores[pick]
 
 
 def pyramid(image, downscale=1.5, max_layer=100, minSize=(32, 32),
@@ -553,10 +556,16 @@ class ObjectDetector(BaseEstimator, ClassifierMixin):
 
     def detect(self, image):
         windows, boxes = self.split(image)
-        y_pred_proba = self.clf.predict_proba(windows)[:,1]
+        y_pred_proba = self.clf.predict_proba(windows)[:, 1]
+        print(y_pred_proba)
         i_found = np.where(y_pred_proba > self.threshold)[0]
+        print(i_found)
         boxes = np.asarray(boxes)[i_found]
         scores = y_pred_proba[i_found]
+        print(len(boxes), len(scores))
+        res = non_max_suppression(boxes=boxes, scores=scores)
+        print(res)
+        boxes, scores = res
         return boxes, scores
 
 
