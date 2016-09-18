@@ -26,6 +26,7 @@ class Timer(object):
             print('[%s]' % self.name, end=' ')
         print('Elapsed: %s' % (time.time() - self.tstart))
 
+
 def test_Timer():
     with Timer('sleep 0.001'):
         time.sleep(0.001)
