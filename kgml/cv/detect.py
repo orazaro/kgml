@@ -530,8 +530,35 @@ def zest_pyramid2():
 class ObjectDetector(BaseEstimator, ClassifierMixin):
     """ A detector of objects in the images.
     """
-    def __init__(self):
-        pass
+    def __init__(self, clf=None, threshold=0.5,
+                 win_width=64, win_height=None,
+                 shift=0.25, downscale=1.5, max_layer=100):
+        self.clf = clf
+        self.threshold = threshold
+        self.win_width = win_width
+        self.win_height = win_height
+        self.shift = shift
+        self.downscale = downscale
+        self.max_layer = max_layer
+
+    def split(self, image):
+        clone = np.asarray(image)
+        windows, boxes = \
+            sliding_window_multiscale(
+                    clone, win_width=self.win_width,
+                    win_height=self.win_height,
+                    shift=self.shift, downscale=self.downscale,
+                    max_layer=self.max_layer)
+        return windows, boxes
+
+    def detect(self, image):
+        windows, boxes = self.split(image)
+        y_pred_proba = self.clf.predict_proba(windows)
+        i_found = np.where(y_pred_proba > self.threshold)[0]
+        boxes = np.asaray(boxes)[i_found]
+        scores = y_pred_proba[i_found]
+        return boxes, scores
+
 
 # ----------------------- Tests --------------------------------#
 
