@@ -411,7 +411,9 @@ def sliding_window(image, win_width=64, win_height=None, step_width=32,
                     x_break = True
                 if x < 0 or y < 0:
                     raise StopIteration('too small image')
-            yield (x, y, image[y: y_end, x: x_end])
+            # yield (x, y, image[y: y_end, x: x_end])
+            rect = (x, y, x_end, y_end)
+            yield (x, y, image.crop(rect))
             if x_break:
                 break
         if y_break:
