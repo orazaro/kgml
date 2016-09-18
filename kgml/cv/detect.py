@@ -533,7 +533,7 @@ def zest_pyramid2():
 class ObjectDetector(BaseEstimator, ClassifierMixin):
     """ A detector of objects in the images.
     """
-    def __init__(self, clf=None, threshold=0.6,
+    def __init__(self, clf=None, threshold=0.5,
                  win_width=64, win_height=None,
                  shift=0.25, downscale=1.5, max_layer=100):
         self.clf = clf
@@ -561,8 +561,13 @@ class ObjectDetector(BaseEstimator, ClassifierMixin):
         boxes = np.asarray(boxes)[i_found]
         scores = y_pred_proba[i_found]
         if len(boxes) > 0:
-            res = non_max_suppression(boxes=boxes, scores=scores)
+            print(boxes)
+            res = non_max_suppression(
+                boxes=boxes, scores=scores,
+                overlapThresh=0.01)
             boxes, scores = res
+            print(boxes)
+            print(scores)
         return boxes, scores
 
 
