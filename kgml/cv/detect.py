@@ -445,6 +445,8 @@ def sliding_window_multiscale(image, win_width=64, win_height=None,
     return windows, boxes
 
 
+class ObjectDetector()
+
 def zest_sliding_window_multiscale2():
     # load the image
     fpath = 'data/4915_heatherglen_dr__houston__tx.jpg'
