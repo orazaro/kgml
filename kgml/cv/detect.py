@@ -560,14 +560,11 @@ class ObjectDetector(BaseEstimator, ClassifierMixin):
         i_found = np.where(y_pred_proba > self.threshold)[0]
         boxes = np.asarray(boxes)[i_found]
         scores = y_pred_proba[i_found]
-        if len(boxes) > 0:
-            print(boxes)
+        if False and len(boxes) > 0:
             res = non_max_suppression(
                 boxes=boxes, scores=scores,
                 overlapThresh=0.01)
             boxes, scores = res
-            print(boxes)
-            print(scores)
         return boxes, scores
 
 
