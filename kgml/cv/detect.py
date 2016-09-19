@@ -564,7 +564,7 @@ class ObjectDetector(BaseEstimator, ClassifierMixin):
             i_found = np.where(y_pred_proba > self.threshold)[0]
         else:
             y_pred = self.clf.predict(windows)
-            i_found = np.where(y_pred_proba > 0)[0]
+            i_found = np.where(y_pred > 0)[0]
         boxes = np.asarray(boxes)[i_found]
         scores = y_pred_proba[i_found]
         if len(boxes) > 0 and self.nms_threshold is not None:
