@@ -535,7 +535,9 @@ class ObjectDetector(BaseEstimator, ClassifierMixin):
     """
     def __init__(self, clf=None, threshold=0.5,
                  win_width=64, win_height=None,
-                 shift=0.25, downscale=1.5, max_layer=100):
+                 shift=0.25, downscale=1.5, max_layer=0,
+                 nms_threshold=None
+                 ):
         self.clf = clf
         self.threshold = threshold
         self.win_width = win_width
@@ -543,6 +545,7 @@ class ObjectDetector(BaseEstimator, ClassifierMixin):
         self.shift = shift
         self.downscale = downscale
         self.max_layer = max_layer
+        self.nms_threshold = nms_threshold
 
     def split(self, image):
         clone = np.asarray(image)
@@ -560,13 +563,19 @@ class ObjectDetector(BaseEstimator, ClassifierMixin):
         i_found = np.where(y_pred_proba > self.threshold)[0]
         boxes = np.asarray(boxes)[i_found]
         scores = y_pred_proba[i_found]
-        if False and len(boxes) > 0:
+        if len(boxes) > 0 and self.nms_threshold is not None:
             res = non_max_suppression(
                 boxes=boxes, scores=scores,
-                overlapThresh=0.01)
+                overlapThresh=self.nms_threshold)
             boxes, scores = res
         return boxes, scores
 
+    def predict(self, images):
+        y_pred = []
+        for img in images:
+            boxes, scores = self.detect(img)
+            y_pred.append(len(boxes) > 0)
+        return np.array(y_pred, dtype=int)
 
 # ----------------------- Tests --------------------------------#
 
