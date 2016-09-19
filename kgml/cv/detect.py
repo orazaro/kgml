@@ -559,8 +559,12 @@ class ObjectDetector(BaseEstimator, ClassifierMixin):
 
     def detect(self, image):
         windows, boxes = self.split(image)
-        y_pred_proba = self.clf.predict_proba(windows)[:, 1]
-        i_found = np.where(y_pred_proba > self.threshold)[0]
+        if hasattr(self.clf, 'predict_proba'):
+            y_pred_proba = self.clf.predict_proba(windows)[:, 1]
+            i_found = np.where(y_pred_proba > self.threshold)[0]
+        else:
+            y_pred = self.clf.predict(windows)
+            i_found = np.where(y_pred_proba > 0)[0]
         boxes = np.asarray(boxes)[i_found]
         scores = y_pred_proba[i_found]
         if len(boxes) > 0 and self.nms_threshold is not None:
