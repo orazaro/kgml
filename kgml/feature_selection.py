@@ -13,6 +13,7 @@ import logging
 import warnings
 
 import numpy as np
+import pandas as pd
 
 from sklearn.feature_selection import f_regression
 from sklearn.datasets.samples_generator import make_regression
@@ -181,6 +182,86 @@ def forward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
     return selected
 
 
+def forward_cv_es(
+        df, df_valid, predictors, target, model, scoring='roc_auc', cv1=None,
+        n_folds=8, n_jobs=-1, start=[], selmax=None, min_ratio=1e-7,
+        max_valid_downs=1, verbosity=0):
+    """ Forward selection with early stoping.
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    selected: list
+        selected predictors
+
+    Example
+    -------
+    References
+    ----------
+    """
+    def score_valid(df, df_valid, predictors, target):
+        df2 = pd.concat([df, df_valid])
+        n_train = df.shape[0]
+        cv2 = [(np.arange(0, n_train, dtype=int),
+               np.arange(n_train, df2.shape[0], dtype=int))]
+        X, y, _ = df_xyf(df2, predictors=predictors, target=target)
+        scores = cross_validation.cross_val_score(
+                    model, X, y, scoring=scoring, cv=cv2, n_jobs=-1,
+                    verbose=0, fit_params=None,
+                    pre_dispatch='2*n_jobs')
+        return np.mean(scores)
+    remaining = set([e for e in predictors if e not in start])
+    selected = list(start)
+    selected_valid = list(selected)
+    current_score = None
+    valid_score = None
+    valid_downs = 0
+    if len(start) > 0:
+        current_score, _ = forward_cv_inner_loop(
+                clone(model), df, start, None, target, scoring,
+                cv1=cv1, n_folds=n_folds)
+        valid_score = score_valid(df, df_valid, start, target)
+    best_new_score = current_score
+    best_valid_score = valid_score
+    while remaining and current_score == best_new_score:
+        pre_dispatch = '2*n_jobs'
+        parallel = Parallel(n_jobs=n_jobs, verbose=0,
+                            pre_dispatch=pre_dispatch)
+        scores_with_candidates = parallel(delayed(forward_cv_inner_loop)(
+            clone(model), df, selected, candidate, target, scoring,
+            cv1=cv1, n_folds=n_folds)
+            for candidate in remaining)
+        scores_with_candidates.sort()
+        # print(scores_with_candidates)
+        best_new_score, best_candidate = scores_with_candidates.pop()
+        if current_score is None or cmp_scores(current_score,
+                                               best_new_score,
+                                               min_ratio):
+            remaining.remove(best_candidate)
+            selected.append(best_candidate)
+            current_score = best_new_score
+            valid_score = score_valid(df, df_valid, selected, target)
+            if best_valid_score is None or best_valid_score <= valid_score:
+                best_valid_score = valid_score
+                selected_valid = list(selected)
+                valid_downs = 0
+            else:
+                valid_downs += 1
+                if valid_downs > max_valid_downs:
+                    break
+
+        else:
+            break
+        if verbosity > 0:
+            print("{:.4f} {:.4f}".format(current_score, valid_score),
+                  ' '.join(selected))
+        if selmax is not None and len(selected) >= selmax:
+            break
+    return selected_valid
+
+
 def make_test_regression(n_features=30, n_informative=5, n_samples=5000):
     import pandas as pd
     X, y = make_regression(n_samples=n_samples, n_features=n_features,
@@ -210,6 +291,26 @@ def test_forward_cv():
                 linear_model.RidgeCV(),)
     selected = forward_cv(
         df, predictors, target, model,
+        scoring='mean_squared_error',
+        n_folds=8, n_jobs=-1, start=[], selmax=None,  min_ratio=0.01,
+        verbosity=1)
+    print("forward_cv:", len(selected), selected)
+
+
+def test_forward_cv_es():
+    from sklearn.preprocessing import StandardScaler
+    from sklearn import linear_model
+    from sklearn.pipeline import make_pipeline
+
+    df, predictors, target = make_test_regression(
+            n_features=30, n_informative=10, n_samples=25000)
+    model = make_pipeline(
+                StandardScaler(),
+                linear_model.RidgeCV(),)
+    df1 = df.iloc[:df.shape[0] // 2, :]
+    df2 = df.iloc[df.shape[0] // 2:, :]
+    selected = forward_cv_es(
+        df1, df2, predictors, target, model,
         scoring='mean_squared_error',
         n_folds=8, n_jobs=-1, start=[], selmax=None,  min_ratio=0.01,
         verbosity=1)
@@ -573,9 +674,10 @@ def test_f_regression_select():
 
 def zest():
     # test_f_regression_select()
-    test_forward_cv()
-    test_backward_cv()
-    test_add_del_cv()
+    # test_forward_cv()
+    test_forward_cv_es()
+    # test_backward_cv()
+    # test_add_del_cv()
     print("Test OK", file=sys.stderr)
 
 if __name__ == '__main__':
