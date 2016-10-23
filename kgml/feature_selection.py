@@ -39,7 +39,7 @@ def remove_noninformative_columns(df):
     return df.iloc[:, list(variance > 1E-15)]
 
 
-def add_quadratic_features(df, predictors, rm_noninform=False):
+def add_quadratic_features(df, predictors, rm_noninform=False, rm_nans=False):
     """ Add quadratic features based on the selected predictors
 
     Parameters
@@ -75,8 +75,19 @@ def add_quadratic_features(df, predictors, rm_noninform=False):
     Xout = np.c_[Xout, X2]
     # print columns
     df_out = pd.DataFrame(Xout, columns=columns)
+
     if rm_noninform:
         df_out = remove_noninformative_columns(df_out)
+
+    if rm_nans and np.isnan(df_out.values).sum() > 0:
+        feature_cols = list(df_out.columns)
+        for f in list(feature_cols):
+            nans = np.isnan(df_out.ix[:, [f]].values).sum()
+            if nans > 0:
+                print('Warn: feature', f, 'has nans (removed)')
+                feature_cols.remove(f)
+        df_out = df_out.ix[:, feature_cols]
+
     return df_out
 
 # ------------------ Greedy Feature Selection ----------------------------- #
