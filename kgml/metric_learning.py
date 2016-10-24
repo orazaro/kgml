@@ -66,7 +66,7 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None,
         except:
             f1_score = 0.0
             logloss = 0.0
-        return f1_score, logloss
+        return f1_score
 
     print("{:<20s}{:>12s}{:>12s}".format('transformer', 'time(Sec)',
           'f1_score'))
