@@ -61,9 +61,12 @@ def plot_manifold_learning(X, y, n_neighbors=10, n_components=2, colors=None,
                                      weights="uniform"))
             y_pred = cross_val_predict(estimator, X, y, cv=8, n_jobs=-1)
             f1_score = metrics.f1_score(y, y_pred, average='macro')
+            logloss = metrics.log_loss(y, y_pred)
+            print('logloss:', logloss)
         except:
             f1_score = 0.0
-        return f1_score
+            logloss = 0.0
+        return f1_score, logloss
 
     print("{:<20s}{:>12s}{:>12s}".format('transformer', 'time(Sec)',
           'f1_score'))
