@@ -129,6 +129,20 @@ def forward_cv_inner_loop(model, df, selected, candidate, target, scoring,
     return (scores_mean, candidate)
 
 
+def forward_cv_one_step(model, df, selected, remaining, target,
+                        scoring='roc_auc',
+                        cv1=None, n_folds=8, n_jobs=-1):
+    pre_dispatch = '2*n_jobs'
+    parallel = Parallel(n_jobs=n_jobs, verbose=0,
+                        pre_dispatch=pre_dispatch)
+    scores_with_candidates = parallel(delayed(forward_cv_inner_loop)(
+        clone(model), df, selected, candidate, target, scoring,
+        cv1=cv1, n_folds=n_folds)
+        for candidate in remaining)
+    scores_with_candidates.sort()
+    return scores_with_candidates
+
+
 def cmp_scores(current_score, new_score, min_ratio=0.01):
     if current_score >= new_score:
         return False
