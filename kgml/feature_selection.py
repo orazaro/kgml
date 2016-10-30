@@ -270,8 +270,8 @@ def forward_cv_es(
                   ' '.join(selected))
         if selmax is not None and len(selected) >= selmax:
             break
-        if verbosity > 0:
-            print("the end:", len(selected_valid))
+    if verbosity > 0:
+        print("the end:", len(selected_valid))
     return selected_valid
 
 
