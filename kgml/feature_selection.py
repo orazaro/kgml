@@ -280,7 +280,7 @@ def forward_cv_es(
         else:
             break
         if verbosity > 0:
-            print("{:.4f} {:.4f}".format(current_score, valid_score),
+            print("{:.5f} {:.5f}".format(current_score, valid_score),
                   ' '.join(selected))
         if selmax is not None and len(selected) >= selmax:
             break
