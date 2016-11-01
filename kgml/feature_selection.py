@@ -84,7 +84,7 @@ def add_quadratic_features(df, predictors, rm_noninform=False, rm_nans=False):
         for f in list(feature_cols):
             nans = np.isnan(df_out.ix[:, [f]].values).sum()
             if nans > 0:
-                print('Warn: feature', f, 'has nans (removed)')
+                print('Warn: feature "{}" has nans (removed)'.format(f))
                 feature_cols.remove(f)
         df_out = df_out.ix[:, feature_cols]
 
