@@ -286,7 +286,7 @@ def forward_cv_es(
             break
     if verbosity > 0:
         print("the end:", len(selected_valid))
-    return selected_valid
+    return selected_valid, selected
 
 
 def make_test_regression(n_features=30, n_informative=5, n_samples=5000):
