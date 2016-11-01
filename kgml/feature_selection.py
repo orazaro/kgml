@@ -204,6 +204,8 @@ def forward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
             print("{:.4f}".format(current_score), ' '.join(selected))
         if selmax is not None and len(selected) >= selmax:
             break
+    if verbosity > 0:
+        print("the end:", len(selected))
     return selected
 
 
@@ -466,6 +468,8 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
         if to_break > 0:
             break
 
+    if verbosity > 0:
+        print("the end:", len(selected))
     return selected_curr
 
 
