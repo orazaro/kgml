@@ -201,7 +201,7 @@ def forward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
         else:
             break
         if verbosity > 0:
-            print("{:.4f}".format(current_score), ' '.join(selected))
+            print("{:.5f}".format(current_score), ' '.join(selected))
         if selmax is not None and len(selected) >= selmax:
             break
     if verbosity > 0:
@@ -389,7 +389,7 @@ def backward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
             # print("back:", current_score, best_new_score)
             break
         if verbosity > 0:
-            print("{:.4f}".format(current_score), ' '.join(selected))
+            print("{:.5f}".format(current_score), ' '.join(selected))
         if selmin is not None and len(selected) <= selmin:
             break
     return selected
