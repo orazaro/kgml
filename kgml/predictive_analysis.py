@@ -12,7 +12,7 @@ import numpy as np
 import warnings
 
 from sklearn import svm, linear_model, ensemble, naive_bayes, neighbors
-from sklearn import cross_validation, metrics
+from sklearn import model_selection, metrics
 from sklearn.feature_selection import RFECV, RFE
 
 import matplotlib.pyplot as plt
@@ -187,7 +187,7 @@ def feature_selection_RFE(
     # Create the RFE object and compute a cross-validated score.
     if est is not None:
         estimator = est
-        cv = cross_validation.StratifiedKFold(y, 4)
+        cv = model_selection.StratifiedKFold(y, 4)
     elif isclass:
         # estimator = svm.SVC(kernel="linear",C=1.0)
         # estimator = get_clf('svm')
@@ -195,7 +195,7 @@ def feature_selection_RFE(
         estimator = \
             linear_model.LogisticRegression(penalty='l2', C=.01,
                                             class_weight='auto')
-        cv = cross_validation.StratifiedKFold(y, 4)
+        cv = model_selection.StratifiedKFold(y, 4)
     else:
         if False:
             from sklearn.ensemble import RandomForestRegressor
@@ -259,6 +259,7 @@ def feature_selection_RFE(
     return best, ranks
 
 # --- old stuff --------#
+
 
 def get_clf(sclf,C=1.0,class_weight=None):
     if sclf == 'svm':
@@ -357,16 +358,16 @@ def predict_evaluate_models(fn ,ax=None, sel=["PhaseTime","rdFar"], goal="Linebr
 
     if nfolds >= len(y)/2:
         if verbosity > 0:
-            print "cross_validation.LeaveOneOut"
-        cv = cross_validation.LeaveOneOut(n=len(y))
+            print "model_selection.LeaveOneOut"
+        cv = model_selection.LeaveOneOut(n=len(y))
     else:
         if verbosity > 0:
-            print "cross_validation.StratifiedKFold"
-        cv = cross_validation.StratifiedKFold(y, n_folds=nfolds)
+            print "model_selection.StratifiedKFold"
+        cv = model_selection.StratifiedKFold(y, n_folds=nfolds)
     results = []
     for sclf in sclfs:
         clf = get_clf(sclf,class_weight=class_weight)
-        y_pred = cross_validation.cross_val_predict(clf, X, y, cv=cv)
+        y_pred = model_selection.cross_val_predict(clf, X, y, cv=cv)
         #print "pred:",y_pred
         
         if toRoundDown and len(np.unique(y))==2:    # round down goal classes
@@ -424,7 +425,7 @@ def feature_selection_RFE_draft(fn ,ax=None, sel="all", goal="Linebreak", isclas
         #estimator = svm.SVC(kernel="linear",C=1.0)
         estimator = get_clf('svm')    
         scoring = 'f1'
-        cv = cross_validation.StratifiedKFold(y, 2)
+        cv = model_selection.StratifiedKFold(y, 2)
     else:
         if False:
             from sklearn.ensemble import RandomForestRegressor
