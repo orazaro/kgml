@@ -23,7 +23,7 @@ from sklearn import model_selection
 from sklearn.base import is_classifier
 
 from predictive_analysis import df_xyf
-from model_selection import cross_val_predict_proba
+from .model_selection import cross_val_predict_proba
 from modsel import estimate_scores
 
 
