@@ -439,7 +439,7 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
 
     X, y, _ = df_xyf(df, predictors=predictors, target=target)
     cv1 = model_selection.check_cv(
-            cv1, X=X, y=y,
+            cv1, y=y,
             classifier=is_classifier(model))
 
     selected_curr = start
