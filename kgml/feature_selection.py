@@ -19,7 +19,7 @@ from sklearn.feature_selection import f_regression
 from sklearn.datasets.samples_generator import make_regression
 from sklearn.base import clone
 from sklearn.externals.joblib import Parallel, delayed
-from sklearn import cross_validation
+from sklearn import model_selection
 from sklearn.base import is_classifier
 
 from predictive_analysis import df_xyf
@@ -98,7 +98,7 @@ def forward_cv_inner_loop_classif(model, df, selected, candidate, target,
     selected_candidate = selected + [candidate]
     X, y, features = df_xyf(df, predictors=selected_candidate, target=target)
     if cv1 is None:
-        cv1 = cross_validation.StratifiedKFold(y, n_folds)
+        cv1 = model_selection.StratifiedKFold(y, n_folds)
     y_proba, scores = cross_val_predict_proba(
         model, X, y, scoring=scoring,
         cv=cv1, n_jobs=1, verbose=0, fit_params=None, pre_dispatch='2*n_jobs')
@@ -119,7 +119,7 @@ def forward_cv_inner_loop(model, df, selected, candidate, target, scoring,
     if cv1 is None:
         cv1 = n_folds
 
-    scores = cross_validation.cross_val_score(
+    scores = model_selection.cross_val_score(
                     model, X, y, scoring=scoring, cv=cv1, n_jobs=1,
                     verbose=0, fit_params=None,
                     pre_dispatch='2*n_jobs')
@@ -234,7 +234,7 @@ def forward_cv_es(
         cv2 = [(np.arange(0, n_train, dtype=int),
                np.arange(n_train, df2.shape[0], dtype=int))]
         X, y, _ = df_xyf(df2, predictors=predictors, target=target)
-        scores = cross_validation.cross_val_score(
+        scores = model_selection.cross_val_score(
                     model, X, y, scoring=scoring, cv=cv2, n_jobs=-1,
                     verbose=0, fit_params=None,
                     pre_dispatch='2*n_jobs')
@@ -438,7 +438,7 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
         return to_break
 
     X, y, _ = df_xyf(df, predictors=predictors, target=target)
-    cv1 = cross_validation.check_cv(
+    cv1 = model_selection.check_cv(
             cv1, X=X, y=y,
             classifier=is_classifier(model))
 
@@ -676,7 +676,7 @@ def make_skewed_dataframe(n_samples=5000, n_features=20):
 
 
 def test_plot_lc_features(plton=False):
-    from sklearn.cross_validation import StratifiedShuffleSplit
+    from sklearn.model_selection import StratifiedShuffleSplit
     from kgml.classifier import get_clf
     model = get_clf('lr2')
     df = make_skewed_dataframe(n_samples=1000)
