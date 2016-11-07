@@ -23,7 +23,7 @@ from sklearn import model_selection
 from sklearn.base import is_classifier
 
 from predictive_analysis import df_xyf
-from .model_selection import cross_val_predict_proba
+from model_selection import cross_val_predict_proba
 from modsel import estimate_scores
 
 
@@ -212,7 +212,7 @@ def forward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
 def forward_cv_es(
         df, df_valid, predictors, target, model, scoring='roc_auc', cv1=None,
         n_folds=8, n_jobs=-1, start=[], selmax=None, min_ratio=1e-7,
-        max_valid_downs=1, verbosity=0):
+        max_valid_downs=1, n_valid_check=0, verbosity=0):
     """ Forward selection with early stoping.
 
     Parameters
@@ -262,10 +262,24 @@ def forward_cv_es(
             for candidate in remaining)
         scores_with_candidates.sort()
         # print(scores_with_candidates)
-        best_new_score, best_candidate = scores_with_candidates.pop()
-        if current_score is None or cmp_scores(current_score,
-                                               best_new_score,
-                                               min_ratio):
+        if n_valid_check > 0:
+            valid_remaining = \
+                [e[1] for e in scores_with_candidates][-n_valid_check:]
+            parallel = Parallel(n_jobs=n_jobs, verbose=0,
+                                pre_dispatch=pre_dispatch)
+            valid_s_with_candidates = parallel(delayed(forward_cv_inner_loop)(
+                clone(model), df_valid, selected, candidate, target,
+                scoring, cv1=cv1, n_folds=n_folds)
+                for candidate in valid_remaining)
+            valid_s_with_candidates.sort()
+            valid_score, best_candidate = valid_s_with_candidates.pop()
+            best_new_score = [e[0] for e in scores_with_candidates
+                              if e[1] == best_candidate][0]
+        else:
+            best_new_score, best_candidate = scores_with_candidates.pop()
+        if (current_score is None or
+                cmp_scores(current_score, best_new_score, min_ratio) or
+                valid_score > best_valid_score):
             remaining.remove(best_candidate)
             selected.append(best_candidate)
             current_score = best_new_score
