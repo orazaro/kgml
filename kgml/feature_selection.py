@@ -277,7 +277,6 @@ def forward_cv_es(
                               if e[1] == best_candidate][0]
             if verbosity > 1:
                 print("best candidate score:", scores_with_candidates[-1][0])
-                print("valid score:", valid_score)
         else:
             best_new_score, best_candidate = scores_with_candidates.pop()
         if (current_score is None or
