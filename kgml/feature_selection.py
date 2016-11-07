@@ -275,6 +275,9 @@ def forward_cv_es(
             valid_score, best_candidate = valid_s_with_candidates.pop()
             best_new_score = [e[0] for e in scores_with_candidates
                               if e[1] == best_candidate][0]
+            if verbosity > 1:
+                print("best candidate score:", scores_with_candidates[-1][0])
+                print("valid score:", valid_score)
         else:
             best_new_score, best_candidate = scores_with_candidates.pop()
         if (current_score is None or
@@ -283,7 +286,8 @@ def forward_cv_es(
             remaining.remove(best_candidate)
             selected.append(best_candidate)
             current_score = best_new_score
-            valid_score = score_valid(df, df_valid, selected, target)
+            if n_valid_check <= 0:
+                valid_score = score_valid(df, df_valid, selected, target)
             if best_valid_score is None or best_valid_score <= valid_score:
                 best_valid_score = valid_score
                 selected_valid = list(selected)
