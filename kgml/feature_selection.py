@@ -212,7 +212,8 @@ def forward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
 def forward_cv_es(
         df, df_valid, predictors, target, model, scoring='roc_auc', cv1=None,
         n_folds=8, n_jobs=-1, start=[], selmax=None, min_ratio=1e-7,
-        max_valid_downs=1, n_valid_check=0, verbosity=0):
+        max_valid_downs=1, n_valid_check=0, cv_valid=None,
+        verbosity=0):
     """ Forward selection with early stoping.
 
     Parameters
@@ -267,10 +268,19 @@ def forward_cv_es(
                 [e[1] for e in scores_with_candidates][-n_valid_check:]
             parallel = Parallel(n_jobs=n_jobs, verbose=0,
                                 pre_dispatch=pre_dispatch)
-            valid_s_with_candidates = parallel(delayed(forward_cv_inner_loop)(
-                clone(model), df_valid, selected, candidate, target,
-                scoring, cv1=cv1, n_folds=n_folds)
-                for candidate in valid_remaining)
+            if cv_valid is None:
+                df2 = pd.concat([df, df_valid])
+                n_train = df.shape[0]
+                cv2 = [(np.arange(0, n_train, dtype=int),
+                        np.arange(n_train, df2.shape[0], dtype=int))]
+            else:
+                df2 = df_valid
+                cv2 = cv_valid
+            valid_s_with_candidates = \
+                parallel(delayed(forward_cv_inner_loop)(
+                    clone(model), df2, selected, candidate, target,
+                    scoring, cv1=cv2, n_folds=n_folds)
+                    for candidate in valid_remaining)
             valid_s_with_candidates.sort()
             valid_score, best_candidate = valid_s_with_candidates.pop()
             best_new_score = [e[0] for e in scores_with_candidates
