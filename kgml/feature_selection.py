@@ -359,7 +359,7 @@ def test_forward_cv_es():
     from sklearn.pipeline import make_pipeline
 
     df, predictors, target = make_test_regression(
-            n_features=30, n_informative=10, n_samples=2500)
+            n_features=300, n_informative=30, n_samples=25000)
     model = make_pipeline(
                 StandardScaler(),
                 linear_model.RidgeCV(),)
