@@ -743,8 +743,8 @@ def test_f_regression_select():
 def zest():
     # test_f_regression_select()
     # test_forward_cv()
-    # test_forward_cv_es()
-    zest_forward_cv_es(n_features=100, n_informative=20, n_samples=25000)
+    test_forward_cv_es()
+    # zest_forward_cv_es(n_features=100, n_informative=20, n_samples=25000)
     # test_backward_cv()
     # test_add_del_cv()
     print("Test OK", file=sys.stderr)
