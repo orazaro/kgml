@@ -354,12 +354,17 @@ def test_forward_cv():
 
 
 def test_forward_cv_es():
+    zest_forward_cv_es(n_features=30, n_informative=10, n_samples=2500)
+
+
+def zest_forward_cv_es(n_features=100, n_informative=20, n_samples=25000):
     from sklearn.preprocessing import StandardScaler
     from sklearn import linear_model
     from sklearn.pipeline import make_pipeline
 
     df, predictors, target = make_test_regression(
-            n_features=300, n_informative=30, n_samples=25000)
+            n_features=n_features, n_informative=n_informative,
+            n_samples=n_samples)
     model = make_pipeline(
                 StandardScaler(),
                 linear_model.RidgeCV(),)
@@ -738,7 +743,8 @@ def test_f_regression_select():
 def zest():
     # test_f_regression_select()
     # test_forward_cv()
-    test_forward_cv_es()
+    # test_forward_cv_es()
+    zest_forward_cv_es(n_features=100, n_informative=20, n_samples=25000)
     # test_backward_cv()
     # test_add_del_cv()
     print("Test OK", file=sys.stderr)
