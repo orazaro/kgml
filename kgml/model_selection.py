@@ -17,7 +17,8 @@ from pprint import pformat
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import ExtraTreesRegressor, GradientBoostingRegressor
 from sklearn import svm, linear_model
-from sklearn import grid_search, cross_validation
+# from sklearn import grid_search, cross_validation
+from sklearn import model_selection
 from sklearn.base import clone
 from sklearn.externals.joblib import Parallel, delayed
 from sklearn.metrics import roc_curve, auc
@@ -67,7 +68,7 @@ def cross_val_estimate(estimator, X, y, cv1=None, n_folds=8, n_jobs=1,
     scores: array
         numpy array of cross-validated scores
     """
-    from sklearn import (metrics, cross_validation)
+    from sklearn import (metrics, model_selection)
     from .model_selection import cross_val_predict_proba
     from .modsel import (
         estimate_scores,
@@ -76,7 +77,7 @@ def cross_val_estimate(estimator, X, y, cv1=None, n_folds=8, n_jobs=1,
     y_true = y
     scoring = 'roc_auc'
     if cv1 is None:
-        cv1 = cross_validation.StratifiedKFold(y, n_folds)
+        cv1 = model_selection.StratifiedKFold(y, n_folds)
     y_proba, scores = cross_val_predict_proba(
         estimator, X, y, scoring=scoring, cv=cv1, n_jobs=n_jobs, verbose=0,
         fit_params=None, pre_dispatch='2*n_jobs')
@@ -215,17 +216,17 @@ def cv_run(estimator, X, y, scoring='roc_auc', n_folds=16, n_iter=4,
     else:
         logger.info("CV run X:%s y:%s", X.shape, y.shape)
         logger.info("n_folds: %d n_jobs=%d", n_folds, n_jobs)
-    # cv1 = cross_validation.KFold(len(y), n_folds=n_cv,
+    # cv1 = model_selection.KFold(len(y), n_folds=n_cv,
     #                              random_state=random_state)
 
     if to_shuffle:
-        cv1 = cross_validation.StratifiedShuffleSplit(
+        cv1 = model_selection.StratifiedShuffleSplit(
                 y, n_iter=n_iter,
                 test_size=test_size,
                 random_state=random_state)
         prefix = "%d Shuffled Iter(test=%.1f%%)" % (n_iter, test_size*100.)
     else:
-        cv1 = cross_validation.StratifiedKFold(y, n_folds=n_folds)
+        cv1 = model_selection.StratifiedKFold(y, n_folds=n_folds)
         prefix = "%d Fold" % n_folds
 
     if 1:
@@ -234,7 +235,7 @@ def cv_run(estimator, X, y, scoring='roc_auc', n_folds=16, n_iter=4,
             n_jobs=n_jobs, verbose=1, fit_params=None, pre_dispatch='2*n_jobs')
     else:
         y_pred = np.zeros(len(y))
-        scores = cross_validation.cross_val_score(
+        scores = model_selection.cross_val_score(
             estimator, X, y, cv=cv1, scoring=scoring,
             # scoring=make_scorer(roc_auc_score),
             n_jobs=n_jobs, verbose=1)
@@ -330,26 +331,26 @@ def find_params(model, X, y, scoring='roc_auc', n_folds=16, n_iter=4,
                 'RandomizedSearchCV' if psearch > 2 else 'GridSearchCV',
                 X.shape, y.shape)
             logger.info("n_folds: %d n_jobs=%d", n_folds, n_jobs)
-        # cv1 = cross_validation.KFold(len(y), n_folds=n_cv,
+        # cv1 = model_selection.KFold(len(y), n_folds=n_cv,
         # random_state=random_state)
 
         if to_shuffle:
-            cv1 = cross_validation.StratifiedShuffleSplit(
+            cv1 = model_selection.StratifiedShuffleSplit(
                     y, n_iter=n_iter, test_size=test_size,
                     random_state=random_state)
             prefix = "%d Shuffled Iter(test=%.1f%%)" % (n_iter, test_size*100.)
         else:
-            cv1 = cross_validation.StratifiedKFold(y, n_folds=n_folds)
+            cv1 = model_selection.StratifiedKFold(y, n_folds=n_folds)
             prefix = "%d Fold" % n_folds
 
         prefix  # flake off
 
         if psearch > 2:
-            clf = grid_search.RandomizedSearchCV(
+            clf = model_selection.RandomizedSearchCV(
                 model, param_distributions=param_grid, n_iter=psearch,
                 cv=cv1, n_jobs=n_jobs, scoring=scoring)
         else:
-            clf = grid_search.GridSearchCV(
+            clf = model_selection.GridSearchCV(
                 model, param_grid,
                 cv=cv1, n_jobs=n_jobs, scoring=scoring)
         clf.fit(X, y)
@@ -429,15 +430,15 @@ def make_cv_grid(X, y, cv=None, n_samples=0.1, verbose=0):
     if isinstance(cv, int):
         if verbose > 0:
             print("cv:int")
-        cv1 = cross_validation.KFold(X.shape[0], cv)
+        cv1 = model_selection.KFold(X.shape[0], cv)
     elif isinstance(cv, float):
         if verbose > 0:
             print("cv:float")
-        cv1 = cross_validation.KFold(X.shape[0])
+        cv1 = model_selection.KFold(X.shape[0])
     elif not cv:
         if verbose > 0:
             print("cv:not")
-        cv1 = cross_validation.KFold(X.shape[0])
+        cv1 = model_selection.KFold(X.shape[0])
     else:
         if verbose > 0:
             print("cv:ok")
@@ -490,7 +491,7 @@ def cross_val_predict(
     """
     """
     if isinstance(cv, int):
-        cv1 = cross_validation.StratifiedKFold(y, cv)
+        cv1 = model_selection.StratifiedKFold(y, cv)
     else:
         cv1 = cv
     fit_params = fit_params if fit_params is not None else {}
@@ -525,7 +526,7 @@ def cross_val_predict_proba(
     """ Predict probabilities using cross-validation.
     """
     if isinstance(cv, int):
-        cv1 = cross_validation.StratifiedKFold(y, cv)
+        cv1 = model_selection.StratifiedKFold(y, cv)
     else:
         cv1 = cv
 
@@ -622,11 +623,11 @@ def make_grid_search(
     if verbose:
         print("Search estimator parameters..", end=" ")
     if n_iter > 0 and clf in ('rf', 'ef', 'gb'):
-        gs = grid_search.RandomizedSearchCV(
+        gs = model_selection.RandomizedSearchCV(
             est, param_distributions=parameters, n_iter=n_iter,
             cv=cv_grid, n_jobs=-1, verbose=verbose-1).fit(X_grid, y_grid)
     else:
-        gs = grid_search.GridSearchCV(
+        gs = model_selection.GridSearchCV(
             est, parameters,
             cv=cv_grid, n_jobs=-1, verbose=verbose-1).fit(X_grid, y_grid)
     if verbose:
