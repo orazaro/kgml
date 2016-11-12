@@ -19,7 +19,7 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn import svm
 
 import sklearn.linear_model as lm
-from sklearn import grid_search
+from sklearn import model_selection
 
 from base import check_n_jobs
 from classifier import Model
@@ -45,8 +45,8 @@ def get_rgr(cl, n_jobs=1, random_state=0):
                 max_features='auto',
                 n_jobs=n_jobs, random_state=random_state, verbose=0)
         rf1 = {'max_depth': [2, 4, 8, 16, 24, 32]}
-        clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs,
-                                       verbose=0)
+        clf = model_selection.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs,
+                                           verbose=0)
     elif cl == '_lr':
         clf = lm.LinearRegression()
     elif cl == '_ridge':
@@ -58,8 +58,8 @@ def get_rgr(cl, n_jobs=1, random_state=0):
         gamma_range = 10.0 ** np.arange(-4, 3)
         svm2 = dict(gamma=gamma_range, C=C_range)
         est3 = svm.SVR(kernel='rbf', verbose=0)
-        clf = grid_search.GridSearchCV(est3, svm2, cv=4, n_jobs=n_jobs,
-                                       verbose=0)
+        clf = model_selection.GridSearchCV(est3, svm2, cv=4, n_jobs=n_jobs,
+                                           verbose=0)
     elif cl == '_svmP3':
         # svm1 = {'C': [0.001, 0.01, 0.1, 1.0, 10],
         #        'gamma': [0.1, 0.01, 0.001, 0.0001]}
@@ -67,11 +67,11 @@ def get_rgr(cl, n_jobs=1, random_state=0):
                 'gamma': [0.1, 0.01, 0.001, 0.0001],
                 'coef0': [0, 1]}
         est4 = svm.SVR(kernel='poly', degree=3, verbose=0)
-        clf = grid_search.GridSearchCV(est4, svm3, cv=4, n_jobs=n_jobs,
-                                       verbose=0)
+        clf = model_selection.GridSearchCV(est4, svm3, cv=4, n_jobs=n_jobs,
+                                           verbose=0)
     elif cl == '_knn':
         knn1 = {'n_neighbors': 2 ** np.arange(0, 8)}
-        clf = grid_search.GridSearchCV(
+        clf = model_selection.GridSearchCV(
                 KNeighborsRegressor(), knn1, cv=4, n_jobs=n_jobs, verbose=0)
     else:
         raise ValueError("bad cl:%s" % cl)
@@ -294,7 +294,7 @@ class KNNg(RModel):
 
     def _get_clf(self, sclf):
         knn1 = {'n_neighbors': 2 ** np.arange(0, 8)}
-        clf = grid_search.GridSearchCV(
+        clf = model_selection.GridSearchCV(
                 KNeighborsRegressor(), knn1, cv=4, n_jobs=self.n_jobs,
                 verbose=0)
         return clf
