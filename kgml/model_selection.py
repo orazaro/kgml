@@ -491,7 +491,7 @@ def cross_val_predict(
     """
     """
     if isinstance(cv, int):
-        cv1 = model_selection.StratifiedKFold(n_splits=cv).split(X, y)
+        cv1 = model_selection.StratifiedKFold(n_splits=cv).split(y, y)
     else:
         cv1 = cv
     fit_params = fit_params if fit_params is not None else {}
