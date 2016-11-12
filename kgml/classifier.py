@@ -23,7 +23,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis as QDA
 
-from sklearn import grid_search
+from sklearn import model_selection
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -59,13 +59,13 @@ def get_clf(cl, n_jobs=1, random_state=0, class_weight='balanced'):
                 n_estimators=100, max_depth=2,
                 max_features='auto', class_weight=class_weight,
                 n_jobs=n_jobs, random_state=random_state, verbose=0)
-        clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs,
+        clf = model_selection.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs,
                                        verbose=0)
     elif cl == 'dt':
         from sklearn.tree import DecisionTreeClassifier
         clf1 = DecisionTreeClassifier(max_depth=2, max_features='auto',
                                       class_weight=class_weight)
-        clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs,
+        clf = model_selection.GridSearchCV(clf1, rf1, cv=4, n_jobs=n_jobs,
                                        verbose=0)
     elif cl == 'lr2':
         clf = lm.LogisticRegression(
@@ -83,14 +83,14 @@ def get_clf(cl, n_jobs=1, random_state=0, class_weight='balanced'):
                     penalty='l2', dual=True, tol=0.0001,
                     C=1, fit_intercept=True, intercept_scaling=1.0,
                     class_weight=class_weight, random_state=random_state)
-        clf = grid_search.GridSearchCV(est2, lm1, cv=4, n_jobs=n_jobs,
+        clf = model_selection.GridSearchCV(est2, lm1, cv=4, n_jobs=n_jobs,
                                        verbose=0)
     elif cl == 'lr1g':
         est1 = lm.LogisticRegression(
                     penalty='l1', dual=False, tol=0.0001,
                     C=1, fit_intercept=True, intercept_scaling=1.0,
                     class_weight=class_weight, random_state=random_state)
-        clf = grid_search.GridSearchCV(est1, lm1, cv=4, n_jobs=n_jobs,
+        clf = model_selection.GridSearchCV(est1, lm1, cv=4, n_jobs=n_jobs,
                                        verbose=0)
     elif cl == 'svmL':
         clf = svm.LinearSVC(C=1.0, loss='l2', penalty='l2', dual=True,
@@ -105,13 +105,13 @@ def get_clf(cl, n_jobs=1, random_state=0, class_weight='balanced'):
         # est3 = svm.SVC(kernel='linear',verbose=0)
         est3 = svm.LinearSVC(loss='l2', penalty='l1', dual=False, verbose=0,
                              class_weight=class_weight)
-        clf = grid_search.GridSearchCV(est3, lm1, cv=4, n_jobs=n_jobs,
+        clf = model_selection.GridSearchCV(est3, lm1, cv=4, n_jobs=n_jobs,
                                        verbose=0)
     elif cl == 'svmL2g':
         # est3 = svm.SVC(kernel='linear',verbose=0)
         est3 = svm.LinearSVC(loss='l1', penalty='l2', verbose=0,
                              class_weight=class_weight)
-        clf = grid_search.GridSearchCV(est3, lm1, cv=4, n_jobs=n_jobs,
+        clf = model_selection.GridSearchCV(est3, lm1, cv=4, n_jobs=n_jobs,
                                        verbose=0)
     elif cl == 'svmRg':
         # C_range = 10.0 ** np.arange(-2, 9)
@@ -120,7 +120,7 @@ def get_clf(cl, n_jobs=1, random_state=0, class_weight='balanced'):
         gamma_range = 10.0 ** np.arange(-4, 3)
         svm2 = dict(gamma=gamma_range, C=C_range)
         est3 = svm.SVC(kernel='rbf', verbose=0, class_weight=class_weight)
-        clf = grid_search.GridSearchCV(est3, svm2, cv=4, n_jobs=n_jobs,
+        clf = model_selection.GridSearchCV(est3, svm2, cv=4, n_jobs=n_jobs,
                                        verbose=0)
     elif cl == 'svmP3':
         # svm1 = {'C':[0.001,0.01,0.1,1.0,10],'gamma':[0.1,0.01,0.001,0.0001]}
@@ -129,7 +129,7 @@ def get_clf(cl, n_jobs=1, random_state=0, class_weight='balanced'):
                 'coef0': [0, 1]}
         est4 = svm.SVC(kernel='poly', degree=3, verbose=0,
                        class_weight=class_weight)
-        clf = grid_search.GridSearchCV(est4, svm3, cv=4, n_jobs=n_jobs,
+        clf = model_selection.GridSearchCV(est4, svm3, cv=4, n_jobs=n_jobs,
                                        verbose=0)
     elif cl == 'mnb':
         clf = MultinomialNB(alpha=1.0)
@@ -137,7 +137,7 @@ def get_clf(cl, n_jobs=1, random_state=0, class_weight='balanced'):
         clf = GaussianNB()
     elif cl == 'knn':
         knn1 = {'n_neighbors': 2 ** np.arange(0, 8)}
-        clf = grid_search.GridSearchCV(KNeighborsClassifier(), knn1, cv=4,
+        clf = model_selection.GridSearchCV(KNeighborsClassifier(), knn1, cv=4,
                                        n_jobs=n_jobs, verbose=0)
     elif cl == 'knn100':
         clf = KNeighborsClassifier(n_neighbors=100)
@@ -150,7 +150,7 @@ def get_clf(cl, n_jobs=1, random_state=0, class_weight='balanced'):
     elif cl == 'gb':
         gb1 = {'max_depth': [1, 2, 4, 8],
                'n_estimators': [10, 20, 40, 80, 160]}
-        clf = grid_search.GridSearchCV(
+        clf = model_selection.GridSearchCV(
             GradientBoostingClassifier(
                 learning_rate=0.1,
                 random_state=random_state, verbose=0, subsample=1.0),
@@ -567,7 +567,7 @@ class SVCRg(CModel):
                        probability=self.probability, verbose=0,
                        class_weight=self.class_weight)
         ncv = 4
-        clf = grid_search.GridSearchCV(est3, pg, scoring='roc_auc', cv=ncv,
+        clf = model_selection.GridSearchCV(est3, pg, scoring='roc_auc', cv=ncv,
                                        n_jobs=self.n_jobs, verbose=0)
         return clf
 
@@ -594,7 +594,7 @@ class SVCPg(CModel):
         est4 = svm.SVC(C=1.0, kernel='poly', gamma=0.1,
                        probability=self.probability, degree=self.pdegree,
                        verbose=0, class_weight=self.class_weight)
-        clf = grid_search.GridSearchCV(est4, pg, scoring='roc_auc', cv=4,
+        clf = model_selection.GridSearchCV(est4, pg, scoring='roc_auc', cv=4,
                                        n_jobs=self.n_jobs, verbose=0)
         return clf
 
@@ -644,7 +644,7 @@ class RFg(RF):
                 random_state=self.rs,
                 verbose=0)
         rf1 = {'max_depth': [2, 4, 8, 16, 24, 32]}
-        clf = grid_search.GridSearchCV(clf1, rf1, cv=4, n_jobs=self.n_jobs,
+        clf = model_selection.GridSearchCV(clf1, rf1, cv=4, n_jobs=self.n_jobs,
                                        verbose=0)
         return clf
 
