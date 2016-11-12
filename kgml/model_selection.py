@@ -77,7 +77,7 @@ def cross_val_estimate(estimator, X, y, cv1=None, n_folds=8, n_jobs=1,
     y_true = y
     scoring = 'roc_auc'
     if cv1 is None:
-        cv1 = model_selection.StratifiedKFold(y, n_folds)
+        cv1 = model_selection.StratifiedKFold(n_splits=n_folds).split(X, y)
     y_proba, scores = cross_val_predict_proba(
         estimator, X, y, scoring=scoring, cv=cv1, n_jobs=n_jobs, verbose=0,
         fit_params=None, pre_dispatch='2*n_jobs')
@@ -226,7 +226,7 @@ def cv_run(estimator, X, y, scoring='roc_auc', n_folds=16, n_iter=4,
                 random_state=random_state)
         prefix = "%d Shuffled Iter(test=%.1f%%)" % (n_iter, test_size*100.)
     else:
-        cv1 = model_selection.StratifiedKFold(y, n_folds=n_folds)
+        cv1 = model_selection.StratifiedKFold(n_splits=n_folds).split(y, y)
         prefix = "%d Fold" % n_folds
 
     if 1:
@@ -340,7 +340,7 @@ def find_params(model, X, y, scoring='roc_auc', n_folds=16, n_iter=4,
                     random_state=random_state)
             prefix = "%d Shuffled Iter(test=%.1f%%)" % (n_iter, test_size*100.)
         else:
-            cv1 = model_selection.StratifiedKFold(y, n_folds=n_folds)
+            cv1 = model_selection.StratifiedKFold(n_splits=n_folds).split(y, y)
             prefix = "%d Fold" % n_folds
 
         prefix  # flake off
@@ -491,7 +491,7 @@ def cross_val_predict(
     """
     """
     if isinstance(cv, int):
-        cv1 = model_selection.StratifiedKFold(y, cv)
+        cv1 = model_selection.StratifiedKFold(n_splits=cv).split(X, y)
     else:
         cv1 = cv
     fit_params = fit_params if fit_params is not None else {}
@@ -526,7 +526,7 @@ def cross_val_predict_proba(
     """ Predict probabilities using cross-validation.
     """
     if isinstance(cv, int):
-        cv1 = model_selection.StratifiedKFold(y, cv)
+        cv1 = model_selection.StratifiedKFold(cv).split(y, y)
     else:
         cv1 = cv
 
