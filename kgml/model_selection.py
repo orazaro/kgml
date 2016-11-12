@@ -491,6 +491,7 @@ def cross_val_predict(
     """
     """
     if isinstance(cv, int):
+        assert X.shape[0] == len(y)
         cv1 = model_selection.StratifiedKFold(n_splits=cv).split(y, y)
     else:
         cv1 = cv
