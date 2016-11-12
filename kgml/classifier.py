@@ -29,7 +29,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.datasets.samples_generator import (make_classification, )
-from sklearn import (metrics, cross_validation)
+from sklearn import (metrics, model_selection)
 
 # kgml
 from imbalanced import round_down
@@ -737,7 +737,7 @@ def check_model(model, X, y, test_size=0.20, train_stat=False,
                 random_state=None):
     """
     """
-    X_train, X_test, y_train, y_test = cross_validation.train_test_split(
+    X_train, X_test, y_train, y_test = model_selection.train_test_split(
         X, y, test_size=test_size, random_state=random_state)
     model.fit(X_train, y_train)
     print("model: {}".format(model.name))
