@@ -210,7 +210,8 @@ def forward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
 
 
 def forward_cv_es(
-        df, df_valid, predictors, target, model, scoring='roc_auc', cv1=None,
+        df, df_valid, predictors, target, model, model_valid=None,
+        scoring='roc_auc', cv1=None,
         n_folds=8, n_jobs=-1, start=[], selmax=None, min_ratio=1e-7,
         max_valid_downs=1, n_valid_check=0, cv_valid=None,
         verbosity=0):
@@ -229,7 +230,7 @@ def forward_cv_es(
     References
     ----------
     """
-    def score_valid(df, df_valid, predictors, target):
+    def score_valid(model_valid, df, df_valid, predictors, target):
         df2 = pd.concat([df, df_valid])
         n_train = df.shape[0]
         cv2 = [(np.arange(0, n_train, dtype=int),
@@ -240,6 +241,7 @@ def forward_cv_es(
                     verbose=0, fit_params=None,
                     pre_dispatch='2*n_jobs')
         return np.mean(scores)
+    model_valid = model if model_valid is None else model_valid
     remaining = set([e for e in predictors if e not in start])
     selected = list(start)
     selected_valid = list(selected)
@@ -250,7 +252,7 @@ def forward_cv_es(
         current_score, _ = forward_cv_inner_loop(
                 clone(model), df, start, None, target, scoring,
                 cv1=cv1, n_folds=n_folds)
-        valid_score = score_valid(df, df_valid, start, target)
+        valid_score = score_valid(model_valid, df, df_valid, start, target)
     best_new_score = current_score
     best_valid_score = valid_score
     while remaining and current_score == best_new_score:
@@ -278,7 +280,7 @@ def forward_cv_es(
                 cv2 = cv_valid
             valid_s_with_candidates = \
                 parallel(delayed(forward_cv_inner_loop)(
-                    clone(model), df2, selected, candidate, target,
+                    clone(model_valid), df2, selected, candidate, target,
                     scoring, cv1=cv2, n_folds=n_folds)
                     for candidate in valid_remaining)
             valid_s_with_candidates.sort()
@@ -297,7 +299,8 @@ def forward_cv_es(
             selected.append(best_candidate)
             current_score = best_new_score
             if n_valid_check <= 0:
-                valid_score = score_valid(df, df_valid, selected, target)
+                valid_score = score_valid(model_valid, df, df_valid, selected,
+                                          target)
             if best_valid_score is None or best_valid_score <= valid_score:
                 best_valid_score = valid_score
                 selected_valid = list(selected)
