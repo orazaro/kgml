@@ -65,7 +65,7 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
         ax1 = ax
     ax1.set_title(title)
     if ylim is not None:
-        ax1.yset_lim(*ylim)
+        ax1.set_ylim(*ylim)
     if False:
         sunits = '%' if isinstance(train_sizes[0], np.float64) else 'samples'
         ax1.set_xlabel("Training examples ({})".format(sunits))
@@ -215,4 +215,5 @@ def test_plot_learning_curve():
     plt.show()
 
 if __name__ == '__main__':
-    test_plot_validation_curve()
+    # test_plot_validation_curve()
+    test_plot_learning_curve()
