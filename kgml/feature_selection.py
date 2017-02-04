@@ -237,7 +237,7 @@ def forward_cv_es(
                np.arange(n_train, df2.shape[0], dtype=int))]
         X, y, _ = df_xyf(df2, predictors=predictors, target=target)
         scores = model_selection.cross_val_score(
-                    model, X, y, scoring=scoring, cv=cv2, n_jobs=-1,
+                    model, X, y, scoring=scoring, cv=cv2, n_jobs=n_jobs,
                     verbose=0, fit_params=None,
                     pre_dispatch='2*n_jobs')
         return np.mean(scores)
