@@ -230,7 +230,7 @@ def forward_cv_es(
     References
     ----------
     """
-    def score_valid(model_valid, df, df_valid, predictors, target):
+    def score_valid(model_valid, df, df_valid, predictors, target, n_jobs):
         df2 = pd.concat([df, df_valid])
         n_train = df.shape[0]
         cv2 = [(np.arange(0, n_train, dtype=int),
@@ -252,7 +252,7 @@ def forward_cv_es(
         current_score, _ = forward_cv_inner_loop(
                 clone(model), df, start, None, target, scoring,
                 cv1=cv1, n_folds=n_folds)
-        valid_score = score_valid(model_valid, df, df_valid, start, target)
+        valid_score = score_valid(model_valid, df, df_valid, start, target, n_jobs)
     best_new_score = current_score
     best_valid_score = valid_score
     while remaining and current_score == best_new_score:
@@ -300,7 +300,7 @@ def forward_cv_es(
             current_score = best_new_score
             if n_valid_check <= 0:
                 valid_score = score_valid(model_valid, df, df_valid, selected,
-                                          target)
+                                          target, n_jobs)
             if best_valid_score is None or best_valid_score <= valid_score:
                 best_valid_score = valid_score
                 selected_valid = list(selected)
