@@ -213,7 +213,7 @@ def forward_cv_es(
         df, df_valid, predictors, target, model, model_valid=None,
         scoring='roc_auc', cv1=None,
         n_folds=8, n_jobs=-1, start=[], selmax=None, min_ratio=1e-7,
-        max_valid_downs=1, n_valid_check=0, cv_valid=None,
+        max_valid_downs=1, n_valid_check=0, cv_valid=None, n_jobs_valid=None,
         verbosity=0):
     """ Forward selection with early stoping.
 
@@ -241,6 +241,8 @@ def forward_cv_es(
                     verbose=0, fit_params=None,
                     pre_dispatch='2*n_jobs')
         return np.mean(scores)
+    if n_jobs_valid is None:
+        n_jobs_valid = n_jobs
     model_valid = model if model_valid is None else model_valid
     remaining = set([e for e in predictors if e not in start])
     selected = list(start)
@@ -252,7 +254,8 @@ def forward_cv_es(
         current_score, _ = forward_cv_inner_loop(
                 clone(model), df, start, None, target, scoring,
                 cv1=cv1, n_folds=n_folds)
-        valid_score = score_valid(model_valid, df, df_valid, start, target, n_jobs)
+        valid_score = score_valid(model_valid, df, df_valid, start, target,
+                                  n_jobs_valid)
     best_new_score = current_score
     best_valid_score = valid_score
     while remaining and current_score == best_new_score:
@@ -300,7 +303,7 @@ def forward_cv_es(
             current_score = best_new_score
             if n_valid_check <= 0:
                 valid_score = score_valid(model_valid, df, df_valid, selected,
-                                          target, n_jobs)
+                                          target, n_jobs_valid)
             if best_valid_score is None or best_valid_score <= valid_score:
                 best_valid_score = valid_score
                 selected_valid = list(selected)
