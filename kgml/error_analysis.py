@@ -23,7 +23,8 @@ def get_confusion_matrix(y_true, y_pred, class_names=None,
                          title='Confusion matrix',
                          cmap=plt.cm.Blues,
                          fmt=None,
-                         figsize=None):
+                         figsize=None,
+                         thresh=None):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
@@ -55,7 +56,8 @@ def get_confusion_matrix(y_true, y_pred, class_names=None,
         plt.xticks(tick_marks, class_names, rotation=45)
         plt.yticks(tick_marks, class_names)
 
-        thresh = cm.max() / 1.27
+        if thresh is None:
+            thresh = cm.max() / 1.29
         for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
             plt.text(j, i, fmt.format(cm[i, j]),
                      horizontalalignment="center",
