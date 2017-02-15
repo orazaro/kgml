@@ -159,7 +159,6 @@ def log_loss_array(y_true, y_pred, eps=1e-15, labels=None):
                              'from that in y_pred. Classes found in '
                              'labels: {0}'.format(lb.classes_))
 
-    print(transformed_labels.shape, y_pred.shape)
     # Renormalize
     y_pred /= y_pred.sum(axis=1)[:, np.newaxis]
     loss = -(transformed_labels * np.log(y_pred)).sum(axis=1)
