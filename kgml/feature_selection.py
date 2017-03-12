@@ -513,7 +513,7 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
         if verbosity > 0:
             print('backward:', ' '.join(selected_curr))
             sys.stdout.flush()
-        if to_break > 0:
+        if to_break > 0 and i_step > 0:
             break
 
     if verbosity > 0:
