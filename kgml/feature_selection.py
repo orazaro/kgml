@@ -290,9 +290,6 @@ def forward_cv_es(
             valid_score, best_candidate = valid_s_with_candidates.pop()
             best_new_score = [e[0] for e in scores_with_candidates
                               if e[1] == best_candidate][0]
-            if verbosity > 1:
-                print("best candidate score:", scores_with_candidates[-1][0])
-                sys.stdout.flush()
         else:
             best_new_score, best_candidate = scores_with_candidates.pop()
         if (current_score is None or
@@ -315,6 +312,11 @@ def forward_cv_es(
 
         else:
             break
+        if verbosity > 1:
+            print("best candidate score:", scores_with_candidates[-1][0],
+                  "best_new_score:", best_new_score,
+                  "valid_downs:", valid_downs)
+            sys.stdout.flush()
         if verbosity > 0:
             print("{:.5f} {:.5f}".format(current_score, valid_score),
                   ' '.join(selected))
