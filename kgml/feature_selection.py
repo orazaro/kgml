@@ -315,6 +315,7 @@ def forward_cv_es(
         if verbosity > 1:
             print("best candidate score:", scores_with_candidates[-1][0],
                   "best_new_score:", best_new_score,
+                  "best_valid_score:", best_valid_score,
                   "valid_downs:", valid_downs)
             sys.stdout.flush()
         if verbosity > 0:
