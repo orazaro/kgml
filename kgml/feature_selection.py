@@ -491,9 +491,10 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
 
     for i_step in xrange(max_steps):
         # shuffle df
-        df = df.iloc[np.random.permutation(len(df))]
-        if verbosity > 1:
-            print('round {} data shuffled'.format(i_step))
+        if i_step > 0:
+            df = df.iloc[np.random.permutation(len(df))]
+            if verbosity > 1:
+                print('round {} data shuffled'.format(i_step))
         selected = forward_cv(
                         df, predictors, target, model, scoring=scoring,
                         cv1=cv1, n_folds=n_folds, n_jobs=n_jobs,
@@ -762,6 +763,7 @@ def zest():
     # test_backward_cv()
     # test_add_del_cv()
     print("Test OK", file=sys.stderr)
+
 
 if __name__ == '__main__':
     random.seed(1)
