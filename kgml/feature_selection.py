@@ -504,7 +504,7 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
                 if verbosity > 1:
                     print('round {} data shuffled'.format(i_step))
                     sys.stdout.flush()
-        if flip_cv and verbosity > 2:
+        if flip_cv and verbosity > 1:
             cv2 = list(cv1.split())
             tr, te = cv2[0]
             print("fold0: train len:{} fst:{} test len:{} fst:{}".format(
