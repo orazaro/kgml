@@ -202,6 +202,7 @@ def forward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
             break
         if verbosity > 0:
             print("{:.5f}".format(current_score), ' '.join(selected))
+            sys.stdout.flush()
         if selmax is not None and len(selected) >= selmax:
             break
     if verbosity > 0:
@@ -500,8 +501,11 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
                 df = df.iloc[np.random.permutation(len(df))]
                 if verbosity > 1:
                     print('round {} data shuffled'.format(i_step))
-        if verbosity > 1:
-            print("folds:", [(len(tr), len(te)) for tr, te in cv1])
+        if flip_cv and verbosity > 1:
+            tr, te = cv1[0]
+            print("fold0: train len:{} fst:{} test len:{} fst:{}".format(
+                len(tr), tr[0], len(te), te[0]))
+            sys.stdout.flush()
         selected = forward_cv(
                         df, predictors, target, model, scoring=scoring,
                         cv1=cv1, n_folds=n_folds, n_jobs=n_jobs,
