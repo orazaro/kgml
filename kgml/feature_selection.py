@@ -494,15 +494,18 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
         # shuffle df or flip cv
         if i_step > 0:
             if flip_cv:
-                cv1 = [(b, a) for a, b in cv1]
+                cv1 = [(b, a) for a, b in cv1.split()]
+                cv1 = model_selection.check_cv(cv1)
                 if verbosity > 1:
                     print('round {} cv flipped'.format(i_step))
+                    sys.stdout.flush()
             else:
                 df = df.iloc[np.random.permutation(len(df))]
                 if verbosity > 1:
                     print('round {} data shuffled'.format(i_step))
         if flip_cv and verbosity > 1:
-            tr, te = cv1[0]
+            cv2 = list(cv1.split())
+            tr, te = cv2[0]
             print("fold0: train len:{} fst:{} test len:{} fst:{}".format(
                 len(tr), tr[0], len(te), te[0]))
             sys.stdout.flush()
