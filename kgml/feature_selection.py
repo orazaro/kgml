@@ -503,7 +503,7 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
                 df = df.iloc[np.random.permutation(len(df))]
                 if verbosity > 1:
                     print('round {} data shuffled'.format(i_step))
-        if flip_cv and verbosity > 1:
+        if flip_cv and verbosity > 2:
             cv2 = list(cv1.split())
             tr, te = cv2[0]
             print("fold0: train len:{} fst:{} test len:{} fst:{}".format(
