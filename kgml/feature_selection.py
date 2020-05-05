@@ -499,15 +499,15 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
             if flip_cv:
                 cv1 = [(b, a) for a, b in cv1.split()]
                 cv1 = model_selection.check_cv(cv1)
-                if verbosity > 1:
+                if verbosity > 0:
                     print('round {} cv flipped'.format(i_step))
                     sys.stdout.flush()
             else:
                 df = df.iloc[np.random.permutation(len(df))]
-                if verbosity > 1:
+                if verbosity > 0:
                     print('round {} data shuffled'.format(i_step))
                     sys.stdout.flush()
-        if flip_cv and verbosity > 1:
+        if flip_cv and verbosity > 0:
             cv2 = list(cv1.split())
             tr, te = cv2[0]
             print("fold0: train len:{} fst:{} test len:{} fst:{}".format(
@@ -563,9 +563,9 @@ def test_add_del_cv():
                 linear_model.RidgeCV(),)
     selected = add_del_cv(
         df, predictors, target, model,
-        scoring='mean_squared_error', cv1=8,
-        n_folds=8, n_jobs=-1, min_ratio=1e-7,
-        verbosity=2)
+        scoring='mean_squared_error', cv1=4,
+        n_folds=4, n_jobs=1, min_ratio=1e-7,
+        verbosity=1)
     print("add_del_cv:", len(selected), selected)
 
 # --------------------- Forward selection using statsmodels ---------- #
@@ -784,10 +784,10 @@ def test_f_regression_select():
 def zest():
     # test_f_regression_select()
     # test_forward_cv()
-    test_forward_cv_es()
+    # test_forward_cv_es()
     # zest_forward_cv_es(n_features=100, n_informative=20, n_samples=25000)
     # test_backward_cv()
-    # test_add_del_cv()
+    test_add_del_cv()
     print("Test OK", file=sys.stderr)
 
 
