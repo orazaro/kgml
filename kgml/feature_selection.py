@@ -180,6 +180,9 @@ def forward_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
         current_score, _ = forward_cv_inner_loop(
                 clone(model), df, start, None, target, scoring,
                 cv1=cv1, n_folds=n_folds)
+        if verbosity > 0:
+            print("{:.5f}".format(current_score), ' '.join(selected))
+            sys.stdout.flush()
     best_new_score = current_score
     while remaining and current_score == best_new_score:
         pre_dispatch = '2*n_jobs'
@@ -518,7 +521,11 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
         to_break = test_to_break(selected, selected_curr, to_break)
         selected_curr = selected
         if verbosity > 0:
-            print('forward:', ' '.join(selected_curr))
+            current_score, _ = forward_cv_inner_loop(
+                    clone(model), df, selected_curr, None, target, scoring,
+                    cv1=cv1, n_folds=n_folds)
+            print("forward ({:.5f}):".format(current_score),
+                  ' '.join(selected_curr))
             sys.stdout.flush()
         if to_break > 1:
             break
@@ -529,7 +536,11 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
         to_break = test_to_break(selected, selected_curr, to_break)
         selected_curr = selected
         if verbosity > 0:
-            print('backward:', ' '.join(selected_curr))
+            current_score, _ = forward_cv_inner_loop(
+                    clone(model), df, selected_curr, None, target, scoring,
+                    cv1=cv1, n_folds=n_folds)
+            print("backward ({:.5f}):".format(current_score),
+                  ' '.join(selected_curr))
             sys.stdout.flush()
         if to_break > 0 and i_step > 0:
             break
