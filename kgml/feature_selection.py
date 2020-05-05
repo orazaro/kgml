@@ -524,7 +524,7 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
             current_score, _ = forward_cv_inner_loop(
                     clone(model), df, selected_curr, None, target, scoring,
                     cv1=cv1, n_folds=n_folds)
-            print("forward ({:.5f}):".format(current_score),
+            print("forward  ({:.5f}):".format(current_score),
                   ' '.join(selected_curr))
             sys.stdout.flush()
         if to_break > 1:
