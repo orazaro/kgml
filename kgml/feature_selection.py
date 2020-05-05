@@ -507,12 +507,39 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
                 if verbosity > 0:
                     print('round {} data shuffled'.format(i_step))
                     sys.stdout.flush()
+        else:
+            if verbosity > 0:
+                print('round {}'.format(i_step))
+                sys.stdout.flush()
         if flip_cv and verbosity > 0:
             cv2 = list(cv1.split())
             tr, te = cv2[0]
             print("fold0: train len:{} fst:{} test len:{} fst:{}".format(
                 len(tr), tr[0], len(te), te[0]))
             sys.stdout.flush()
+
+        def print_selected(direction_str='forward '):
+            if verbosity > 0:
+                current_score, _ = forward_cv_inner_loop(
+                        clone(model), df, selected_curr, None, target, scoring,
+                        cv1=cv1, n_folds=n_folds)
+                print("{} ({:.5f}):".format(direction_str, current_score),
+                      ' '.join(selected_curr))
+                sys.stdout.flush()
+
+        if len(selected_curr) > 0:
+            print_selected(direction_str='start   ')
+            selected = backward_cv(
+                            df, selected_curr, target, model, scoring=scoring,
+                            cv1=cv1, n_folds=n_folds, n_jobs=n_jobs,
+                            selmin=selmin, min_ratio=min_ratio,
+                            verbosity=verbosity-1)
+            to_break = test_to_break(selected, selected_curr, to_break)
+            selected_curr = selected
+            print_selected(direction_str='backward')
+            if to_break > 0 and i_step > 0:
+                break
+
         selected = forward_cv(
                         df, predictors, target, model, scoring=scoring,
                         cv1=cv1, n_folds=n_folds, n_jobs=n_jobs,
@@ -520,28 +547,17 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
                         min_ratio=min_ratio, verbosity=verbosity-1)
         to_break = test_to_break(selected, selected_curr, to_break)
         selected_curr = selected
-        if verbosity > 0:
-            current_score, _ = forward_cv_inner_loop(
-                    clone(model), df, selected_curr, None, target, scoring,
-                    cv1=cv1, n_folds=n_folds)
-            print("forward  ({:.5f}):".format(current_score),
-                  ' '.join(selected_curr))
-            sys.stdout.flush()
+        print_selected(direction_str='forward ')
         if to_break > 1:
             break
+
         selected = backward_cv(
                         df, selected_curr, target, model, scoring=scoring,
                         cv1=cv1, n_folds=n_folds, n_jobs=n_jobs, selmin=selmin,
                         min_ratio=min_ratio, verbosity=verbosity-1)
         to_break = test_to_break(selected, selected_curr, to_break)
         selected_curr = selected
-        if verbosity > 0:
-            current_score, _ = forward_cv_inner_loop(
-                    clone(model), df, selected_curr, None, target, scoring,
-                    cv1=cv1, n_folds=n_folds)
-            print("backward ({:.5f}):".format(current_score),
-                  ' '.join(selected_curr))
-            sys.stdout.flush()
+        print_selected(direction_str='backward')
         if to_break > 0 and i_step > 0:
             break
 
@@ -565,7 +581,7 @@ def test_add_del_cv():
         df, predictors, target, model,
         scoring='mean_squared_error', cv1=4,
         n_folds=4, n_jobs=1, min_ratio=1e-7,
-        verbosity=1)
+        verbosity=2)
     print("add_del_cv:", len(selected), selected)
 
 # --------------------- Forward selection using statsmodels ---------- #
