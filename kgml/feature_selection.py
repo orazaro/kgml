@@ -462,7 +462,8 @@ def test_backward_cv():
 
 def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
                n_folds=8, n_jobs=-1, start=[], selmax=None, selmin=1,
-               min_ratio=1e-7, max_steps=10, flip_cv=False, verbosity=0):
+               min_ratio=1e-7, max_steps=10, flip_cv=False,
+               start_backward=True, verbosity=0):
     """ Forward-Backward (ADD-DEL) selection using model.
 
     Parameters
@@ -527,7 +528,7 @@ def add_del_cv(df, predictors, target, model, scoring='roc_auc', cv1=None,
                       ' '.join(selected_curr))
                 sys.stdout.flush()
 
-        if len(selected_curr) > 0:
+        if start_backward and len(selected_curr) > 0:
             print_selected(direction_str='start   ')
             selected = backward_cv(
                             df, selected_curr, target, model, scoring=scoring,
