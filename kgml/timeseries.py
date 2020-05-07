@@ -9,9 +9,12 @@ from __future__ import division, print_function
 
 import numpy as np
 import statsmodels.api as sm
-from pandas.tools.plotting import lag_plot, autocorrelation_plot
 from scipy import interpolate
 import calendar
+try:
+    from pandas.plotting import lag_plot, autocorrelation_plot
+except ImportError:
+    from pandas.tools.plotting import lag_plot, autocorrelation_plot
 
 
 def datetime_timestamp(d):
